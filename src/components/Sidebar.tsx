@@ -11,9 +11,10 @@ import {
 } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import { cn } from '../lib/utils';
+import { supabase } from '../lib/supabase';
 
 export const Sidebar: React.FC = () => {
-  const { activeResponsable, setActiveResponsable } = useApp();
+  const { activeResponsable } = useApp();
 
   const menuItems = [
     { icon: LayoutDashboard, label: 'Catálogo', path: '/' },
@@ -64,11 +65,11 @@ export const Sidebar: React.FC = () => {
           <p className="text-sm font-semibold text-white truncate">{activeResponsable}</p>
         </div>
         <button
-          onClick={() => setActiveResponsable(null)}
+          onClick={() => supabase.auth.signOut()}
           className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-red-400 hover:bg-red-500/10 transition-colors font-medium"
         >
           <LogOut className="w-5 h-5" />
-          Cerrar Turno
+          Cerrar Sesión
         </button>
       </div>
     </aside>

@@ -11,9 +11,18 @@ import { Catalog } from './components/Catalog';
 import { LoanWizard } from './components/LoanWizard';
 import { ActiveLoans } from './components/ActiveLoans';
 import { AuditLogs } from './components/AuditLogs';
+import { Loader2 } from 'lucide-react';
 
 function AppContent() {
-  const { activeResponsable } = useApp();
+  const { activeResponsable, loading } = useApp();
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-black flex items-center justify-center">
+        <Loader2 className="w-12 h-12 animate-spin text-amber-500" />
+      </div>
+    );
+  }
 
   if (!activeResponsable) {
     return <ResponsableModal />;

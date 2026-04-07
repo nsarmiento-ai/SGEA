@@ -28,6 +28,7 @@ export interface Equipment {
 export interface Responsable {
   id: string;
   nombre_completo: string;
+  email?: string;
   activo: boolean;
   creado_at: string;
 }
