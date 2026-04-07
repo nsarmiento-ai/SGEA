@@ -1,0 +1,351 @@
+import React, { useState, useEffect } from 'react';
+import { supabase, logAction } from '../lib/supabase';
+import { Equipment, Loan } from '../types';
+import { useApp } from '../context/AppContext';
+import { generateLoanPDF } from '../lib/pdf';
+import { 
+  Check, 
+  ChevronRight, 
+  ChevronLeft, 
+  ShoppingCart, 
+  User, 
+  Calendar, 
+  FileText,
+  Loader2,
+  Search,
+  X
+} from 'lucide-react';
+import { motion, AnimatePresence } from 'motion/react';
+import { cn } from '../lib/utils';
+import { addDays, format } from 'date-fns';
+
+export const LoanWizard: React.FC = () => {
+  const { activeResponsable } = useApp();
+  const [step, setStep] = useState(1);
+  const [equipments, setEquipments] = useState<Equipment[]>([]);
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [submitting, setSubmitting] = useState(false);
+  const [search, setSearch] = useState('');
+  
+  const [formData, setFormData] = useState({
+    alumno_nombre: '',
+    alumno_dni: '',
+    fechaDevolucion: format(addDays(new Date(), 1), "yyyy-MM-dd'T'HH:mm"),
+    comentarios: ''
+  });
+
+  useEffect(() => {
+    fetchAvailable();
+  }, []);
+
+  const fetchAvailable = async () => {
+    setLoading(true);
+    const { data, error } = await supabase
+      .from('equipamiento')
+      .select('*')
+      .eq('estado', 'disponible');
+    if (!error && data) setEquipments(data);
+    setLoading(false);
+  };
+
+  const toggleSelect = (id: string) => {
+    setSelectedIds(prev => 
+      prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]
+    );
+  };
+
+  const isFormValid = () => {
+    const valid = !!(
+      formData.alumno_nombre && 
+      formData.alumno_dni && 
+      selectedIds.length > 0 && 
+      activeResponsable
+    );
+    if (!valid) {
+      console.log('Validación fallida:', {
+        nombre: !!formData.alumno_nombre,
+        dni: !!formData.alumno_dni,
+        equipos: selectedIds.length > 0,
+        responsable: !!activeResponsable
+      });
+    }
+    return valid;
+  };
+
+  const handleFinish = async () => {
+    if (!isFormValid()) return;
+    setSubmitting(true);
+
+    try {
+      // 1. Create Loan
+      const loanData: Partial<Loan> = {
+        alumno_nombre: formData.alumno_nombre,
+        alumno_dni: formData.alumno_dni,
+        responsable_nombre: activeResponsable!,
+        fecha_salida: new Date().toISOString(),
+        fecha_devolucion_estimada: new Date(formData.fechaDevolucion).toISOString(),
+        estado: 'Activo',
+        equipos_ids: selectedIds,
+        comentarios: formData.comentarios
+      };
+
+      const { data: loan, error: loanError } = await supabase
+        .from('prestamos')
+        .insert([loanData])
+        .select()
+        .single();
+
+      if (loanError) throw loanError;
+
+      // 2. Update Equipments
+      const { error: eqError } = await supabase
+        .from('equipamiento')
+        .update({ estado: 'prestado' })
+        .in('id', selectedIds);
+
+      if (eqError) throw eqError;
+
+      // 3. Log Action
+      await logAction(activeResponsable!, 'NUEVO_PRESTAMO', { 
+        loanId: loan.id, 
+        alumno_nombre: formData.alumno_nombre,
+        alumno_dni: formData.alumno_dni,
+        equipos: selectedIds 
+      });
+
+      // 4. Generate PDF
+      const selectedEquipments = equipments.filter(e => selectedIds.includes(e.id));
+      generateLoanPDF(loan as Loan, selectedEquipments);
+
+      // 5. Reset
+      alert('Préstamo registrado con éxito. El comprobante se ha descargado.');
+      window.location.href = '/';
+    } catch (error) {
+      console.error('Error al registrar el préstamo:', error);
+      alert('Error al registrar el préstamo. Revisa la consola.');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const filtered = equipments.filter(e => 
+    e.nombre.toLowerCase().includes(search.toLowerCase()) ||
+    e.modelo.toLowerCase().includes(search.toLowerCase())
+  );
+
+  return (
+    <div className="p-8 max-w-5xl mx-auto">
+      <header className="mb-8">
+        <h1 className="text-3xl font-display font-bold text-slate-900">Nuevo Préstamo</h1>
+        <div className="flex items-center gap-4 mt-4">
+          <div className={cn(
+            "flex items-center gap-2 px-4 py-2 rounded-full text-sm font-bold transition-all",
+            step === 1 ? "bg-amber-500 text-white" : "bg-slate-200 text-slate-500"
+          )}>
+            <span className="w-6 h-6 rounded-full bg-white/20 flex items-center justify-center text-xs">1</span>
+            Selección de Equipos
+          </div>
+          <ChevronRight className="text-slate-300 w-5 h-5" />
+          <div className={cn(
+            "flex items-center gap-2 px-4 py-2 rounded-full text-sm font-bold transition-all",
+            step === 2 ? "bg-amber-500 text-white" : "bg-slate-200 text-slate-500"
+          )}>
+            <span className="w-6 h-6 rounded-full bg-white/20 flex items-center justify-center text-xs">2</span>
+            Registro de Alumno
+          </div>
+        </div>
+      </header>
+
+      <AnimatePresence mode="wait">
+        {step === 1 ? (
+          <motion.div
+            key="step1"
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: 20 }}
+          >
+            <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+              <div className="p-4 border-b border-slate-100 flex items-center gap-4 bg-slate-50">
+                <div className="relative flex-1">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 w-4 h-4" />
+                  <input
+                    type="text"
+                    placeholder="Filtrar equipos disponibles..."
+                    value={search}
+                    onChange={(e) => setSearch(e.target.value)}
+                    className="w-full pl-9 pr-4 py-2 bg-white border border-slate-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-amber-500"
+                  />
+                </div>
+                <div className="text-sm font-bold text-slate-500">
+                  {selectedIds.length} seleccionados
+                </div>
+              </div>
+
+              <div className="max-h-[500px] overflow-y-auto p-4 grid grid-cols-1 sm:grid-cols-2 gap-3">
+                {loading ? (
+                  <div className="col-span-full py-10 flex justify-center"><Loader2 className="animate-spin text-amber-500" /></div>
+                ) : filtered.map(eq => (
+                  <button
+                    key={eq.id}
+                    onClick={() => toggleSelect(eq.id)}
+                    className={cn(
+                      "flex items-center gap-4 p-3 rounded-xl border transition-all text-left",
+                      selectedIds.includes(eq.id) 
+                        ? "border-amber-500 bg-amber-50 ring-1 ring-amber-500" 
+                        : "border-slate-200 hover:border-slate-300 bg-white"
+                    )}
+                  >
+                    <div className="w-12 h-12 rounded-lg bg-slate-100 overflow-hidden flex-shrink-0">
+                      <img src={eq.foto_url || 'https://picsum.photos/seed/gear/100/100'} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="font-bold text-slate-900 truncate text-sm">{eq.nombre}</p>
+                      <p className="text-xs text-slate-500 truncate">{eq.modelo}</p>
+                    </div>
+                    {selectedIds.includes(eq.id) && (
+                      <div className="bg-amber-500 rounded-full p-1">
+                        <Check className="w-3 h-3 text-white" />
+                      </div>
+                    )}
+                  </button>
+                ))}
+              </div>
+
+              <div className="p-6 bg-slate-50 border-t border-slate-100 flex justify-end">
+                <button
+                  disabled={selectedIds.length === 0}
+                  onClick={() => setStep(2)}
+                  className="btn-primary flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  Siguiente paso
+                  <ChevronRight className="w-5 h-5" />
+                </button>
+              </div>
+            </div>
+          </motion.div>
+        ) : (
+          <motion.div
+            key="step2"
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: -20 }}
+            className="grid grid-cols-1 md:grid-cols-3 gap-8"
+          >
+            <div className="md:col-span-2 space-y-6">
+              <div className="bg-white p-8 rounded-2xl shadow-sm border border-slate-200 space-y-6">
+                <div className="space-y-4">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="flex items-center gap-2 text-sm font-bold text-slate-700 mb-2">
+                        <User className="w-4 h-4 text-amber-500" />
+                        Nombre del Alumno
+                      </label>
+                      <input
+                        required
+                        type="text"
+                        value={formData.alumno_nombre || ''}
+                        onChange={e => setFormData({...formData, alumno_nombre: e.target.value})}
+                        className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-amber-500 transition-all"
+                        placeholder="Ej: Nicolás Sarmiento"
+                      />
+                    </div>
+                    <div>
+                      <label className="flex items-center gap-2 text-sm font-bold text-slate-700 mb-2">
+                        <User className="w-4 h-4 text-amber-500" />
+                        DNI
+                      </label>
+                      <input
+                        required
+                        type="text"
+                        value={formData.alumno_dni || ''}
+                        onChange={e => setFormData({...formData, alumno_dni: e.target.value})}
+                        className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-amber-500 transition-all"
+                        placeholder="Ej: 38.123.456"
+                      />
+                    </div>
+                  </div>
+                  <div>
+                    <label className="flex items-center gap-2 text-sm font-bold text-slate-700 mb-2">
+                      <Calendar className="w-4 h-4 text-amber-500" />
+                      Fecha de Devolución Estimada
+                    </label>
+                    <input
+                      required
+                      type="datetime-local"
+                      value={formData.fechaDevolucion || ''}
+                      onChange={e => setFormData({...formData, fechaDevolucion: e.target.value})}
+                      className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-amber-500 transition-all"
+                    />
+                  </div>
+                  <div>
+                    <label className="flex items-center gap-2 text-sm font-bold text-slate-700 mb-2">
+                      <FileText className="w-4 h-4 text-amber-500" />
+                      Comentarios / Observaciones
+                    </label>
+                    <textarea
+                      rows={3}
+                      value={formData.comentarios}
+                      onChange={e => setFormData({...formData, comentarios: e.target.value})}
+                      className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-amber-500 transition-all resize-none"
+                      placeholder="Estado de las baterías, accesorios extra, etc."
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex justify-between">
+                <button
+                  onClick={() => setStep(1)}
+                  className="flex items-center gap-2 px-6 py-3 text-slate-600 font-bold hover:bg-slate-100 rounded-xl transition-all"
+                >
+                  <ChevronLeft className="w-5 h-5" />
+                  Volver a selección
+                </button>
+                <button
+                  disabled={!isFormValid()}
+                  onClick={handleFinish}
+                  className="btn-primary flex items-center gap-2 px-8 py-3 disabled:opacity-50"
+                >
+                  {submitting ? <Loader2 className="w-5 h-5 animate-spin" /> : <Check className="w-5 h-5" />}
+                  Finalizar y Generar PDF
+                </button>
+              </div>
+            </div>
+
+            <div className="space-y-4">
+              <div className="bg-slate-900 text-white p-6 rounded-2xl shadow-lg">
+                <div className="flex items-center gap-2 mb-4 border-b border-slate-800 pb-4">
+                  <ShoppingCart className="w-5 h-5 text-amber-500" />
+                  <h2 className="font-bold">Resumen de Equipos</h2>
+                </div>
+                <div className="space-y-3 max-h-[400px] overflow-y-auto pr-2">
+                  {equipments.filter(e => selectedIds.includes(e.id)).map(eq => (
+                    <div key={eq.id} className="flex items-center gap-3 group">
+                      <div className="w-10 h-10 rounded-lg bg-slate-800 overflow-hidden flex-shrink-0">
+                        <img src={eq.foto_url || 'https://picsum.photos/seed/gear/100/100'} className="w-full h-full object-cover opacity-80" referrerPolicy="no-referrer" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium text-slate-200 truncate">{eq.nombre}</p>
+                        <p className="text-[10px] text-slate-500 truncate">{eq.modelo}</p>
+                      </div>
+                      <button 
+                        onClick={() => toggleSelect(eq.id)}
+                        className="text-slate-600 hover:text-red-400 opacity-0 group-hover:opacity-100 transition-all"
+                      >
+                        <X className="w-4 h-4" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+                <div className="mt-6 pt-4 border-t border-slate-800 text-center">
+                  <p className="text-xs text-slate-500">Total de ítems: <span className="text-amber-500 font-bold">{selectedIds.length}</span></p>
+                </div>
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+};
