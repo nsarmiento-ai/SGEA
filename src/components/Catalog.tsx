@@ -26,6 +26,16 @@ const statusConfig: Record<EquipmentStatus, { color: string, icon: any, label: s
   'disponible': { color: 'text-green-600 bg-green-50 border-green-200', icon: CheckCircle2, label: 'Disponible' },
   'prestado': { color: 'text-blue-600 bg-blue-50 border-blue-200', icon: Clock, label: 'Prestado' },
   'fuera de servicio': { color: 'text-red-600 bg-red-50 border-red-200', icon: XCircle, label: 'Fuera de Servicio' },
+  'archivado': { color: 'text-slate-500 bg-slate-50 border-slate-200', icon: Trash2, label: 'Archivado' },
+};
+
+const mapStatus = (status: string): EquipmentStatus => {
+  const s = status.toLowerCase();
+  if (s === 'roto' || s === 'en reparación' || s === 'perdido' || s === 'mantenimiento' || s === 'incompleto') {
+    return 'fuera de servicio';
+  }
+  if (s === 'eliminado') return 'archivado';
+  return s as EquipmentStatus;
 };
 
 const InventoryMetrics: React.FC<{ equipments: Equipment[] }> = ({ equipments }) => {
@@ -74,6 +84,7 @@ export const Catalog: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [category, setCategory] = useState('Todas');
+  const [showArchived, setShowArchived] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<Equipment | null>(null);
 
@@ -90,7 +101,13 @@ export const Catalog: React.FC = () => {
       .select('*')
       .order('nombre', { ascending: true });
     
-    if (!error && data) setEquipments(data);
+    if (!error && data) {
+      const mappedData = data.map(eq => ({
+        ...eq,
+        estado: mapStatus(eq.estado)
+      }));
+      setEquipments(mappedData);
+    }
     setLoading(false);
   };
 
@@ -99,23 +116,37 @@ export const Catalog: React.FC = () => {
                          eq.modelo.toLowerCase().includes(search.toLowerCase()) ||
                          eq.numero_serie.toLowerCase().includes(search.toLowerCase());
     const matchesCategory = category === 'Todas' || eq.categoria === category;
-    return matchesSearch && matchesCategory;
+    const matchesArchived = showArchived ? eq.estado === 'archivado' : eq.estado !== 'archivado';
+    return matchesSearch && matchesCategory && matchesArchived;
   });
 
   const handleDelete = async (id: string, name: string) => {
-    console.log('Attempting to delete:', name, 'with ID:', id);
+    if (!confirm(`¿Está seguro de archivar "${name}"? No aparecerá en el inventario activo.`)) return;
     
-    console.log('Sending delete request to Supabase...');
-    const { error } = await supabase.from('equipamiento').delete().eq('id', id);
+    const { error } = await supabase
+      .from('equipamiento')
+      .update({ estado: 'archivado' })
+      .eq('id', id);
     
     if (error) {
-      console.error('Error deleting equipment:', error);
-      alert(`Error al eliminar: ${error.message}`);
+      alert(`Error al archivar: ${error.message}`);
     } else {
-      console.log('Deletion successful in Supabase.');
-      await logAction(activeResponsable!, 'BAJA_EQUIPO', { id, nombre: name });
-      setEquipments(equipments.filter(e => e.id !== id));
-      console.log('State updated.');
+      await logAction(activeResponsable!, 'BAJA_EQUIPO', { id, nombre: name, motivo: 'Archivado' });
+      fetchEquipments();
+    }
+  };
+
+  const handleRestore = async (id: string, name: string) => {
+    const { error } = await supabase
+      .from('equipamiento')
+      .update({ estado: 'fuera de servicio' })
+      .eq('id', id);
+    
+    if (error) {
+      alert(`Error al restaurar: ${error.message}`);
+    } else {
+      await logAction(activeResponsable!, 'RESTAURAR_EQUIPO', { id, nombre: name });
+      fetchEquipments();
     }
   };
 
@@ -126,13 +157,27 @@ export const Catalog: React.FC = () => {
           <h1 className="text-3xl font-display font-bold text-slate-900">Catálogo de Equipos</h1>
           <p className="text-slate-500">Gestione el inventario de la escuela.</p>
         </div>
-        <button 
-          onClick={() => { setEditingItem(null); setIsModalOpen(true); }}
-          className="btn-primary flex items-center gap-2 self-start"
-        >
-          <Plus className="w-5 h-5" />
-          Nuevo Equipo
-        </button>
+        <div className="flex gap-2 self-start">
+          <button 
+            onClick={() => setShowArchived(!showArchived)}
+            className={cn(
+              "flex items-center gap-2 px-4 py-2 rounded-xl font-bold text-sm transition-all border",
+              showArchived 
+                ? "bg-slate-900 text-white border-slate-900" 
+                : "bg-white text-slate-600 border-slate-200 hover:border-slate-300"
+            )}
+          >
+            <Trash2 className="w-4 h-4" />
+            {showArchived ? 'Ver Activos' : 'Ver Archivados'}
+          </button>
+          <button 
+            onClick={() => { setEditingItem(null); setIsModalOpen(true); }}
+            className="btn-primary flex items-center gap-2"
+          >
+            <Plus className="w-5 h-5" />
+            Nuevo Equipo
+          </button>
+        </div>
       </header>
 
       <InventoryMetrics equipments={equipments} />
@@ -209,12 +254,23 @@ export const Catalog: React.FC = () => {
                     >
                       <Edit2 className="w-4 h-4" />
                     </button>
-                    <button 
-                      onClick={() => handleDelete(eq.id, eq.nombre)}
-                      className="p-1.5 hover:bg-red-50 rounded-lg text-red-500"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
+                    {eq.estado === 'archivado' ? (
+                      <button 
+                        onClick={() => handleRestore(eq.id, eq.nombre)}
+                        className="p-1.5 hover:bg-green-50 rounded-lg text-green-600"
+                        title="Restaurar"
+                      >
+                        <History className="w-4 h-4" />
+                      </button>
+                    ) : (
+                      <button 
+                        onClick={() => handleDelete(eq.id, eq.nombre)}
+                        className="p-1.5 hover:bg-red-50 rounded-lg text-red-500"
+                        title="Archivar"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    )}
                   </div>
                 </div>
                 

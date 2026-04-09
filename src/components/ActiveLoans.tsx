@@ -51,7 +51,19 @@ export const ActiveLoans: React.FC<{ filterMora?: boolean }> = ({ filterMora = f
       if (eqIds.length > 0) {
         const { data: eqData } = await supabase.from('equipamiento').select('*').in('id', eqIds);
         if (eqData) {
-          const eqMap = eqData.reduce((acc, eq) => ({ ...acc, [eq.id]: eq }), {});
+          const eqMap = eqData.reduce((acc, eq) => ({ 
+            ...acc, 
+            [eq.id]: {
+              ...eq,
+              estado: (eq.estado.toLowerCase() === 'roto' || 
+                       eq.estado.toLowerCase() === 'en reparación' || 
+                       eq.estado.toLowerCase() === 'perdido' || 
+                       eq.estado.toLowerCase() === 'mantenimiento' || 
+                       eq.estado.toLowerCase() === 'incompleto') 
+                       ? 'fuera de servicio' 
+                       : (eq.estado.toLowerCase() === 'eliminado' ? 'archivado' : eq.estado)
+            } 
+          }), {});
           setEquipments(eqMap);
         }
       }
