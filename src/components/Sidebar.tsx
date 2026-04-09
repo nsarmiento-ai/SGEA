@@ -15,7 +15,8 @@ import { cn } from '../lib/utils';
 import { supabase } from '../lib/supabase';
 
 export const Sidebar: React.FC = () => {
-  const { activeResponsable, role } = useApp();
+  const { activeResponsable, profile } = useApp();
+  const role = profile?.rol;
 
   const menuItems = [
     { icon: LayoutDashboard, label: 'Catálogo', path: '/' },

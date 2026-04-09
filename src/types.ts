@@ -39,6 +39,8 @@ export interface Loan {
   id: string;
   alumno_nombre: string;
   alumno_dni: string;
+  materia: string;
+  docente_responsable: string;
   responsable_nombre: string;
   fecha_salida: string;
   fecha_devolucion_estimada: string;
@@ -64,5 +66,13 @@ export interface Reservation {
   fecha_inicio: string;
   fecha_fin: string;
   estado: string;
+  created_at?: string;
+}
+
+export interface Profile {
+  id: string;
+  email: string;
+  rol: 'Pañolero' | 'Docente' | null;
+  favoritos: string[];
   created_at?: string;
 }

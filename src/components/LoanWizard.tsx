@@ -29,22 +29,31 @@ export const LoanWizard: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [search, setSearch] = useState('');
+  const [docentes, setDocentes] = useState<Responsable[]>([]);
   
   const [formData, setFormData] = useState({
     alumno_nombre: '',
     alumno_dni: '',
+    materia: '',
+    docente_responsable: '',
     fechaDevolucion: format(addDays(new Date(), 1), "yyyy-MM-dd'T'HH:mm"),
     comentarios: ''
   });
 
   useEffect(() => {
     fetchAvailable();
+    fetchDocentes();
     const params = new URLSearchParams(window.location.search);
     const preselectedId = params.get('id');
     if (preselectedId) {
       setSelectedIds([preselectedId]);
     }
   }, []);
+
+  const fetchDocentes = async () => {
+    const { data } = await supabase.from('responsables').select('*').eq('activo', true);
+    if (data) setDocentes(data);
+  };
 
   const fetchAvailable = async () => {
     setLoading(true);
@@ -91,6 +100,8 @@ export const LoanWizard: React.FC = () => {
     const valid = !!(
       formData.alumno_nombre && 
       formData.alumno_dni && 
+      formData.materia &&
+      formData.docente_responsable &&
       selectedIds.length > 0 && 
       activeResponsable &&
       Object.keys(conflicts).length === 0
@@ -125,6 +136,8 @@ export const LoanWizard: React.FC = () => {
       const loanData: Partial<Loan> = {
         alumno_nombre: formData.alumno_nombre,
         alumno_dni: formData.alumno_dni,
+        materia: formData.materia,
+        docente_responsable: formData.docente_responsable,
         responsable_nombre: activeResponsable!,
         fecha_salida: new Date().toISOString(),
         fecha_devolucion_estimada: new Date(formData.fechaDevolucion).toISOString(),
@@ -345,6 +358,39 @@ export const LoanWizard: React.FC = () => {
                         className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-amber-500 transition-all"
                         placeholder="Ej: 38.123.456"
                       />
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="flex items-center gap-2 text-sm font-bold text-slate-700 mb-2">
+                        <FileText className="w-4 h-4 text-amber-500" />
+                        Materia
+                      </label>
+                      <input
+                        required
+                        type="text"
+                        value={formData.materia || ''}
+                        onChange={e => setFormData({...formData, materia: e.target.value})}
+                        className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-amber-500 transition-all"
+                        placeholder="Ej: Dirección de Cine"
+                      />
+                    </div>
+                    <div>
+                      <label className="flex items-center gap-2 text-sm font-bold text-slate-700 mb-2">
+                        <User className="w-4 h-4 text-amber-500" />
+                        Docente Responsable
+                      </label>
+                      <select
+                        required
+                        value={formData.docente_responsable || ''}
+                        onChange={e => setFormData({...formData, docente_responsable: e.target.value})}
+                        className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-amber-500 transition-all"
+                      >
+                        <option value="">Seleccionar docente...</option>
+                        {docentes.map(d => (
+                          <option key={d.id} value={d.nombre_completo}>{d.nombre_completo}</option>
+                        ))}
+                      </select>
                     </div>
                   </div>
                   <div>

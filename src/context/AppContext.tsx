@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
-import { Responsable } from '../types';
+import { Responsable, Profile } from '../types';
 
 interface AppContextType {
   activeResponsable: string | null;
@@ -8,6 +8,8 @@ interface AppContextType {
   loading: boolean;
   role: 'Pañolero' | 'Docente' | null;
   userEmail: string | null;
+  profile: Profile | null;
+  setRole: (role: 'Pañolero' | 'Docente') => void;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -16,6 +18,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [activeResponsable, setActiveResponsableState] = useState<string | null>(null);
   const [role, setRole] = useState<'Pañolero' | 'Docente' | null>(null);
   const [userEmail, setUserEmail] = useState<string | null>(null);
+  const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -37,61 +40,36 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       setActiveResponsableState(null);
       setRole(null);
       setUserEmail(null);
+      setProfile(null);
       setLoading(false);
       return;
     }
 
     const email = session.user.email;
     const fullName = session.user.user_metadata.full_name || session.user.email;
-    const userRole = email?.endsWith('@cine.unt.edu.ar') ? 'Pañolero' : 'Docente';
-
     setUserEmail(email);
-    setRole(userRole);
-
-    // Domain validation
-    if (!email.endsWith('@cine.unt.edu.ar') && false) { // Temporarily allow Docentes
-      alert('Acceso denegado: Solo se permiten correos @cine.unt.edu.ar');
-      await supabase.auth.signOut();
-      localStorage.clear(); // Clear any stale data
-      setActiveResponsableState(null);
-      setRole(null);
-      setUserEmail(null);
-      setLoading(false);
-      return;
-    }
 
     try {
-      // Sync with responsables table by email (preferred) or name
-      const { data: existing, error: fetchError } = await supabase
-        .from('responsables')
+      let { data: profile, error: profileError } = await supabase
+        .from('profiles')
         .select('*')
-        .or(`email.eq.${email},nombre_completo.eq.${fullName}`)
+        .eq('id', session.user.id)
         .maybeSingle();
 
-      if (fetchError) {
-        console.error('Error fetching responsable:', fetchError);
-      }
-
-      if (!existing) {
-        const { error: insertError } = await supabase
-          .from('responsables')
-          .insert([{ 
-            nombre_completo: fullName, 
-            email: email,
-            activo: true 
-          }]);
+      if (!profile) {
+        const newRole = email?.endsWith('@cine.unt.edu.ar') ? null : 'Docente';
+        const { data: newProfile, error: insertError } = await supabase
+          .from('profiles')
+          .insert([{ id: session.user.id, email, rol: newRole, favoritos: [] }])
+          .select()
+          .single();
         
-        if (insertError) {
-          console.error('Error creating responsable:', insertError);
-        }
-      } else if (!existing.email) {
-        // Update existing record with email if missing
-        await supabase
-          .from('responsables')
-          .update({ email: email })
-          .eq('id', existing.id);
+        if (insertError) console.error('Error creating profile:', insertError);
+        profile = newProfile;
       }
 
+      setProfile(profile);
+      setRole(profile?.rol || null);
       setActiveResponsableState(fullName);
     } catch (error) {
       console.error('Error syncing user:', error);
@@ -100,12 +78,25 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
   };
 
+  const setRoleAndSave = async (newRole: 'Pañolero' | 'Docente') => {
+    if (!profile) return;
+    const { error } = await supabase
+      .from('profiles')
+      .update({ rol: newRole })
+      .eq('id', profile.id);
+    
+    if (!error) {
+      setRole(newRole);
+      setProfile({ ...profile, rol: newRole });
+    }
+  };
+
   const setActiveResponsable = (name: string | null) => {
     setActiveResponsableState(name);
   };
 
   return (
-    <AppContext.Provider value={{ activeResponsable, setActiveResponsable, loading, role, userEmail }}>
+    <AppContext.Provider value={{ activeResponsable, setActiveResponsable, loading, role, userEmail, profile, setRole: setRoleAndSave }}>
       {children}
     </AppContext.Provider>
   );
