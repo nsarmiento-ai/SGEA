@@ -39,6 +39,11 @@ export const LoanWizard: React.FC = () => {
 
   useEffect(() => {
     fetchAvailable();
+    const params = new URLSearchParams(window.location.search);
+    const preselectedId = params.get('id');
+    if (preselectedId) {
+      setSelectedIds([preselectedId]);
+    }
   }, []);
 
   const fetchAvailable = async () => {

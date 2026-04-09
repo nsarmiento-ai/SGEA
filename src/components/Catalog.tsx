@@ -329,15 +329,34 @@ export const Catalog: React.FC = () => {
                 </div>
               </div>
               
-              <div className="px-4 py-3 bg-slate-50 border-t border-slate-100 flex justify-between items-center">
-                <span className="text-[10px] font-bold text-slate-400">
-                  {eq.piezas && eq.piezas.length > 0 ? `KIT: ${eq.piezas.length} PIEZAS` : 'SIN PIEZAS'}
-                </span>
-                <button className="text-xs font-semibold text-amber-600 hover:text-amber-700 flex items-center gap-1">
-                  <History className="w-3.5 h-3.5" />
-                  Historial
-                </button>
-              </div>
+                <div className="px-4 py-3 bg-slate-50 border-t border-slate-100 flex justify-between items-center">
+                  <div className="flex flex-col">
+                    <span className="text-[10px] font-bold text-slate-400">
+                      {eq.piezas && eq.piezas.length > 0 ? `KIT: ${eq.piezas.length} PIEZAS` : 'SIN PIEZAS'}
+                    </span>
+                    {isReservedNow && (
+                      <span className="text-[10px] font-black text-amber-600 uppercase">Reservado Hoy</span>
+                    )}
+                  </div>
+                  <div className="flex gap-2">
+                    <button 
+                      disabled={isReservedNow || eq.estado !== 'Disponible'}
+                      onClick={() => window.location.href = `/nuevo-prestamo?id=${eq.id}`}
+                      className={cn(
+                        "text-xs font-bold px-3 py-1.5 rounded-lg transition-all",
+                        isReservedNow || eq.estado !== 'Disponible'
+                          ? "bg-slate-200 text-slate-400 cursor-not-allowed"
+                          : "bg-amber-500 text-white hover:bg-amber-600 shadow-sm"
+                      )}
+                    >
+                      Prestar
+                    </button>
+                    <button className="text-xs font-semibold text-slate-600 hover:text-slate-900 flex items-center gap-1">
+                      <History className="w-3.5 h-3.5" />
+                      Historial
+                    </button>
+                  </div>
+                </div>
             </motion.div>
           )})}
         </div>

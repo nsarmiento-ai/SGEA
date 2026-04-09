@@ -39,15 +39,21 @@ export const Reservations: React.FC = () => {
     fetchData();
   }, []);
 
+  useEffect(() => {
+    if (activeResponsable && !formData.docente_nombre) {
+      setFormData(prev => ({ ...prev, docente_nombre: activeResponsable }));
+    }
+  }, [activeResponsable]);
+
   const fetchData = async () => {
     setLoading(true);
     try {
       const [resData, eqData] = await Promise.all([
-        supabase.from('reservas').select('*').order('fecha_inicio', { ascending: true }),
+        supabase.from('reservas').select('*, equipamiento(nombre, modelo)').order('fecha_inicio', { ascending: true }),
         supabase.from('equipamiento').select('*').neq('estado', 'Archivado')
       ]);
 
-      if (resData.data) setReservations(resData.data);
+      if (resData.data) setReservations(resData.data as any);
       if (eqData.data) {
         setAllEquipments(eqData.data);
         const eqMap = eqData.data.reduce((acc, eq) => ({ ...acc, [eq.id]: eq }), {});
@@ -98,12 +104,17 @@ export const Reservations: React.FC = () => {
 
     setSubmitting(true);
     try {
-      const { error: insertError } = await supabase.from('reservas').insert([formData]);
+      const dataToInsert = {
+        ...formData,
+        docente_nombre: formData.docente_nombre || activeResponsable
+      };
+
+      const { error: insertError } = await supabase.from('reservas').insert([dataToInsert]);
       if (insertError) throw insertError;
 
       await logAction(activeResponsable!, 'NUEVA_RESERVA', { 
         equipo: equipments[formData.equipo_id]?.nombre,
-        docente: formData.docente_nombre,
+        docente: dataToInsert.docente_nombre,
         inicio: formData.fecha_inicio,
         fin: formData.fecha_fin
       });
@@ -161,8 +172,8 @@ export const Reservations: React.FC = () => {
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {reservations.map((res) => {
-            const eq = equipments[res.equipo_id];
+          {reservations.map((res: any) => {
+            const eq = res.equipamiento || equipments[res.equipo_id];
             const isNow = isWithinInterval(new Date(), {
               start: parseISO(res.fecha_inicio),
               end: parseISO(res.fecha_fin)
