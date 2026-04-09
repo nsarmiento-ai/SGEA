@@ -393,6 +393,7 @@ const EquipmentModal: React.FC<{ item: Equipment | null, onClose: () => void, on
               <option value="disponible">Disponible</option>
               <option value="prestado">Prestado</option>
               <option value="fuera de servicio">Fuera de Servicio</option>
+              <option value="archivado">Archivado</option>
             </select>
           </div>
           <div>
