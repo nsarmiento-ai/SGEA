@@ -59,9 +59,12 @@ export const ActiveLoans: React.FC<{ filterMora?: boolean }> = ({ filterMora = f
                        eq.estado.toLowerCase() === 'en reparación' || 
                        eq.estado.toLowerCase() === 'perdido' || 
                        eq.estado.toLowerCase() === 'mantenimiento' || 
-                       eq.estado.toLowerCase() === 'incompleto') 
-                       ? 'fuera de servicio' 
-                       : (eq.estado.toLowerCase() === 'eliminado' ? 'archivado' : eq.estado)
+                       eq.estado.toLowerCase() === 'incompleto' ||
+                       eq.estado.toLowerCase() === 'fuera de servicio') 
+                       ? 'Fuera de Servicio' 
+                       : (eq.estado.toLowerCase() === 'eliminado' || eq.estado.toLowerCase() === 'archivado' ? 'Archivado' : 
+                          eq.estado.toLowerCase() === 'disponible' ? 'Disponible' :
+                          eq.estado.toLowerCase() === 'prestado' ? 'Prestado' : eq.estado)
             } 
           }), {});
           setEquipments(eqMap);
@@ -233,7 +236,7 @@ const ReceiveModal: React.FC<{ loan: Loan, equipmentsMap: Record<string, Equipme
         const eq = equipmentStates[eqId];
         if (!eq) continue;
 
-        let newEqStatus: EquipmentStatus = 'disponible';
+        let newEqStatus: EquipmentStatus = 'Disponible';
         let hasIssues = false;
         let issueDetails = [];
 
@@ -242,7 +245,7 @@ const ReceiveModal: React.FC<{ loan: Loan, equipmentsMap: Record<string, Equipme
           const hasDamaged = eq.piezas.some(p => p.estado === 'Dañado');
           
           if (hasMissing || hasDamaged) {
-            newEqStatus = 'fuera de servicio';
+            newEqStatus = 'Fuera de Servicio';
             hasIssues = true;
           }
 
@@ -251,6 +254,7 @@ const ReceiveModal: React.FC<{ loan: Loan, equipmentsMap: Record<string, Equipme
           }
         }
 
+        console.log(`Actualizando equipo ${eqId} tras devolución. Nuevo estado:`, newEqStatus);
         await supabase.from('equipamiento').update({ 
           estado: newEqStatus,
           piezas: eq.piezas 

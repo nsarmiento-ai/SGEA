@@ -44,7 +44,7 @@ export const LoanWizard: React.FC = () => {
     const { data, error } = await supabase
       .from('equipamiento')
       .select('*')
-      .eq('estado', 'disponible');
+      .eq('estado', 'Disponible');
     if (!error && data) setEquipments(data);
     setLoading(false);
   };
@@ -99,9 +99,10 @@ export const LoanWizard: React.FC = () => {
       if (loanError) throw loanError;
 
       // 2. Update Equipments
+      console.log('Actualizando equipos a "Prestado". IDs:', selectedIds);
       const { error: eqError } = await supabase
         .from('equipamiento')
-        .update({ estado: 'prestado' })
+        .update({ estado: 'Prestado' })
         .in('id', selectedIds);
 
       if (eqError) throw eqError;

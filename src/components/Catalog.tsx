@@ -23,26 +23,28 @@ import { motion } from 'motion/react';
 import { cn } from '../lib/utils';
 
 const statusConfig: Record<EquipmentStatus, { color: string, icon: any, label: string }> = {
-  'disponible': { color: 'text-green-600 bg-green-50 border-green-200', icon: CheckCircle2, label: 'Disponible' },
-  'prestado': { color: 'text-blue-600 bg-blue-50 border-blue-200', icon: Clock, label: 'Prestado' },
-  'fuera de servicio': { color: 'text-red-600 bg-red-50 border-red-200', icon: XCircle, label: 'Fuera de Servicio' },
-  'archivado': { color: 'text-slate-500 bg-slate-50 border-slate-200', icon: Trash2, label: 'Archivado' },
+  'Disponible': { color: 'text-green-600 bg-green-50 border-green-200', icon: CheckCircle2, label: 'Disponible' },
+  'Prestado': { color: 'text-blue-600 bg-blue-50 border-blue-200', icon: Clock, label: 'Prestado' },
+  'Fuera de Servicio': { color: 'text-red-600 bg-red-50 border-red-200', icon: XCircle, label: 'Fuera de Servicio' },
+  'Archivado': { color: 'text-slate-500 bg-slate-50 border-slate-200', icon: Trash2, label: 'Archivado' },
 };
 
 const mapStatus = (status: string): EquipmentStatus => {
   const s = status.toLowerCase();
-  if (s === 'roto' || s === 'en reparación' || s === 'perdido' || s === 'mantenimiento' || s === 'incompleto') {
-    return 'fuera de servicio';
+  if (s === 'roto' || s === 'en reparación' || s === 'perdido' || s === 'mantenimiento' || s === 'incompleto' || s === 'fuera de servicio') {
+    return 'Fuera de Servicio';
   }
-  if (s === 'eliminado') return 'archivado';
-  return s as EquipmentStatus;
+  if (s === 'eliminado' || s === 'archivado') return 'Archivado';
+  if (s === 'disponible') return 'Disponible';
+  if (s === 'prestado') return 'Prestado';
+  return status as EquipmentStatus;
 };
 
 const InventoryMetrics: React.FC<{ equipments: Equipment[] }> = ({ equipments }) => {
   const stats = {
-    disponible: equipments.filter(e => e.estado === 'disponible').length,
-    prestado: equipments.filter(e => e.estado === 'prestado').length,
-    fueraDeServicio: equipments.filter(e => e.estado === 'fuera de servicio').length,
+    disponible: equipments.filter(e => e.estado === 'Disponible').length,
+    prestado: equipments.filter(e => e.estado === 'Prestado').length,
+    fueraDeServicio: equipments.filter(e => e.estado === 'Fuera de Servicio').length,
   };
 
   return (
@@ -116,16 +118,17 @@ export const Catalog: React.FC = () => {
                          eq.modelo.toLowerCase().includes(search.toLowerCase()) ||
                          eq.numero_serie.toLowerCase().includes(search.toLowerCase());
     const matchesCategory = category === 'Todas' || eq.categoria === category;
-    const matchesArchived = showArchived ? eq.estado === 'archivado' : eq.estado !== 'archivado';
+    const matchesArchived = showArchived ? eq.estado === 'Archivado' : eq.estado !== 'Archivado';
     return matchesSearch && matchesCategory && matchesArchived;
   });
 
   const handleDelete = async (id: string, name: string) => {
     if (!confirm(`¿Está seguro de archivar "${name}"? No aparecerá en el inventario activo.`)) return;
     
+    console.log('Archivando equipo. Valor enviado a Supabase:', 'Archivado');
     const { error } = await supabase
       .from('equipamiento')
-      .update({ estado: 'archivado' })
+      .update({ estado: 'Archivado' })
       .eq('id', id);
     
     if (error) {
@@ -137,9 +140,10 @@ export const Catalog: React.FC = () => {
   };
 
   const handleRestore = async (id: string, name: string) => {
+    console.log('Restaurando equipo. Valor enviado a Supabase:', 'Fuera de Servicio');
     const { error } = await supabase
       .from('equipamiento')
-      .update({ estado: 'fuera de servicio' })
+      .update({ estado: 'Fuera de Servicio' })
       .eq('id', id);
     
     if (error) {
@@ -254,7 +258,7 @@ export const Catalog: React.FC = () => {
                     >
                       <Edit2 className="w-4 h-4" />
                     </button>
-                    {eq.estado === 'archivado' ? (
+                    {eq.estado === 'Archivado' ? (
                       <button 
                         onClick={() => handleRestore(eq.id, eq.nombre)}
                         className="p-1.5 hover:bg-green-50 rounded-lg text-green-600"
@@ -327,7 +331,7 @@ const EquipmentModal: React.FC<{ item: Equipment | null, onClose: () => void, on
     ubicacion: '',
     descripcion: '',
     foto_url: '',
-    estado: 'disponible',
+    estado: 'Disponible',
     restriccion: false,
     piezas: []
   });
@@ -338,6 +342,9 @@ const EquipmentModal: React.FC<{ item: Equipment | null, onClose: () => void, on
 
     const { piezas, restriccion, ...dataToSave } = formData;
     const action = item ? 'EDICION_EQUIPO' : 'ALTA_EQUIPO';
+    
+    console.log(`Guardando equipo (${action}). Datos enviados a Supabase:`, dataToSave);
+    
     const { error } = item 
       ? await supabase.from('equipamiento').update(dataToSave).eq('id', item.id)
       : await supabase.from('equipamiento').insert([dataToSave]);
@@ -390,10 +397,10 @@ const EquipmentModal: React.FC<{ item: Equipment | null, onClose: () => void, on
               onChange={e => setFormData({...formData, estado: e.target.value as EquipmentStatus})}
               className="w-full px-4 py-2 border border-slate-200 rounded-lg outline-none focus:ring-2 focus:ring-amber-500"
             >
-              <option value="disponible">Disponible</option>
-              <option value="prestado">Prestado</option>
-              <option value="fuera de servicio">Fuera de Servicio</option>
-              <option value="archivado">Archivado</option>
+              <option value="Disponible">Disponible</option>
+              <option value="Prestado">Prestado</option>
+              <option value="Fuera de Servicio">Fuera de Servicio</option>
+              <option value="Archivado">Archivado</option>
             </select>
           </div>
           <div>
