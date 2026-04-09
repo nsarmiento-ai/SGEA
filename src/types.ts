@@ -59,9 +59,10 @@ export interface AuditLog {
 export interface Reservation {
   id: string;
   equipo_id: string;
-  usuario_id?: string;
+  usuario_id: string;
   docente_nombre: string;
   fecha_inicio: string;
   fecha_fin: string;
+  estado: string;
   created_at?: string;
 }

@@ -106,20 +106,29 @@ export const Reservations: React.FC = () => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
       
-      const dataToInsert = {
-        ...formData,
-        docente_nombre: formData.docente_nombre || activeResponsable,
-        usuario_id: user?.id
+      if (!user?.id) {
+        throw new Error('No se pudo obtener el ID del usuario autenticado.');
+      }
+
+      const newReservation = {
+        equipo_id: formData.equipo_id,
+        usuario_id: user.id,
+        fecha_inicio: formData.fecha_inicio,
+        fecha_fin: formData.fecha_fin,
+        docente_nombre: formData.docente_nombre || activeResponsable || '',
+        estado: 'Activa'
       };
 
-      const { error: insertError } = await supabase.from('reservas').insert([dataToInsert]);
+      console.log('Datos a enviar:', newReservation);
+
+      const { error: insertError } = await supabase.from('reservas').insert([newReservation]);
       if (insertError) throw insertError;
 
       await logAction(activeResponsable!, 'NUEVA_RESERVA', { 
         equipo: equipments[formData.equipo_id]?.nombre,
-        docente: dataToInsert.docente_nombre,
-        inicio: formData.fecha_inicio,
-        fin: formData.fecha_fin
+        docente: newReservation.docente_nombre,
+        inicio: newReservation.fecha_inicio,
+        fin: newReservation.fecha_fin
       });
 
       setIsModalOpen(false);
