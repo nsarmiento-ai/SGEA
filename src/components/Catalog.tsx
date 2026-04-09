@@ -17,10 +17,13 @@ import {
   AlertCircle,
   Clock,
   XCircle,
-  Loader2
+  Loader2,
+  Calendar
 } from 'lucide-react';
 import { motion } from 'motion/react';
 import { cn } from '../lib/utils';
+import { isWithinInterval, parseISO, isAfter } from 'date-fns';
+import { Reservation } from '../types';
 
 const statusConfig: Record<EquipmentStatus, { color: string, icon: any, label: string }> = {
   'Disponible': { color: 'text-green-600 bg-green-50 border-green-200', icon: CheckCircle2, label: 'Disponible' },
@@ -83,6 +86,7 @@ const InventoryMetrics: React.FC<{ equipments: Equipment[] }> = ({ equipments })
 export const Catalog: React.FC = () => {
   const { activeResponsable } = useApp();
   const [equipments, setEquipments] = useState<Equipment[]>([]);
+  const [reservations, setReservations] = useState<Reservation[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [category, setCategory] = useState('Todas');
@@ -98,17 +102,21 @@ export const Catalog: React.FC = () => {
 
   const fetchEquipments = async () => {
     setLoading(true);
-    const { data, error } = await supabase
-      .from('equipamiento')
-      .select('*')
-      .order('nombre', { ascending: true });
+    const [eqRes, resRes] = await Promise.all([
+      supabase.from('equipamiento').select('*').order('nombre', { ascending: true }),
+      supabase.from('reservas').select('*')
+    ]);
     
-    if (!error && data) {
-      const mappedData = data.map(eq => ({
+    if (!eqRes.error && eqRes.data) {
+      const mappedData = eqRes.data.map(eq => ({
         ...eq,
         estado: mapStatus(eq.estado)
       }));
       setEquipments(mappedData);
+    }
+
+    if (!resRes.error && resRes.data) {
+      setReservations(resRes.data);
     }
     setLoading(false);
   };
@@ -222,36 +230,64 @@ export const Catalog: React.FC = () => {
         </div>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-          {filteredEquipments.map((eq) => (
-            <motion.div
-              layout
-              key={eq.id}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="card group"
-            >
-              <div className="relative h-48 bg-slate-100 overflow-hidden">
-                <img
-                  src={eq.foto_url || 'https://picsum.photos/seed/camera/400/300'}
-                  alt={eq.nombre}
-                  referrerPolicy="no-referrer"
-                  className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
-                />
-                <div className="absolute top-3 right-3">
-                  <div className={cn(
-                    "flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold border shadow-sm",
-                    (statusConfig[eq.estado] || { color: 'text-slate-600 bg-slate-50 border-slate-200' }).color
-                  )}>
-                    {React.createElement((statusConfig[eq.estado] || { icon: AlertCircle }).icon, { className: "w-3.5 h-3.5" })}
-                    {(statusConfig[eq.estado] || { label: eq.estado }).label}
+          {filteredEquipments.map((eq) => {
+            const eqReservations = reservations.filter(r => r.equipo_id === eq.id);
+            const isReservedNow = eqReservations.some(r => 
+              isWithinInterval(new Date(), {
+                start: parseISO(r.fecha_inicio),
+                end: parseISO(r.fecha_fin)
+              })
+            );
+            const hasFutureReservations = eqReservations.some(r => 
+              isAfter(parseISO(r.fecha_inicio), new Date())
+            );
+
+            return (
+              <motion.div
+                layout
+                key={eq.id}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                className={cn("card group", isReservedNow && "ring-2 ring-amber-500")}
+              >
+                <div className="relative h-48 bg-slate-100 overflow-hidden">
+                  <img
+                    src={eq.foto_url || 'https://picsum.photos/seed/camera/400/300'}
+                    alt={eq.nombre}
+                    referrerPolicy="no-referrer"
+                    className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+                  />
+                  <div className="absolute top-3 right-3 flex flex-col gap-2 items-end">
+                    <div className={cn(
+                      "flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold border shadow-sm",
+                      isReservedNow 
+                        ? "bg-amber-500 text-white border-amber-600"
+                        : (statusConfig[eq.estado] || { color: 'text-slate-600 bg-slate-50 border-slate-200' }).color
+                    )}>
+                      {isReservedNow ? (
+                        <Calendar className="w-3.5 h-3.5" />
+                      ) : (
+                        React.createElement((statusConfig[eq.estado] || { icon: AlertCircle }).icon, { className: "w-3.5 h-3.5" })
+                      )}
+                      {isReservedNow ? 'Reservado' : (statusConfig[eq.estado] || { label: eq.estado }).label}
+                    </div>
+                    {hasFutureReservations && !isReservedNow && (
+                      <div className="bg-white/90 backdrop-blur-sm text-slate-900 p-1.5 rounded-full shadow-sm border border-slate-200" title="Tiene reservas futuras">
+                        <Calendar className="w-4 h-4 text-amber-500" />
+                      </div>
+                    )}
                   </div>
                 </div>
-              </div>
               
               <div className="p-4">
                 <div className="flex justify-between items-start mb-1">
                   <span className="text-[10px] uppercase tracking-wider font-bold text-amber-600">{eq.categoria}</span>
                   <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                    {isReservedNow && (
+                      <div className="px-2 py-1 bg-amber-50 text-amber-700 text-[10px] font-black rounded border border-amber-200 uppercase">
+                        Reservado por Docente
+                      </div>
+                    )}
                     <button 
                       onClick={() => { setEditingItem(eq); setIsModalOpen(true); }}
                       className="p-1.5 hover:bg-slate-100 rounded-lg text-slate-600"
@@ -303,7 +339,7 @@ export const Catalog: React.FC = () => {
                 </button>
               </div>
             </motion.div>
-          ))}
+          )})}
         </div>
       )}
 

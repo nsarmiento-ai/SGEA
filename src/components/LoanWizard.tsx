@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { supabase, logAction } from '../lib/supabase';
-import { Equipment, Loan } from '../types';
+import { Equipment, Loan, Reservation } from '../types';
 import { useApp } from '../context/AppContext';
 import { generateLoanPDF } from '../lib/pdf';
 import { 
@@ -13,16 +13,18 @@ import {
   FileText,
   Loader2,
   Search,
-  X
+  X,
+  AlertCircle
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { cn } from '../lib/utils';
-import { addDays, format } from 'date-fns';
+import { addDays, format, isWithinInterval, parseISO } from 'date-fns';
 
 export const LoanWizard: React.FC = () => {
   const { activeResponsable } = useApp();
   const [step, setStep] = useState(1);
   const [equipments, setEquipments] = useState<Equipment[]>([]);
+  const [reservations, setReservations] = useState<Reservation[]>([]);
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
@@ -41,11 +43,13 @@ export const LoanWizard: React.FC = () => {
 
   const fetchAvailable = async () => {
     setLoading(true);
-    const { data, error } = await supabase
-      .from('equipamiento')
-      .select('*')
-      .eq('estado', 'Disponible');
-    if (!error && data) setEquipments(data);
+    const [eqRes, resRes] = await Promise.all([
+      supabase.from('equipamiento').select('*').eq('estado', 'Disponible'),
+      supabase.from('reservas').select('*')
+    ]);
+    
+    if (!eqRes.error && eqRes.data) setEquipments(eqRes.data);
+    if (!resRes.error && resRes.data) setReservations(resRes.data);
     setLoading(false);
   };
 
@@ -186,31 +190,51 @@ export const LoanWizard: React.FC = () => {
               <div className="max-h-[500px] overflow-y-auto p-4 grid grid-cols-1 sm:grid-cols-2 gap-3">
                 {loading ? (
                   <div className="col-span-full py-10 flex justify-center"><Loader2 className="animate-spin text-amber-500" /></div>
-                ) : filtered.map(eq => (
-                  <button
-                    key={eq.id}
-                    onClick={() => toggleSelect(eq.id)}
-                    className={cn(
-                      "flex items-center gap-4 p-3 rounded-xl border transition-all text-left",
-                      selectedIds.includes(eq.id) 
-                        ? "border-amber-500 bg-amber-50 ring-1 ring-amber-500" 
-                        : "border-slate-200 hover:border-slate-300 bg-white"
-                    )}
-                  >
-                    <div className="w-12 h-12 rounded-lg bg-slate-100 overflow-hidden flex-shrink-0">
-                      <img src={eq.foto_url || 'https://picsum.photos/seed/gear/100/100'} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="font-bold text-slate-900 truncate text-sm">{eq.nombre}</p>
-                      <p className="text-xs text-slate-500 truncate">{eq.modelo}</p>
-                    </div>
-                    {selectedIds.includes(eq.id) && (
-                      <div className="bg-amber-500 rounded-full p-1">
-                        <Check className="w-3 h-3 text-white" />
+                ) : filtered.map(eq => {
+                  const isReservedNow = reservations.some(r => 
+                    r.equipo_id === eq.id &&
+                    isWithinInterval(new Date(), {
+                      start: parseISO(r.fecha_inicio),
+                      end: parseISO(r.fecha_fin)
+                    })
+                  );
+
+                  return (
+                    <button
+                      key={eq.id}
+                      disabled={isReservedNow}
+                      onClick={() => toggleSelect(eq.id)}
+                      className={cn(
+                        "flex items-center gap-4 p-3 rounded-xl border transition-all text-left relative",
+                        selectedIds.includes(eq.id) 
+                          ? "border-amber-500 bg-amber-50 ring-1 ring-amber-500" 
+                          : isReservedNow
+                            ? "border-slate-200 bg-slate-50 opacity-75 cursor-not-allowed"
+                            : "border-slate-200 hover:border-slate-300 bg-white"
+                      )}
+                    >
+                      <div className="w-12 h-12 rounded-lg bg-slate-100 overflow-hidden flex-shrink-0">
+                        <img src={eq.foto_url || 'https://picsum.photos/seed/gear/100/100'} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
                       </div>
-                    )}
-                  </button>
-                ))}
+                      <div className="flex-1 min-w-0">
+                        <p className="font-bold text-slate-900 truncate text-sm">{eq.nombre}</p>
+                        <p className="text-xs text-slate-500 truncate">
+                          {isReservedNow ? (
+                            <span className="text-amber-600 font-bold flex items-center gap-1">
+                              <AlertCircle className="w-3 h-3" />
+                              Reservado por Docente
+                            </span>
+                          ) : eq.modelo}
+                        </p>
+                      </div>
+                      {selectedIds.includes(eq.id) && (
+                        <div className="bg-amber-500 rounded-full p-1">
+                          <Check className="w-3 h-3 text-white" />
+                        </div>
+                      )}
+                    </button>
+                  );
+                })}
               </div>
 
               <div className="p-6 bg-slate-50 border-t border-slate-100 flex justify-end">

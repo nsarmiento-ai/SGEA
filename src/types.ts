@@ -55,3 +55,12 @@ export interface AuditLog {
   accion: string;
   detalles: any;
 }
+
+export interface Reservation {
+  id: string;
+  equipo_id: string;
+  docente_nombre: string;
+  fecha_inicio: string;
+  fecha_fin: string;
+  created_at?: string;
+}

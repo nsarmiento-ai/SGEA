@@ -7,7 +7,8 @@ import {
   AlertTriangle, 
   History, 
   LogOut,
-  Camera
+  Camera,
+  Calendar
 } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import { cn } from '../lib/utils';
@@ -21,6 +22,7 @@ export const Sidebar: React.FC = () => {
     { icon: PlusCircle, label: 'Nuevo Préstamo', path: '/nuevo-prestamo' },
     { icon: Clock, label: 'Préstamos Activos', path: '/activos' },
     { icon: AlertTriangle, label: 'Panel de Mora', path: '/mora' },
+    { icon: Calendar, label: 'Reservas / Agenda', path: '/reservas' },
     { icon: History, label: 'Historial Global', path: '/historial' },
   ];
 

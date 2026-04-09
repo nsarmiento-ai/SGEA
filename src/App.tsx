@@ -11,6 +11,7 @@ import { Catalog } from './components/Catalog';
 import { LoanWizard } from './components/LoanWizard';
 import { ActiveLoans } from './components/ActiveLoans';
 import { AuditLogs } from './components/AuditLogs';
+import { Reservations } from './components/Reservations';
 import { Loader2 } from 'lucide-react';
 
 function AppContent() {
@@ -37,6 +38,7 @@ function AppContent() {
           <Route path="/nuevo-prestamo" element={<LoanWizard />} />
           <Route path="/activos" element={<ActiveLoans />} />
           <Route path="/mora" element={<ActiveLoans filterMora />} />
+          <Route path="/reservas" element={<Reservations />} />
           <Route path="/historial" element={<AuditLogs />} />
         </Routes>
       </main>
