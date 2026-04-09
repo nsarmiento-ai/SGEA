@@ -15,7 +15,7 @@ import { Reservations } from './components/Reservations';
 import { Loader2 } from 'lucide-react';
 
 function AppContent() {
-  const { activeResponsable, loading } = useApp();
+  const { activeResponsable, loading, role } = useApp();
 
   if (loading) {
     return (
@@ -35,11 +35,11 @@ function AppContent() {
       <main className="flex-1 overflow-x-hidden">
         <Routes>
           <Route path="/" element={<Catalog />} />
-          <Route path="/nuevo-prestamo" element={<LoanWizard />} />
-          <Route path="/activos" element={<ActiveLoans />} />
-          <Route path="/mora" element={<ActiveLoans filterMora />} />
           <Route path="/reservas" element={<Reservations />} />
-          <Route path="/historial" element={<AuditLogs />} />
+          <Route path="/mora" element={<ActiveLoans filterMora />} />
+          <Route path="/activos" element={<ActiveLoans />} />
+          <Route path="/nuevo-prestamo" element={role === 'Pañolero' ? <LoanWizard /> : <Catalog />} />
+          <Route path="/historial" element={role === 'Pañolero' ? <AuditLogs /> : <Catalog />} />
         </Routes>
       </main>
     </div>

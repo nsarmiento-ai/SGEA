@@ -6,12 +6,16 @@ interface AppContextType {
   activeResponsable: string | null;
   setActiveResponsable: (name: string | null) => void;
   loading: boolean;
+  role: 'Pañolero' | 'Docente' | null;
+  userEmail: string | null;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
 
 export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [activeResponsable, setActiveResponsableState] = useState<string | null>(null);
+  const [role, setRole] = useState<'Pañolero' | 'Docente' | null>(null);
+  const [userEmail, setUserEmail] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -31,19 +35,27 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const handleAuthChange = async (session: any) => {
     if (!session?.user) {
       setActiveResponsableState(null);
+      setRole(null);
+      setUserEmail(null);
       setLoading(false);
       return;
     }
 
     const email = session.user.email;
     const fullName = session.user.user_metadata.full_name || session.user.email;
+    const userRole = email?.endsWith('@cine.unt.edu.ar') ? 'Pañolero' : 'Docente';
+
+    setUserEmail(email);
+    setRole(userRole);
 
     // Domain validation
-    if (!email.endsWith('@cine.unt.edu.ar')) {
+    if (!email.endsWith('@cine.unt.edu.ar') && false) { // Temporarily allow Docentes
       alert('Acceso denegado: Solo se permiten correos @cine.unt.edu.ar');
       await supabase.auth.signOut();
       localStorage.clear(); // Clear any stale data
       setActiveResponsableState(null);
+      setRole(null);
+      setUserEmail(null);
       setLoading(false);
       return;
     }
@@ -93,7 +105,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   return (
-    <AppContext.Provider value={{ activeResponsable, setActiveResponsable, loading }}>
+    <AppContext.Provider value={{ activeResponsable, setActiveResponsable, loading, role, userEmail }}>
       {children}
     </AppContext.Provider>
   );

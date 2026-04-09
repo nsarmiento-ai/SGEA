@@ -15,16 +15,21 @@ import { cn } from '../lib/utils';
 import { supabase } from '../lib/supabase';
 
 export const Sidebar: React.FC = () => {
-  const { activeResponsable } = useApp();
+  const { activeResponsable, role } = useApp();
 
   const menuItems = [
     { icon: LayoutDashboard, label: 'Catálogo', path: '/' },
-    { icon: PlusCircle, label: 'Nuevo Préstamo', path: '/nuevo-prestamo' },
-    { icon: Clock, label: 'Préstamos Activos', path: '/activos' },
+    { icon: Calendar, label: 'Reservas', path: '/reservas' },
     { icon: AlertTriangle, label: 'Panel de Mora', path: '/mora' },
-    { icon: Calendar, label: 'Reservas / Agenda', path: '/reservas' },
+    { icon: Clock, label: 'Mis Préstamos', path: '/activos' },
+    { icon: PlusCircle, label: 'Nuevo Préstamo', path: '/nuevo-prestamo' },
     { icon: History, label: 'Historial Global', path: '/historial' },
-  ];
+  ].filter(item => {
+    if (role === 'Docente') {
+      return ['Catálogo', 'Reservas', 'Panel de Mora', 'Mis Préstamos'].includes(item.label);
+    }
+    return true;
+  });
 
   return (
     <aside className="w-64 bg-slate-900 h-screen sticky top-0 flex flex-col text-slate-300">

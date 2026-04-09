@@ -69,15 +69,18 @@ export const LoanWizard: React.FC = () => {
   useEffect(() => {
     const newConflicts: Record<string, Reservation> = {};
     const returnDate = parseISO(formData.fechaDevolucion);
-    const now = new Date();
+    const salidaDate = new Date();
 
     selectedIds.forEach(id => {
-      const nextRes = reservations
-        .filter(r => r.equipo_id === id && r.estado === 'Activa' && isAfter(parseISO(r.fecha_inicio), now))
-        .sort((a, b) => parseISO(a.fecha_inicio).getTime() - parseISO(b.fecha_inicio).getTime())[0];
+      const conflictRes = reservations.find(r => 
+        r.equipo_id === id && 
+        r.estado === 'Activa' &&
+        isAfter(returnDate, parseISO(r.fecha_inicio)) &&
+        isAfter(parseISO(r.fecha_fin), salidaDate)
+      );
       
-      if (nextRes && isAfter(returnDate, parseISO(nextRes.fecha_inicio))) {
-        newConflicts[id] = nextRes;
+      if (conflictRes) {
+        newConflicts[id] = conflictRes;
       }
     });
 
@@ -96,6 +99,24 @@ export const LoanWizard: React.FC = () => {
   };
 
   const handleFinish = async () => {
+    const returnDate = parseISO(formData.fechaDevolucion);
+    const salidaDate = new Date();
+    
+    for (const id of selectedIds) {
+      const conflictRes = reservations.find(r => 
+        r.equipo_id === id && 
+        r.estado === 'Activa' &&
+        isAfter(returnDate, parseISO(r.fecha_inicio)) &&
+        isAfter(parseISO(r.fecha_fin), salidaDate)
+      );
+      
+      if (conflictRes) {
+        const eq = equipments.find(e => e.id === id);
+        alert(`Error: El equipo ${eq?.nombre} no puede prestarse hasta el ${format(parseISO(conflictRes.fecha_inicio), 'dd/MM')} porque tiene una reserva de ${conflictRes.docente_nombre} el día ${format(parseISO(conflictRes.fecha_inicio), 'dd/MM')}.`);
+        return;
+      }
+    }
+
     if (!isFormValid()) return;
     setSubmitting(true);
 
