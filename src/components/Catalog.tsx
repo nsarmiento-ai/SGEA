@@ -22,14 +22,50 @@ import {
 import { motion } from 'motion/react';
 import { cn } from '../lib/utils';
 
-const statusConfig: Record<EquipmentStatus, { color: string, icon: any }> = {
-  'disponible': { color: 'text-green-600 bg-green-50 border-green-200', icon: CheckCircle2 },
-  'prestado': { color: 'text-amber-600 bg-amber-50 border-amber-200', icon: Clock },
-  'roto': { color: 'text-red-600 bg-red-50 border-red-200', icon: AlertCircle },
-  'en reparación': { color: 'text-blue-600 bg-blue-50 border-blue-200', icon: Package },
-  'perdido': { color: 'text-slate-600 bg-slate-50 border-slate-200', icon: XCircle },
-  'mantenimiento': { color: 'text-orange-600 bg-orange-50 border-orange-200', icon: AlertCircle },
-  'incompleto': { color: 'text-purple-600 bg-purple-50 border-purple-200', icon: AlertCircle },
+const statusConfig: Record<EquipmentStatus, { color: string, icon: any, label: string }> = {
+  'disponible': { color: 'text-green-600 bg-green-50 border-green-200', icon: CheckCircle2, label: 'Disponible' },
+  'prestado': { color: 'text-blue-600 bg-blue-50 border-blue-200', icon: Clock, label: 'Prestado' },
+  'fuera de servicio': { color: 'text-red-600 bg-red-50 border-red-200', icon: XCircle, label: 'Fuera de Servicio' },
+};
+
+const InventoryMetrics: React.FC<{ equipments: Equipment[] }> = ({ equipments }) => {
+  const stats = {
+    disponible: equipments.filter(e => e.estado === 'disponible').length,
+    prestado: equipments.filter(e => e.estado === 'prestado').length,
+    fueraDeServicio: equipments.filter(e => e.estado === 'fuera de servicio').length,
+  };
+
+  return (
+    <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+      <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm flex items-center gap-4">
+        <div className="w-12 h-12 rounded-xl bg-green-50 flex items-center justify-center text-green-600">
+          <CheckCircle2 className="w-6 h-6" />
+        </div>
+        <div>
+          <p className="text-xs font-bold text-slate-500 uppercase tracking-wider">Total Disponible</p>
+          <p className="text-2xl font-black text-slate-900">{stats.disponible}</p>
+        </div>
+      </div>
+      <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm flex items-center gap-4">
+        <div className="w-12 h-12 rounded-xl bg-blue-50 flex items-center justify-center text-blue-600">
+          <Clock className="w-6 h-6" />
+        </div>
+        <div>
+          <p className="text-xs font-bold text-slate-500 uppercase tracking-wider">Total en Préstamo</p>
+          <p className="text-2xl font-black text-slate-900">{stats.prestado}</p>
+        </div>
+      </div>
+      <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm flex items-center gap-4">
+        <div className="w-12 h-12 rounded-xl bg-red-50 flex items-center justify-center text-red-600">
+          <XCircle className="w-6 h-6" />
+        </div>
+        <div>
+          <p className="text-xs font-bold text-slate-500 uppercase tracking-wider">Fuera de Servicio</p>
+          <p className="text-2xl font-black text-slate-900">{stats.fueraDeServicio}</p>
+        </div>
+      </div>
+    </div>
+  );
 };
 
 export const Catalog: React.FC = () => {
@@ -99,6 +135,8 @@ export const Catalog: React.FC = () => {
         </button>
       </header>
 
+      <InventoryMetrics equipments={equipments} />
+
       <div className="flex flex-col md:flex-row gap-4 mb-8">
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 w-5 h-5" />
@@ -156,7 +194,7 @@ export const Catalog: React.FC = () => {
                     (statusConfig[eq.estado] || { color: 'text-slate-600 bg-slate-50 border-slate-200' }).color
                   )}>
                     {React.createElement((statusConfig[eq.estado] || { icon: AlertCircle }).icon, { className: "w-3.5 h-3.5" })}
-                    {eq.estado}
+                    {(statusConfig[eq.estado] || { label: eq.estado }).label}
                   </div>
                 </div>
               </div>
@@ -296,7 +334,9 @@ const EquipmentModal: React.FC<{ item: Equipment | null, onClose: () => void, on
               onChange={e => setFormData({...formData, estado: e.target.value as EquipmentStatus})}
               className="w-full px-4 py-2 border border-slate-200 rounded-lg outline-none focus:ring-2 focus:ring-amber-500"
             >
-              {['disponible', 'prestado', 'roto', 'en reparación', 'perdido'].map(s => <option key={s} value={s}>{s.charAt(0).toUpperCase() + s.slice(1)}</option>)}
+              <option value="disponible">Disponible</option>
+              <option value="prestado">Prestado</option>
+              <option value="fuera de servicio">Fuera de Servicio</option>
             </select>
           </div>
           <div>

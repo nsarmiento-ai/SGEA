@@ -1,4 +1,4 @@
-export type EquipmentStatus = 'disponible' | 'prestado' | 'roto' | 'en reparación' | 'perdido' | 'mantenimiento' | 'incompleto';
+export type EquipmentStatus = 'disponible' | 'prestado' | 'fuera de servicio';
 
 export type PiezaEstado = 'OK' | 'Dañado' | 'Faltante';
 

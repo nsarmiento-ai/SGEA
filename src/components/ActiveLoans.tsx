@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { supabase, logAction } from '../lib/supabase';
-import { Loan, Equipment, LoanStatus, PiezaEstado } from '../types';
+import { Loan, Equipment, LoanStatus, PiezaEstado, EquipmentStatus } from '../types';
 import { useApp } from '../context/AppContext';
 import { 
   Clock, 
@@ -221,7 +221,7 @@ const ReceiveModal: React.FC<{ loan: Loan, equipmentsMap: Record<string, Equipme
         const eq = equipmentStates[eqId];
         if (!eq) continue;
 
-        let newEqStatus = 'disponible';
+        let newEqStatus: EquipmentStatus = 'disponible';
         let hasIssues = false;
         let issueDetails = [];
 
@@ -229,11 +229,8 @@ const ReceiveModal: React.FC<{ loan: Loan, equipmentsMap: Record<string, Equipme
           const hasMissing = eq.piezas.some(p => p.estado === 'Faltante');
           const hasDamaged = eq.piezas.some(p => p.estado === 'Dañado');
           
-          if (hasMissing) {
-            newEqStatus = 'incompleto';
-            hasIssues = true;
-          } else if (hasDamaged) {
-            newEqStatus = 'mantenimiento';
+          if (hasMissing || hasDamaged) {
+            newEqStatus = 'fuera de servicio';
             hasIssues = true;
           }
 
