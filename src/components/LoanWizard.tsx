@@ -18,7 +18,7 @@ import {
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { cn } from '../lib/utils';
-import { addDays, format, isWithinInterval, parseISO } from 'date-fns';
+import { addDays, format, isWithinInterval, parseISO, isAfter } from 'date-fns';
 
 export const LoanWizard: React.FC = () => {
   const { activeResponsable } = useApp();
@@ -64,21 +64,34 @@ export const LoanWizard: React.FC = () => {
     );
   };
 
+  const [conflicts, setConflicts] = useState<Record<string, Reservation>>({});
+
+  useEffect(() => {
+    const newConflicts: Record<string, Reservation> = {};
+    const returnDate = parseISO(formData.fechaDevolucion);
+    const now = new Date();
+
+    selectedIds.forEach(id => {
+      const nextRes = reservations
+        .filter(r => r.equipo_id === id && r.estado === 'Activa' && isAfter(parseISO(r.fecha_inicio), now))
+        .sort((a, b) => parseISO(a.fecha_inicio).getTime() - parseISO(b.fecha_inicio).getTime())[0];
+      
+      if (nextRes && isAfter(returnDate, parseISO(nextRes.fecha_inicio))) {
+        newConflicts[id] = nextRes;
+      }
+    });
+
+    setConflicts(newConflicts);
+  }, [selectedIds, formData.fechaDevolucion, reservations]);
+
   const isFormValid = () => {
     const valid = !!(
       formData.alumno_nombre && 
       formData.alumno_dni && 
       selectedIds.length > 0 && 
-      activeResponsable
+      activeResponsable &&
+      Object.keys(conflicts).length === 0
     );
-    if (!valid) {
-      console.log('Validación fallida:', {
-        nombre: !!formData.alumno_nombre,
-        dni: !!formData.alumno_dni,
-        equipos: selectedIds.length > 0,
-        responsable: !!activeResponsable
-      });
-    }
     return valid;
   };
 
@@ -203,6 +216,9 @@ export const LoanWizard: React.FC = () => {
                       end: parseISO(r.fecha_fin)
                     })
                   );
+                  const nextRes = reservations
+                    .filter(r => r.equipo_id === eq.id && r.estado === 'Activa' && isAfter(parseISO(r.fecha_inicio), new Date()))
+                    .sort((a, b) => parseISO(a.fecha_inicio).getTime() - parseISO(b.fecha_inicio).getTime())[0];
 
                   return (
                     <button
@@ -228,6 +244,10 @@ export const LoanWizard: React.FC = () => {
                             <span className="text-amber-600 font-bold flex items-center gap-1">
                               <AlertCircle className="w-3 h-3" />
                               Reservado por Docente
+                            </span>
+                          ) : nextRes ? (
+                            <span className="text-slate-400 font-medium">
+                              Próxima reserva: {format(parseISO(nextRes.fecha_inicio), 'dd/MM HH:mm')}
                             </span>
                           ) : eq.modelo}
                         </p>
@@ -264,6 +284,17 @@ export const LoanWizard: React.FC = () => {
           >
             <div className="md:col-span-2 space-y-6">
               <div className="bg-white p-8 rounded-2xl shadow-sm border border-slate-200 space-y-6">
+                {(Object.values(conflicts) as Reservation[]).map(res => {
+                  const eq = equipments.find(e => e.id === res.equipo_id);
+                  return (
+                    <div key={res.id} className="bg-red-50 border border-red-200 p-4 rounded-xl text-red-700 text-sm flex items-start gap-3">
+                      <AlertCircle className="w-5 h-5 flex-shrink-0" />
+                      <p>
+                        <strong>⚠️ Conflicto de Reserva:</strong> El equipo {eq?.nombre} está reservado por el docente {res.docente_nombre} a partir del {format(parseISO(res.fecha_inicio), 'dd/MM HH:mm')}. Debes ajustar la fecha de devolución para que sea previa a este compromiso.
+                      </p>
+                    </div>
+                  );
+                })}
                 <div className="space-y-4">
                   <div className="grid grid-cols-2 gap-4">
                     <div>
