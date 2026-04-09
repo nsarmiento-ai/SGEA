@@ -104,9 +104,12 @@ export const Reservations: React.FC = () => {
 
     setSubmitting(true);
     try {
+      const { data: { user } } = await supabase.auth.getUser();
+      
       const dataToInsert = {
         ...formData,
-        docente_nombre: formData.docente_nombre || activeResponsable
+        docente_nombre: formData.docente_nombre || activeResponsable,
+        usuario_id: user?.id
       };
 
       const { error: insertError } = await supabase.from('reservas').insert([dataToInsert]);
