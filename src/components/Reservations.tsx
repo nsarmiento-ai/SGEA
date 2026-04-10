@@ -131,8 +131,8 @@ export const Reservations: React.FC = () => {
       const newReservation = {
         equipos_ids: equiposIds,
         usuario_id: user.id,
-        fecha_inicio: formData.fecha_inicio,
-        fecha_fin: formData.fecha_fin,
+        fecha_inicio: new Date(formData.fecha_inicio).toISOString(),
+        fecha_fin: new Date(formData.fecha_fin).toISOString(),
         docente_nombre: activeResponsable || '',
         estado: 'Pendiente'
       };
@@ -152,11 +152,14 @@ export const Reservations: React.FC = () => {
       setIsModalOpen(false);
       setCart([]);
       setFormData({ fecha_inicio: '', fecha_fin: '' });
-      fetchData();
+      await fetchData(); // Ensure data is fetched before switching tab
       setActiveTab('mis-reservas');
       alert('Reserva realizada con éxito. Se ha descargado tu comprobante.');
     } catch (err: any) {
-      setError(err.message || 'Error al guardar la reserva.');
+      console.error('ERROR DE SUPABASE:', err);
+      const errorMsg = err.message || JSON.stringify(err);
+      setError(errorMsg);
+      alert(`Error al guardar la reserva: ${errorMsg}`);
     } finally {
       setSubmitting(false);
     }
