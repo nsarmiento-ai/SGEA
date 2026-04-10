@@ -20,6 +20,7 @@ import {
 import { motion, AnimatePresence } from 'motion/react';
 import { cn } from '../lib/utils';
 import { parseISO, areIntervalsOverlapping } from 'date-fns';
+import { generateReservationPDF } from '../lib/pdf';
 
 export const Reservations: React.FC = () => {
   const { activeResponsable, profile, toggleFavorite } = useApp();
@@ -29,6 +30,7 @@ export const Reservations: React.FC = () => {
   const [search, setSearch] = useState('');
   const [category, setCategory] = useState('Todas');
   const [showFavorites, setShowFavorites] = useState(false);
+  const [activeTab, setActiveTab] = useState<'catalogo' | 'mis-reservas'>('catalogo');
   
   const [cart, setCart] = useState<Equipment[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -135,7 +137,7 @@ export const Reservations: React.FC = () => {
         estado: 'Pendiente'
       };
 
-      const { error: insertError } = await supabase.from('reservas').insert([newReservation]);
+      const { data: insertedData, error: insertError } = await supabase.from('reservas').insert([newReservation]).select().single();
       if (insertError) throw insertError;
 
       await logAction(activeResponsable!, 'NUEVA_RESERVA_PENDIENTE', { 
@@ -144,11 +146,15 @@ export const Reservations: React.FC = () => {
         fin: newReservation.fecha_fin
       });
 
+      // Generar PDF
+      generateReservationPDF(insertedData || newReservation, cart);
+
       setIsModalOpen(false);
       setCart([]);
       setFormData({ fecha_inicio: '', fecha_fin: '' });
       fetchData();
-      alert('Reserva enviada con éxito. Estado: PENDIENTE.');
+      setActiveTab('mis-reservas');
+      alert('Reserva realizada con éxito. Se ha descargado tu comprobante.');
     } catch (err: any) {
       setError(err.message || 'Error al guardar la reserva.');
     } finally {
@@ -160,23 +166,45 @@ export const Reservations: React.FC = () => {
     <div className="p-8 max-w-7xl mx-auto">
       <header className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
         <div>
-          <h1 className="text-3xl font-display font-bold text-slate-900">Nueva Reserva</h1>
-          <p className="text-slate-500">Seleccione los equipos y solicite su reserva.</p>
+          <h1 className="text-3xl font-display font-bold text-slate-900">Reservas</h1>
+          <p className="text-slate-500">Gestione sus reservas de equipamiento.</p>
         </div>
         <div className="flex gap-3">
-          <button 
-            onClick={() => setShowFavorites(!showFavorites)}
-            className={cn(
-              "flex items-center gap-2 px-6 py-3 rounded-2xl font-bold text-sm transition-all border shadow-sm",
-              showFavorites 
-                ? "bg-amber-500 text-white border-amber-600 shadow-amber-200" 
-                : "bg-white text-slate-600 border-slate-200 hover:border-amber-500"
-            )}
-          >
-            <Star className={cn("w-5 h-5", showFavorites ? "fill-current" : "text-amber-500")} />
-            {showFavorites ? 'Viendo habituales' : 'Ver habituales'}
-          </button>
-          {cart.length > 0 && (
+          <div className="bg-slate-100 p-1 rounded-2xl flex">
+            <button
+              onClick={() => setActiveTab('catalogo')}
+              className={cn(
+                "px-6 py-2.5 rounded-xl font-bold text-sm transition-all",
+                activeTab === 'catalogo' ? "bg-white text-slate-900 shadow-sm" : "text-slate-500 hover:text-slate-700"
+              )}
+            >
+              Catálogo
+            </button>
+            <button
+              onClick={() => setActiveTab('mis-reservas')}
+              className={cn(
+                "px-6 py-2.5 rounded-xl font-bold text-sm transition-all",
+                activeTab === 'mis-reservas' ? "bg-white text-slate-900 shadow-sm" : "text-slate-500 hover:text-slate-700"
+              )}
+            >
+              Mis Reservas
+            </button>
+          </div>
+          {activeTab === 'catalogo' && (
+            <button 
+              onClick={() => setShowFavorites(!showFavorites)}
+              className={cn(
+                "flex items-center gap-2 px-6 py-3 rounded-2xl font-bold text-sm transition-all border shadow-sm",
+                showFavorites 
+                  ? "bg-amber-500 text-white border-amber-600 shadow-amber-200" 
+                  : "bg-white text-slate-600 border-slate-200 hover:border-amber-500"
+              )}
+            >
+              <Star className={cn("w-5 h-5", showFavorites ? "fill-current" : "text-amber-500")} />
+              {showFavorites ? 'Viendo habituales' : 'Ver habituales'}
+            </button>
+          )}
+          {activeTab === 'catalogo' && cart.length > 0 && (
             <button 
               onClick={() => setIsModalOpen(true)}
               className="bg-slate-900 text-white px-6 py-3 rounded-2xl font-bold text-sm flex items-center gap-2 shadow-lg shadow-slate-200 animate-in fade-in zoom-in"
@@ -188,116 +216,171 @@ export const Reservations: React.FC = () => {
         </div>
       </header>
 
-      <div className="flex flex-col md:flex-row gap-4 mb-8">
-        <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 w-5 h-5" />
-          <input
-            type="text"
-            placeholder="Buscar equipo..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="w-full pl-10 pr-4 py-3 bg-white border border-slate-200 rounded-2xl focus:ring-2 focus:ring-amber-500 outline-none shadow-sm"
-          />
-        </div>
-        <div className="flex gap-2 overflow-x-auto pb-2 md:pb-0">
-          {categories.map(cat => (
-            <button
-              key={cat}
-              onClick={() => setCategory(cat)}
-              className={cn(
-                "px-5 py-2.5 rounded-2xl text-sm font-bold transition-all whitespace-nowrap border shadow-sm",
-                category === cat 
-                  ? "bg-slate-900 text-white border-slate-900" 
-                  : "bg-white text-slate-600 border-slate-200 hover:border-amber-500"
-              )}
-            >
-              {cat}
-            </button>
-          ))}
-        </div>
-      </div>
+      {activeTab === 'catalogo' ? (
+        <>
+          <div className="flex flex-col md:flex-row gap-4 mb-8">
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 w-5 h-5" />
+              <input
+                type="text"
+                placeholder="Buscar equipo..."
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                className="w-full pl-10 pr-4 py-3 bg-white border border-slate-200 rounded-2xl focus:ring-2 focus:ring-amber-500 outline-none shadow-sm"
+              />
+            </div>
+            <div className="flex gap-2 overflow-x-auto pb-2 md:pb-0">
+              {categories.map(cat => (
+                <button
+                  key={cat}
+                  onClick={() => setCategory(cat)}
+                  className={cn(
+                    "px-5 py-2.5 rounded-2xl text-sm font-bold transition-all whitespace-nowrap border shadow-sm",
+                    category === cat 
+                      ? "bg-slate-900 text-white border-slate-900" 
+                      : "bg-white text-slate-600 border-slate-200 hover:border-amber-500"
+                  )}
+                >
+                  {cat}
+                </button>
+              ))}
+            </div>
+          </div>
 
-      {loading ? (
-        <div className="flex flex-col items-center justify-center py-20">
-          <Loader2 className="w-10 h-10 animate-spin text-amber-500 mb-4" />
-          <p className="text-slate-500 font-medium">Cargando catálogo...</p>
-        </div>
-      ) : filteredEquipments.length === 0 ? (
-        <div className="bg-white rounded-3xl p-12 text-center border border-dashed border-slate-300">
-          <Filter className="w-12 h-12 text-slate-300 mx-auto mb-4" />
-          <h3 className="text-lg font-bold text-slate-900">No se encontraron equipos</h3>
-          <p className="text-slate-500">Intente ajustar los filtros o la búsqueda.</p>
-        </div>
-      ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
-          {filteredEquipments.map((eq) => {
-            const isInCart = cart.find(item => item.id === eq.id);
-            return (
-              <motion.div
-                layout
-                key={eq.id}
-                initial={{ opacity: 0, scale: 0.95 }}
-                animate={{ opacity: 1, scale: 1 }}
-                className={cn(
-                  "bg-white rounded-3xl border overflow-hidden shadow-sm hover:shadow-xl transition-all group flex flex-col",
-                  isInCart ? "border-amber-500 ring-2 ring-amber-500/20" : "border-slate-200"
-                )}
-              >
-                <div className="relative h-56 bg-slate-100 overflow-hidden">
-                  <img
-                    src={eq.foto_url || 'https://picsum.photos/seed/camera/400/300'}
-                    alt={eq.nombre}
-                    referrerPolicy="no-referrer"
-                    className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
-                  />
-                  <button 
-                    onClick={() => toggleFavorite(eq.id)}
-                    className="absolute top-4 right-4 p-2.5 bg-white/90 backdrop-blur-sm rounded-full shadow-lg border border-slate-100 transition-transform active:scale-90"
+          {loading ? (
+            <div className="flex flex-col items-center justify-center py-20">
+              <Loader2 className="w-10 h-10 animate-spin text-amber-500 mb-4" />
+              <p className="text-slate-500 font-medium">Cargando catálogo...</p>
+            </div>
+          ) : filteredEquipments.length === 0 ? (
+            <div className="bg-white rounded-3xl p-12 text-center border border-dashed border-slate-300">
+              <Filter className="w-12 h-12 text-slate-300 mx-auto mb-4" />
+              <h3 className="text-lg font-bold text-slate-900">No se encontraron equipos</h3>
+              <p className="text-slate-500">Intente ajustar los filtros o la búsqueda.</p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
+              {filteredEquipments.map((eq) => {
+                const isInCart = cart.find(item => item.id === eq.id);
+                return (
+                  <motion.div
+                    layout
+                    key={eq.id}
+                    initial={{ opacity: 0, scale: 0.95 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    className={cn(
+                      "bg-white rounded-3xl border overflow-hidden shadow-sm hover:shadow-xl transition-all group flex flex-col",
+                      isInCart ? "border-amber-500 ring-2 ring-amber-500/20" : "border-slate-200"
+                    )}
                   >
-                    <Star className={cn(
-                      "w-5 h-5 transition-colors",
-                      profile?.favoritos?.includes(eq.id) ? "fill-amber-500 text-amber-500" : "text-slate-400"
-                    )} />
-                  </button>
-                  <div className="absolute bottom-4 left-4">
-                    <span className="px-3 py-1 bg-slate-900/80 backdrop-blur-sm text-white text-[10px] font-black uppercase rounded-lg tracking-wider">
-                      {eq.categoria}
-                    </span>
-                  </div>
-                </div>
-                
-                <div className="p-6 flex-1 flex flex-col">
-                  <h3 className="font-black text-slate-900 text-lg leading-tight mb-1">{eq.nombre}</h3>
-                  <p className="text-sm text-slate-500 mb-4">{eq.modelo}</p>
-                  
-                  <div className="mt-auto space-y-4">
-                    <div className="flex items-center gap-2 text-xs text-slate-600 bg-slate-50 p-3 rounded-xl border border-slate-100">
-                      <Info className="w-4 h-4 text-amber-500" />
-                      <span className="truncate">{eq.descripcion || 'Sin descripción.'}</span>
+                    <div className="relative h-56 bg-slate-100 overflow-hidden">
+                      <img
+                        src={eq.foto_url || 'https://picsum.photos/seed/camera/400/300'}
+                        alt={eq.nombre}
+                        referrerPolicy="no-referrer"
+                        className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+                      />
+                      <button 
+                        onClick={() => toggleFavorite(eq.id)}
+                        className="absolute top-4 right-4 p-2.5 bg-white/90 backdrop-blur-sm rounded-full shadow-lg border border-slate-100 transition-transform active:scale-90"
+                      >
+                        <Star className={cn(
+                          "w-5 h-5 transition-colors",
+                          profile?.favoritos?.includes(eq.id) ? "fill-amber-500 text-amber-500" : "text-slate-400"
+                        )} />
+                      </button>
+                      <div className="absolute bottom-4 left-4">
+                        <span className="px-3 py-1 bg-slate-900/80 backdrop-blur-sm text-white text-[10px] font-black uppercase rounded-lg tracking-wider">
+                          {eq.categoria}
+                        </span>
+                      </div>
                     </div>
                     
-                    {isInCart ? (
-                      <button 
-                        onClick={() => removeFromCart(eq.id)}
-                        className="w-full py-3 bg-red-50 text-red-600 rounded-2xl font-bold flex items-center justify-center gap-2 hover:bg-red-100 transition-colors"
-                      >
-                        <Trash2 className="w-5 h-5" />
-                        Quitar de la reserva
-                      </button>
-                    ) : (
-                      <button 
-                        onClick={() => addToCart(eq)}
-                        className="w-full py-3 bg-slate-900 text-white rounded-2xl font-bold flex items-center justify-center gap-2 hover:bg-amber-500 transition-colors shadow-lg shadow-slate-200"
-                      >
-                        <Plus className="w-5 h-5" />
-                        Añadir a la reserva
-                      </button>
-                    )}
+                    <div className="p-6 flex-1 flex flex-col">
+                      <h3 className="font-black text-slate-900 text-lg leading-tight mb-1">{eq.nombre}</h3>
+                      <p className="text-sm text-slate-500 mb-4">{eq.modelo}</p>
+                      
+                      <div className="mt-auto space-y-4">
+                        <div className="flex items-center gap-2 text-xs text-slate-600 bg-slate-50 p-3 rounded-xl border border-slate-100">
+                          <Info className="w-4 h-4 text-amber-500" />
+                          <span className="truncate">{eq.descripcion || 'Sin descripción.'}</span>
+                        </div>
+                        
+                        {isInCart ? (
+                          <button 
+                            onClick={() => removeFromCart(eq.id)}
+                            className="w-full py-3 bg-red-50 text-red-600 rounded-2xl font-bold flex items-center justify-center gap-2 hover:bg-red-100 transition-colors"
+                          >
+                            <Trash2 className="w-5 h-5" />
+                            Quitar de la reserva
+                          </button>
+                        ) : (
+                          <button 
+                            onClick={() => addToCart(eq)}
+                            className="w-full py-3 bg-slate-900 text-white rounded-2xl font-bold flex items-center justify-center gap-2 hover:bg-amber-500 transition-colors shadow-lg shadow-slate-200"
+                          >
+                            <Plus className="w-5 h-5" />
+                            Añadir a la reserva
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  </motion.div>
+                );
+              })}
+            </div>
+          )}
+        </>
+      ) : (
+        <div className="space-y-6">
+          {reservations.filter(r => r.docente_nombre === activeResponsable).length === 0 ? (
+            <div className="bg-white rounded-3xl p-12 text-center border border-dashed border-slate-300">
+              <Calendar className="w-12 h-12 text-slate-300 mx-auto mb-4" />
+              <h3 className="text-lg font-bold text-slate-900">No tienes reservas</h3>
+              <p className="text-slate-500">Tus reservas aparecerán aquí.</p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 gap-4">
+              {reservations.filter(r => r.docente_nombre === activeResponsable).map(res => (
+                <div key={res.id} className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm flex flex-col md:flex-row gap-6">
+                  <div className="flex-1">
+                    <div className="flex items-center gap-3 mb-4">
+                      <span className={cn(
+                        "px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider",
+                        res.estado === 'Pendiente' ? "bg-amber-100 text-amber-700" :
+                        res.estado === 'Entregada' ? "bg-green-100 text-green-700" :
+                        res.estado === 'Cancelada' ? "bg-red-100 text-red-700" :
+                        "bg-blue-100 text-blue-700"
+                      )}>
+                        {res.estado}
+                      </span>
+                      <span className="text-sm text-slate-500">
+                        {new Date(res.fecha_inicio).toLocaleDateString()} - {new Date(res.fecha_fin).toLocaleDateString()}
+                      </span>
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                      {res.equipos_ids.map(id => {
+                        const eq = equipments.find(e => e.id === id);
+                        return eq ? (
+                          <div key={id} className="flex items-center gap-2 bg-slate-50 px-3 py-2 rounded-xl border border-slate-100">
+                            <span className="text-sm font-bold text-slate-700">{eq.nombre}</span>
+                          </div>
+                        ) : null;
+                      })}
+                    </div>
+                  </div>
+                  <div className="flex items-center justify-end">
+                    <button 
+                      onClick={() => generateReservationPDF(res, equipments.filter(e => res.equipos_ids.includes(e.id)))}
+                      className="flex items-center gap-2 px-4 py-2 text-sm font-bold text-slate-600 hover:text-amber-600 bg-slate-50 hover:bg-amber-50 rounded-xl transition-colors"
+                    >
+                      Descargar Comprobante
+                    </button>
                   </div>
                 </div>
-              </motion.div>
-            );
-          })}
+              ))}
+            </div>
+          )}
         </div>
       )}
 

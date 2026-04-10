@@ -83,6 +83,46 @@ export const generateLoanPDF = (loan: Loan, equipments: Equipment[]) => {
   doc.save(`prestamo_${loan.alumno_nombre.replace(/\s+/g, '_')}_${new Date().getTime()}.pdf`);
 };
 
+export const generateReservationPDF = (reservation: any, equipments: Equipment[]) => {
+  const doc = new jsPDF();
+  const pageWidth = doc.internal.pageSize.getWidth();
+
+  // Header
+  doc.setFontSize(20);
+  doc.setTextColor(15, 23, 42);
+  doc.text('SGEA - Comprobante de Reserva', pageWidth / 2, 20, { align: 'center' });
+  
+  doc.setFontSize(12);
+  doc.text('Escuela de Cine, Video y TV (UNT)', pageWidth / 2, 28, { align: 'center' });
+
+  // Reservation Info
+  doc.setFontSize(10);
+  doc.setTextColor(100);
+  doc.text(`Docente: ${reservation.docente_nombre}`, 20, 45);
+  doc.text(`Fecha Desde: ${formatDate(reservation.fecha_inicio)}`, 20, 52);
+  doc.text(`Fecha Hasta: ${formatDate(reservation.fecha_fin)}`, 20, 59);
+  doc.text(`Estado: ${reservation.estado.toUpperCase()}`, 20, 66);
+
+  // Equipment Table
+  const tableData = equipments.map((eq, index) => [
+    index + 1,
+    eq.nombre,
+    eq.modelo,
+    eq.categoria
+  ]);
+
+  autoTable(doc, {
+    startY: 75,
+    head: [['#', 'Equipo', 'Modelo', 'Categoría']],
+    body: tableData,
+    headStyles: { fillColor: [15, 23, 42] },
+    theme: 'grid',
+  });
+
+  // Save
+  doc.save(`reserva_${reservation.docente_nombre.replace(/\s+/g, '_')}_${new Date().getTime()}.pdf`);
+};
+
 export const generateReturnPDF = (loan: Loan, equipments: Equipment[], responsableRecibe: string) => {
   const doc = new jsPDF();
   const pageWidth = doc.internal.pageSize.getWidth();
