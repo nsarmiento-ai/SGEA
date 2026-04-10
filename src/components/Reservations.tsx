@@ -31,6 +31,7 @@ export const Reservations: React.FC = () => {
   const [category, setCategory] = useState('Todas');
   const [showFavorites, setShowFavorites] = useState(false);
   const [activeTab, setActiveTab] = useState<'catalogo' | 'mis-reservas'>('catalogo');
+  const [currentUser, setCurrentUser] = useState<any>(null);
   
   const [cart, setCart] = useState<Equipment[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -46,6 +47,9 @@ export const Reservations: React.FC = () => {
 
   useEffect(() => {
     fetchData();
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      setCurrentUser(user);
+    });
   }, []);
 
   const fetchData = async () => {
@@ -130,15 +134,13 @@ export const Reservations: React.FC = () => {
 
     setSubmitting(true);
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      
-      if (!user?.id) {
+      if (!currentUser?.id) {
         throw new Error('No se pudo obtener el ID del usuario autenticado.');
       }
 
       const newReservation = {
         equipos_ids: equiposIds,
-        usuario_id: user.id,
+        usuario_id: currentUser.id,
         fecha_inicio: new Date(formData.fecha_inicio).toISOString(),
         fecha_fin: new Date(formData.fecha_fin).toISOString(),
         docente_nombre: activeResponsable || '',
@@ -484,7 +486,7 @@ export const Reservations: React.FC = () => {
                   </button>
                   <button 
                     type="submit" 
-                    disabled={submitting}
+                    disabled={submitting || !currentUser}
                     className="flex-1 bg-slate-900 text-white font-black uppercase tracking-wider py-4 rounded-2xl flex items-center justify-center gap-2 hover:bg-amber-500 transition-all shadow-lg shadow-slate-200 disabled:opacity-50"
                   >
                     {submitting ? <Loader2 className="w-6 h-6 animate-spin" /> : <CheckCircle2 className="w-6 h-6" />}
