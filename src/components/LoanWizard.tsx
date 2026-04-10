@@ -43,12 +43,31 @@ export const LoanWizard: React.FC = () => {
   useEffect(() => {
     fetchAvailable();
     fetchDocentes();
+    
     const params = new URLSearchParams(window.location.search);
     const preselectedId = params.get('id');
+    const resId = params.get('resId');
+    const resDocente = params.get('docente');
+    const resEquipos = params.get('equipos');
+    const resFin = params.get('fin');
+
     if (preselectedId) {
       setSelectedIds([preselectedId]);
     }
+
+    if (resId && resEquipos) {
+      setSelectedIds(resEquipos.split(','));
+      setFormData(prev => ({
+        ...prev,
+        docente_responsable: resDocente || '',
+        fechaDevolucion: resFin ? format(parseISO(resFin), "yyyy-MM-dd'T'HH:mm") : prev.fechaDevolucion
+      }));
+      // Store resId in a ref or state if needed to update it later
+      setReservationId(resId);
+    }
   }, []);
+
+  const [reservationId, setReservationId] = useState<string | null>(null);
 
   const fetchDocentes = async () => {
     const { data } = await supabase.from('responsables').select('*').eq('activo', true);
@@ -82,7 +101,7 @@ export const LoanWizard: React.FC = () => {
 
     selectedIds.forEach(id => {
       const conflictRes = reservations.find(r => 
-        r.equipo_id === id && 
+        r.equipos_ids.includes(id) && 
         r.estado === 'Activa' &&
         isAfter(returnDate, parseISO(r.fecha_inicio)) &&
         isAfter(parseISO(r.fecha_fin), salidaDate)
@@ -115,7 +134,7 @@ export const LoanWizard: React.FC = () => {
     
     for (const id of selectedIds) {
       const conflictRes = reservations.find(r => 
-        r.equipo_id === id && 
+        r.equipos_ids.includes(id) && 
         r.estado === 'Activa' &&
         isAfter(returnDate, parseISO(r.fecha_inicio)) &&
         isAfter(parseISO(r.fecha_fin), salidaDate)
@@ -162,6 +181,15 @@ export const LoanWizard: React.FC = () => {
         .in('id', selectedIds);
 
       if (eqError) throw eqError;
+
+      // 2.5 Update Reservation if exists
+      if (reservationId) {
+        const { error: resError } = await supabase
+          .from('reservas')
+          .update({ estado: 'Entregada' })
+          .eq('id', reservationId);
+        if (resError) console.error('Error updating reservation status:', resError);
+      }
 
       // 3. Log Action
       await logAction(activeResponsable!, 'NUEVO_PRESTAMO', { 
@@ -244,14 +272,14 @@ export const LoanWizard: React.FC = () => {
                   <div className="col-span-full py-10 flex justify-center"><Loader2 className="animate-spin text-amber-500" /></div>
                 ) : filtered.map(eq => {
                   const isReservedNow = reservations.some(r => 
-                    r.equipo_id === eq.id &&
+                    r.equipos_ids.includes(eq.id) &&
                     isWithinInterval(new Date(), {
                       start: parseISO(r.fecha_inicio),
                       end: parseISO(r.fecha_fin)
                     })
                   );
                   const nextRes = reservations
-                    .filter(r => r.equipo_id === eq.id && r.estado === 'Activa' && isAfter(parseISO(r.fecha_inicio), new Date()))
+                    .filter(r => r.equipos_ids.includes(eq.id) && r.estado === 'Activa' && isAfter(parseISO(r.fecha_inicio), new Date()))
                     .sort((a, b) => parseISO(a.fecha_inicio).getTime() - parseISO(b.fecha_inicio).getTime())[0];
 
                   return (
@@ -318,8 +346,8 @@ export const LoanWizard: React.FC = () => {
           >
             <div className="md:col-span-2 space-y-6">
               <div className="bg-white p-8 rounded-2xl shadow-sm border border-slate-200 space-y-6">
-                {(Object.values(conflicts) as Reservation[]).map(res => {
-                  const eq = equipments.find(e => e.id === res.equipo_id);
+                {(Object.entries(conflicts) as [string, Reservation][]).map(([eqId, res]) => {
+                  const eq = equipments.find(e => e.id === eqId);
                   return (
                     <div key={res.id} className="bg-red-50 border border-red-200 p-4 rounded-xl text-red-700 text-sm flex items-start gap-3">
                       <AlertCircle className="w-5 h-5 flex-shrink-0" />

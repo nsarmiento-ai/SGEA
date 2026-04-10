@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { supabase, logAction } from '../lib/supabase';
 import { Loan, Equipment, LoanStatus, PiezaEstado, EquipmentStatus } from '../types';
 import { useApp } from '../context/AppContext';
+import { generateReturnPDF } from '../lib/pdf';
 import { 
   Clock, 
   User, 
@@ -11,14 +12,15 @@ import {
   AlertCircle,
   Loader2,
   ArrowRight,
-  XCircle
+  XCircle,
+  Download
 } from 'lucide-react';
 import { motion } from 'motion/react';
 import { cn, formatDate } from '../lib/utils';
 import { differenceInDays, isPast } from 'date-fns';
 
 export const ActiveLoans: React.FC<{ filterMora?: boolean }> = ({ filterMora = false }) => {
-  const { activeResponsable } = useApp();
+  const { activeResponsable, profile, role } = useApp();
   const [loans, setLoans] = useState<Loan[]>([]);
   const [equipments, setEquipments] = useState<Record<string, Equipment>>({});
   const [loading, setLoading] = useState(true);
@@ -26,7 +28,7 @@ export const ActiveLoans: React.FC<{ filterMora?: boolean }> = ({ filterMora = f
 
   useEffect(() => {
     fetchData();
-  }, [filterMora]);
+  }, [filterMora, profile]);
 
   const fetchData = async () => {
     setLoading(true);
@@ -35,6 +37,16 @@ export const ActiveLoans: React.FC<{ filterMora?: boolean }> = ({ filterMora = f
       .select('*')
       .eq('estado', 'Activo')
       .order('fecha_devolucion_estimada', { ascending: true });
+    
+    if (role === 'Docente' && profile?.id) {
+      // Assuming there's a way to link loans to users. 
+      // The user mentioned "Mis Préstamos" for Docentes.
+      // If the loan table doesn't have usuario_id, we might need to filter by docente_responsable name or add the field.
+      // Let's assume we filter by docente_responsable matching profile email or name for now, 
+      // but ideally we should have usuario_id in prestamos too.
+      // For now, let's use docente_responsable as a proxy if usuario_id is missing.
+      query = query.eq('docente_responsable', activeResponsable);
+    }
     
     const { data: loansData, error: loansError } = await query;
     
@@ -78,10 +90,10 @@ export const ActiveLoans: React.FC<{ filterMora?: boolean }> = ({ filterMora = f
     <div className="p-8 max-w-7xl mx-auto">
       <header className="mb-8">
         <h1 className="text-3xl font-display font-bold text-slate-900">
-          {filterMora ? 'Panel de Mora' : 'Préstamos Activos'}
+          {filterMora ? 'Panel de Mora' : (role === 'Docente' ? 'Mis Préstamos' : 'Devolución de Equipos')}
         </h1>
         <p className="text-slate-500">
-          {filterMora ? 'Equipos con fecha de devolución vencida.' : 'Seguimiento de equipos fuera del pañol.'}
+          {filterMora ? 'Equipos con fecha de devolución vencida.' : (role === 'Docente' ? 'Seguimiento de sus equipos retirados.' : 'Gestión de recepción de equipos.')}
         </p>
       </header>
 
@@ -168,15 +180,17 @@ export const ActiveLoans: React.FC<{ filterMora?: boolean }> = ({ filterMora = f
                   </div>
                 </div>
 
-                <div className="p-4 bg-slate-50 border-t border-slate-100 flex justify-end">
-                  <button
-                    onClick={() => setSelectedLoan(loan)}
-                    className="flex items-center gap-2 px-6 py-2 bg-slate-900 text-white rounded-xl font-bold text-sm hover:bg-slate-800 transition-all"
-                  >
-                    <CheckCircle className="w-4 h-4" />
-                    Recibir Equipos
-                  </button>
-                </div>
+                {role === 'Pañolero' && (
+                  <div className="p-4 bg-slate-50 border-t border-slate-100 flex justify-end">
+                    <button
+                      onClick={() => setSelectedLoan(loan)}
+                      className="flex items-center gap-2 px-6 py-2 bg-slate-900 text-white rounded-xl font-bold text-sm hover:bg-slate-800 transition-all"
+                    >
+                      <CheckCircle className="w-4 h-4" />
+                      Recibir Equipos
+                    </button>
+                  </div>
+                )}
               </motion.div>
             );
           })}
@@ -275,6 +289,10 @@ const ReceiveModal: React.FC<{ loan: Loan, equipmentsMap: Record<string, Equipme
       // 3. Log the general return action
       await logAction(activeResponsable!, 'DEVOLUCION_PRESTAMO', { loanId: loan.id, alumno: `${loan.alumno_nombre} (${loan.alumno_dni})` });
       
+      // 4. Generate Return PDF
+      const returnedEquipments = Object.values(equipmentStates) as Equipment[];
+      generateReturnPDF(loan, returnedEquipments, activeResponsable!);
+
       onSuccess();
     } catch (error) {
       console.error(error);

@@ -12,12 +12,14 @@ import {
   CheckCircle2,
   Star,
   Filter,
-  ChevronRight,
+  ShoppingCart,
+  Plus,
+  Trash2,
   Info
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { cn } from '../lib/utils';
-import { parseISO, areIntervalsOverlapping, format } from 'date-fns';
+import { parseISO, areIntervalsOverlapping } from 'date-fns';
 
 export const Reservations: React.FC = () => {
   const { activeResponsable, profile, toggleFavorite } = useApp();
@@ -28,7 +30,7 @@ export const Reservations: React.FC = () => {
   const [category, setCategory] = useState('Todas');
   const [showFavorites, setShowFavorites] = useState(false);
   
-  const [selectedEquipment, setSelectedEquipment] = useState<Equipment | null>(null);
+  const [cart, setCart] = useState<Equipment[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -69,12 +71,22 @@ export const Reservations: React.FC = () => {
     return matchesSearch && matchesCategory && matchesFavorites;
   });
 
-  const checkOverlap = (equipoId: string, start: string, end: string) => {
+  const addToCart = (eq: Equipment) => {
+    if (cart.find(item => item.id === eq.id)) return;
+    setCart([...cart, eq]);
+  };
+
+  const removeFromCart = (id: string) => {
+    setCart(cart.filter(item => item.id !== id));
+  };
+
+  const checkOverlap = (equiposIds: string[], start: string, end: string) => {
     const newStart = parseISO(start);
     const newEnd = parseISO(end);
 
     return reservations.some(res => {
-      if (res.equipo_id !== equipoId) return false;
+      if (!res.equipos_ids.some(id => equiposIds.includes(id))) return false;
+      if (res.estado === 'Cancelada') return false;
       
       const resStart = parseISO(res.fecha_inicio);
       const resEnd = parseISO(res.fecha_fin);
@@ -86,18 +98,12 @@ export const Reservations: React.FC = () => {
     });
   };
 
-  const handleOpenReserve = (eq: Equipment) => {
-    setSelectedEquipment(eq);
-    setIsModalOpen(true);
-    setError(null);
-  };
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
 
-    if (!selectedEquipment || !formData.fecha_inicio || !formData.fecha_fin) {
-      setError('Todos los campos son obligatorios.');
+    if (cart.length === 0 || !formData.fecha_inicio || !formData.fecha_fin) {
+      setError('Debe seleccionar equipos y fechas.');
       return;
     }
 
@@ -106,8 +112,9 @@ export const Reservations: React.FC = () => {
       return;
     }
 
-    if (checkOverlap(selectedEquipment.id, formData.fecha_inicio, formData.fecha_fin)) {
-      setError('El equipo ya tiene una reserva en ese rango de fechas.');
+    const equiposIds = cart.map(eq => eq.id);
+    if (checkOverlap(equiposIds, formData.fecha_inicio, formData.fecha_fin)) {
+      setError('Uno o más equipos ya tienen una reserva en ese rango de fechas.');
       return;
     }
 
@@ -120,27 +127,28 @@ export const Reservations: React.FC = () => {
       }
 
       const newReservation = {
-        equipo_id: selectedEquipment.id,
+        equipos_ids: equiposIds,
         usuario_id: user.id,
         fecha_inicio: formData.fecha_inicio,
         fecha_fin: formData.fecha_fin,
         docente_nombre: activeResponsable || '',
-        estado: 'Activa'
+        estado: 'Pendiente'
       };
 
       const { error: insertError } = await supabase.from('reservas').insert([newReservation]);
       if (insertError) throw insertError;
 
-      await logAction(activeResponsable!, 'NUEVA_RESERVA', { 
-        equipo: selectedEquipment.nombre,
+      await logAction(activeResponsable!, 'NUEVA_RESERVA_PENDIENTE', { 
+        equipos: cart.map(eq => eq.nombre),
         inicio: newReservation.fecha_inicio,
         fin: newReservation.fecha_fin
       });
 
       setIsModalOpen(false);
+      setCart([]);
       setFormData({ fecha_inicio: '', fecha_fin: '' });
       fetchData();
-      alert('Reserva confirmada con éxito.');
+      alert('Reserva enviada con éxito. Estado: PENDIENTE.');
     } catch (err: any) {
       setError(err.message || 'Error al guardar la reserva.');
     } finally {
@@ -152,21 +160,32 @@ export const Reservations: React.FC = () => {
     <div className="p-8 max-w-7xl mx-auto">
       <header className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
         <div>
-          <h1 className="text-3xl font-display font-bold text-slate-900">Catálogo de Reservas</h1>
-          <p className="text-slate-500">Solicite equipos para sus clases o proyectos.</p>
+          <h1 className="text-3xl font-display font-bold text-slate-900">Nueva Reserva</h1>
+          <p className="text-slate-500">Seleccione los equipos y solicite su reserva.</p>
         </div>
-        <button 
-          onClick={() => setShowFavorites(!showFavorites)}
-          className={cn(
-            "flex items-center gap-2 px-6 py-3 rounded-2xl font-bold text-sm transition-all border shadow-sm",
-            showFavorites 
-              ? "bg-amber-500 text-white border-amber-600 shadow-amber-200" 
-              : "bg-white text-slate-600 border-slate-200 hover:border-amber-500"
+        <div className="flex gap-3">
+          <button 
+            onClick={() => setShowFavorites(!showFavorites)}
+            className={cn(
+              "flex items-center gap-2 px-6 py-3 rounded-2xl font-bold text-sm transition-all border shadow-sm",
+              showFavorites 
+                ? "bg-amber-500 text-white border-amber-600 shadow-amber-200" 
+                : "bg-white text-slate-600 border-slate-200 hover:border-amber-500"
+            )}
+          >
+            <Star className={cn("w-5 h-5", showFavorites ? "fill-current" : "text-amber-500")} />
+            {showFavorites ? 'Viendo habituales' : 'Ver habituales'}
+          </button>
+          {cart.length > 0 && (
+            <button 
+              onClick={() => setIsModalOpen(true)}
+              className="bg-slate-900 text-white px-6 py-3 rounded-2xl font-bold text-sm flex items-center gap-2 shadow-lg shadow-slate-200 animate-in fade-in zoom-in"
+            >
+              <ShoppingCart className="w-5 h-5" />
+              Confirmar Reserva ({cart.length})
+            </button>
           )}
-        >
-          <Star className={cn("w-5 h-5", showFavorites ? "fill-current" : "text-amber-500")} />
-          {showFavorites ? 'Viendo mis habituales' : 'Ver mis habituales'}
-        </button>
+        </div>
       </header>
 
       <div className="flex flex-col md:flex-row gap-4 mb-8">
@@ -174,7 +193,7 @@ export const Reservations: React.FC = () => {
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 w-5 h-5" />
           <input
             type="text"
-            placeholder="Buscar equipo para reservar..."
+            placeholder="Buscar equipo..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             className="w-full pl-10 pr-4 py-3 bg-white border border-slate-200 rounded-2xl focus:ring-2 focus:ring-amber-500 outline-none shadow-sm"
@@ -211,79 +230,95 @@ export const Reservations: React.FC = () => {
         </div>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
-          {filteredEquipments.map((eq) => (
-            <motion.div
-              layout
-              key={eq.id}
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              className="bg-white rounded-3xl border border-slate-200 overflow-hidden shadow-sm hover:shadow-xl transition-all group flex flex-col"
-            >
-              <div className="relative h-56 bg-slate-100 overflow-hidden">
-                <img
-                  src={eq.foto_url || 'https://picsum.photos/seed/camera/400/300'}
-                  alt={eq.nombre}
-                  referrerPolicy="no-referrer"
-                  className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
-                />
-                <button 
-                  onClick={() => toggleFavorite(eq.id)}
-                  className="absolute top-4 right-4 p-2.5 bg-white/90 backdrop-blur-sm rounded-full shadow-lg border border-slate-100 transition-transform active:scale-90"
-                >
-                  <Star className={cn(
-                    "w-5 h-5 transition-colors",
-                    profile?.favoritos?.includes(eq.id) ? "fill-amber-500 text-amber-500" : "text-slate-400"
-                  )} />
-                </button>
-                <div className="absolute bottom-4 left-4">
-                  <span className="px-3 py-1 bg-slate-900/80 backdrop-blur-sm text-white text-[10px] font-black uppercase rounded-lg tracking-wider">
-                    {eq.categoria}
-                  </span>
-                </div>
-              </div>
-              
-              <div className="p-6 flex-1 flex flex-col">
-                <h3 className="font-black text-slate-900 text-lg leading-tight mb-1">{eq.nombre}</h3>
-                <p className="text-sm text-slate-500 mb-4">{eq.modelo}</p>
-                
-                <div className="mt-auto space-y-4">
-                  <div className="flex items-center gap-2 text-xs text-slate-600 bg-slate-50 p-3 rounded-xl border border-slate-100">
-                    <Info className="w-4 h-4 text-amber-500" />
-                    <span>{eq.descripcion || 'Sin descripción adicional.'}</span>
-                  </div>
-                  
+          {filteredEquipments.map((eq) => {
+            const isInCart = cart.find(item => item.id === eq.id);
+            return (
+              <motion.div
+                layout
+                key={eq.id}
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                className={cn(
+                  "bg-white rounded-3xl border overflow-hidden shadow-sm hover:shadow-xl transition-all group flex flex-col",
+                  isInCart ? "border-amber-500 ring-2 ring-amber-500/20" : "border-slate-200"
+                )}
+              >
+                <div className="relative h-56 bg-slate-100 overflow-hidden">
+                  <img
+                    src={eq.foto_url || 'https://picsum.photos/seed/camera/400/300'}
+                    alt={eq.nombre}
+                    referrerPolicy="no-referrer"
+                    className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+                  />
                   <button 
-                    onClick={() => handleOpenReserve(eq)}
-                    className="w-full py-3 bg-slate-900 text-white rounded-2xl font-bold flex items-center justify-center gap-2 hover:bg-amber-500 transition-colors shadow-lg shadow-slate-200"
+                    onClick={() => toggleFavorite(eq.id)}
+                    className="absolute top-4 right-4 p-2.5 bg-white/90 backdrop-blur-sm rounded-full shadow-lg border border-slate-100 transition-transform active:scale-90"
                   >
-                    <Calendar className="w-5 h-5" />
-                    Reservar Equipo
+                    <Star className={cn(
+                      "w-5 h-5 transition-colors",
+                      profile?.favoritos?.includes(eq.id) ? "fill-amber-500 text-amber-500" : "text-slate-400"
+                    )} />
                   </button>
+                  <div className="absolute bottom-4 left-4">
+                    <span className="px-3 py-1 bg-slate-900/80 backdrop-blur-sm text-white text-[10px] font-black uppercase rounded-lg tracking-wider">
+                      {eq.categoria}
+                    </span>
+                  </div>
                 </div>
-              </div>
-            </motion.div>
-          ))}
+                
+                <div className="p-6 flex-1 flex flex-col">
+                  <h3 className="font-black text-slate-900 text-lg leading-tight mb-1">{eq.nombre}</h3>
+                  <p className="text-sm text-slate-500 mb-4">{eq.modelo}</p>
+                  
+                  <div className="mt-auto space-y-4">
+                    <div className="flex items-center gap-2 text-xs text-slate-600 bg-slate-50 p-3 rounded-xl border border-slate-100">
+                      <Info className="w-4 h-4 text-amber-500" />
+                      <span className="truncate">{eq.descripcion || 'Sin descripción.'}</span>
+                    </div>
+                    
+                    {isInCart ? (
+                      <button 
+                        onClick={() => removeFromCart(eq.id)}
+                        className="w-full py-3 bg-red-50 text-red-600 rounded-2xl font-bold flex items-center justify-center gap-2 hover:bg-red-100 transition-colors"
+                      >
+                        <Trash2 className="w-5 h-5" />
+                        Quitar de la reserva
+                      </button>
+                    ) : (
+                      <button 
+                        onClick={() => addToCart(eq)}
+                        className="w-full py-3 bg-slate-900 text-white rounded-2xl font-bold flex items-center justify-center gap-2 hover:bg-amber-500 transition-colors shadow-lg shadow-slate-200"
+                      >
+                        <Plus className="w-5 h-5" />
+                        Añadir a la reserva
+                      </button>
+                    )}
+                  </div>
+                </div>
+              </motion.div>
+            );
+          })}
         </div>
       )}
 
-      {/* Reservation Modal */}
+      {/* Cart Modal */}
       <AnimatePresence>
-        {isModalOpen && selectedEquipment && (
+        {isModalOpen && (
           <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
             <motion.div 
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: 20 }}
-              className="bg-white rounded-[2rem] shadow-2xl w-full max-w-lg overflow-hidden"
+              className="bg-white rounded-[2rem] shadow-2xl w-full max-w-2xl overflow-hidden"
             >
               <div className="p-8 border-b border-slate-100 flex justify-between items-center bg-slate-50">
                 <div className="flex items-center gap-4">
                   <div className="w-12 h-12 rounded-2xl bg-amber-500 flex items-center justify-center text-white shadow-lg shadow-amber-200">
-                    <Calendar className="w-6 h-6" />
+                    <ShoppingCart className="w-6 h-6" />
                   </div>
                   <div>
-                    <h2 className="text-xl font-black text-slate-900">Confirmar Reserva</h2>
-                    <p className="text-sm text-slate-500">{selectedEquipment.nombre}</p>
+                    <h2 className="text-xl font-black text-slate-900">Confirmar Pedido</h2>
+                    <p className="text-sm text-slate-500">{cart.length} equipos seleccionados</p>
                   </div>
                 </div>
                 <button onClick={() => setIsModalOpen(false)} className="text-slate-400 hover:text-slate-600 p-2 hover:bg-white rounded-full transition-colors">
@@ -299,7 +334,7 @@ export const Reservations: React.FC = () => {
                   </div>
                 )}
 
-                <div className="grid grid-cols-1 gap-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div>
                     <label className="block text-sm font-black text-slate-700 mb-2 uppercase tracking-wider">Fecha Desde</label>
                     <div className="relative">
@@ -328,6 +363,23 @@ export const Reservations: React.FC = () => {
                   </div>
                 </div>
 
+                <div className="max-h-40 overflow-y-auto space-y-2 pr-2">
+                  <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-2">Equipos en el pedido</p>
+                  {cart.map(eq => (
+                    <div key={eq.id} className="flex items-center justify-between bg-slate-50 p-3 rounded-xl border border-slate-100">
+                      <div className="flex items-center gap-3">
+                        <div className="w-8 h-8 rounded-lg bg-slate-200 overflow-hidden">
+                          <img src={eq.foto_url || 'https://picsum.photos/seed/gear/50/50'} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+                        </div>
+                        <span className="text-sm font-bold text-slate-700">{eq.nombre}</span>
+                      </div>
+                      <button type="button" onClick={() => removeFromCart(eq.id)} className="text-red-400 hover:text-red-600">
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+
                 <div className="pt-4 flex gap-4">
                   <button 
                     type="button" 
@@ -339,10 +391,10 @@ export const Reservations: React.FC = () => {
                   <button 
                     type="submit" 
                     disabled={submitting}
-                    className="flex-1 bg-amber-500 text-white font-black uppercase tracking-wider py-4 rounded-2xl flex items-center justify-center gap-2 hover:bg-amber-600 transition-all shadow-lg shadow-amber-200 disabled:opacity-50"
+                    className="flex-1 bg-slate-900 text-white font-black uppercase tracking-wider py-4 rounded-2xl flex items-center justify-center gap-2 hover:bg-amber-500 transition-all shadow-lg shadow-slate-200 disabled:opacity-50"
                   >
                     {submitting ? <Loader2 className="w-6 h-6 animate-spin" /> : <CheckCircle2 className="w-6 h-6" />}
-                    Confirmar
+                    Confirmar Reserva
                   </button>
                 </div>
               </form>

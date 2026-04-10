@@ -60,12 +60,12 @@ export interface AuditLog {
 
 export interface Reservation {
   id: string;
-  equipo_id: string;
+  equipos_ids: string[]; // Array of equipment IDs
   usuario_id: string;
   docente_nombre: string;
   fecha_inicio: string;
   fecha_fin: string;
-  estado: string;
+  estado: 'Pendiente' | 'Entregada' | 'Cancelada' | 'Activa';
   created_at?: string;
 }
 

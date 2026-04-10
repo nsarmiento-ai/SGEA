@@ -13,6 +13,7 @@ import { LoanWizard } from './components/LoanWizard';
 import { ActiveLoans } from './components/ActiveLoans';
 import { AuditLogs } from './components/AuditLogs';
 import { Reservations } from './components/Reservations';
+import { PendingReservations } from './components/PendingReservations';
 import { Loader2 } from 'lucide-react';
 
 function AppContent() {
@@ -39,14 +40,16 @@ function AppContent() {
       <Sidebar />
       <main className="flex-1 overflow-x-hidden">
         <Routes>
-          <Route path="/" element={<Catalog />} />
+          <Route path="/" element={role === 'Docente' ? <Navigate to="/reservas" /> : <Catalog />} />
           <Route path="/reservas" element={<Reservations />} />
+          <Route path="/reservas-pendientes" element={role === 'Pañolero' ? <PendingReservations /> : <Navigate to="/reservas" />} />
           <Route path="/mora" element={<ActiveLoans filterMora />} />
           <Route path="/activos" element={<ActiveLoans />} />
-          <Route path="/nuevo-prestamo" element={role === 'Pañolero' ? <LoanWizard /> : <Navigate to="/" />} />
-          <Route path="/historial" element={role === 'Pañolero' ? <AuditLogs /> : <Navigate to="/" />} />
-          <Route path="/admin" element={role === 'Pañolero' ? <Catalog /> : <Navigate to="/" />} />
-          <Route path="/configuracion" element={role === 'Pañolero' ? <Catalog /> : <Navigate to="/" />} />
+          <Route path="/nuevo-prestamo" element={role === 'Pañolero' ? <LoanWizard /> : <Navigate to="/reservas" />} />
+          <Route path="/historial" element={role === 'Pañolero' ? <AuditLogs /> : <Navigate to="/reservas" />} />
+          <Route path="/admin" element={role === 'Pañolero' ? <Catalog /> : <Navigate to="/reservas" />} />
+          <Route path="/configuracion" element={role === 'Pañolero' ? <Catalog /> : <Navigate to="/reservas" />} />
+          <Route path="*" element={<Navigate to={role === 'Docente' ? "/reservas" : "/"} />} />
         </Routes>
       </main>
     </div>

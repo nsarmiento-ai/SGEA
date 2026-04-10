@@ -25,7 +25,9 @@ export const generateLoanPDF = (loan: Loan, equipments: Equipment[]) => {
   doc.setFontSize(12);
   doc.setTextColor(0);
   doc.text(`Alumno: ${loan.alumno_nombre} (DNI: ${loan.alumno_dni})`, 20, 70);
-  doc.text(`Devolución Estimada: ${formatDate(loan.fecha_devolucion_estimada)}`, 20, 77);
+  doc.text(`Materia: ${loan.materia || 'N/A'}`, 20, 77);
+  doc.text(`Docente Responsable: ${loan.docente_responsable || 'N/A'}`, 20, 84);
+  doc.text(`Devolución Estimada: ${formatDate(loan.fecha_devolucion_estimada)}`, 20, 91);
 
   // Equipment Table
   const tableData: any[][] = [];
@@ -56,7 +58,7 @@ export const generateLoanPDF = (loan: Loan, equipments: Equipment[]) => {
   });
 
   autoTable(doc, {
-    startY: 85,
+    startY: 98,
     head: [['#', 'Equipo / Kit', 'Modelo', 'Nº Serie', 'Categoría']],
     body: tableData,
     headStyles: { fillColor: [245, 158, 11] }, // Amber 500
@@ -79,4 +81,64 @@ export const generateLoanPDF = (loan: Loan, equipments: Equipment[]) => {
 
   // Save
   doc.save(`prestamo_${loan.alumno_nombre.replace(/\s+/g, '_')}_${new Date().getTime()}.pdf`);
+};
+
+export const generateReturnPDF = (loan: Loan, equipments: Equipment[], responsableRecibe: string) => {
+  const doc = new jsPDF();
+  const pageWidth = doc.internal.pageSize.getWidth();
+
+  // Header
+  doc.setFontSize(20);
+  doc.setTextColor(15, 23, 42);
+  doc.text('SGEA - Comprobante de Devolución', pageWidth / 2, 20, { align: 'center' });
+  
+  doc.setFontSize(12);
+  doc.text('Escuela de Cine, Video y TV (UNT)', pageWidth / 2, 28, { align: 'center' });
+
+  // Return Info
+  doc.setFontSize(10);
+  doc.setTextColor(100);
+  doc.text(`Folio Préstamo: ${loan.id.slice(0, 8).toUpperCase()}`, 20, 45);
+  doc.text(`Fecha de Devolución: ${formatDate(new Date().toISOString())}`, 20, 52);
+  doc.text(`Recibido por: ${responsableRecibe}`, 20, 59);
+  
+  doc.setFontSize(12);
+  doc.setTextColor(0);
+  doc.text(`Alumno: ${loan.alumno_nombre} (DNI: ${loan.alumno_dni})`, 20, 70);
+
+  // Equipment Table
+  const tableData = equipments.map((eq, index) => {
+    let status = 'RECIBIDO OK';
+    if (eq.piezas && eq.piezas.length > 0) {
+      const issues = eq.piezas.filter(p => p.estado !== 'OK').map(p => `${p.nombre}: ${p.estado}`);
+      if (issues.length > 0) {
+        status = `CON INCIDENCIAS:\n${issues.join('\n')}`;
+      }
+    }
+    return [
+      index + 1,
+      eq.nombre,
+      eq.modelo,
+      eq.numero_serie,
+      status
+    ];
+  });
+
+  autoTable(doc, {
+    startY: 80,
+    head: [['#', 'Equipo', 'Modelo', 'Nº Serie', 'Estado al Recibir']],
+    body: tableData,
+    headStyles: { fillColor: [15, 23, 42] },
+    theme: 'grid',
+  });
+
+  // Signature
+  const finalY = (doc as any).lastAutoTable.finalY + 30;
+  doc.line(pageWidth / 2 - 30, finalY, pageWidth / 2 + 30, finalY);
+  doc.text('Firma Digital Pañolero', pageWidth / 2, finalY + 5, { align: 'center' });
+  doc.setFontSize(8);
+  doc.text(responsableRecibe, pageWidth / 2, finalY + 10, { align: 'center' });
+
+  // Save
+  doc.save(`devolucion_${loan.alumno_nombre.replace(/\s+/g, '_')}_${new Date().getTime()}.pdf`);
 };

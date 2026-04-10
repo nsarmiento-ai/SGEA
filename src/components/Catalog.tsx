@@ -246,7 +246,7 @@ export const Catalog: React.FC = () => {
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
           {filteredEquipments.map((eq) => {
-            const eqReservations = reservations.filter(r => r.equipo_id === eq.id);
+            const eqReservations = reservations.filter(r => r.equipos_ids.includes(eq.id));
             const isReservedNow = eqReservations.some(r => 
               isWithinInterval(new Date(), {
                 start: parseISO(r.fecha_inicio),

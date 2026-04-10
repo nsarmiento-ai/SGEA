@@ -19,15 +19,16 @@ export const Sidebar: React.FC = () => {
   const role = profile?.rol;
 
   const menuItems = [
-    { icon: LayoutDashboard, label: 'Catálogo General', path: '/' },
-    { icon: Calendar, label: 'Catálogo de Reservas', path: '/reservas' },
+    { icon: LayoutDashboard, label: 'Catálogo General', path: '/', adminOnly: true },
+    { icon: Calendar, label: 'Nueva Reserva', path: '/reservas' },
+    { icon: Clock, label: 'Reservas Pendientes', path: '/reservas-pendientes', adminOnly: true },
     { icon: AlertTriangle, label: 'Panel de Mora', path: '/mora' },
-    { icon: Clock, label: 'Mis Préstamos', path: '/activos' },
-    { icon: PlusCircle, label: 'Nuevo Préstamo', path: '/nuevo-prestamo' },
-    { icon: History, label: 'Historial Global', path: '/historial' },
+    { icon: Clock, label: role === 'Docente' ? 'Mis Préstamos' : 'Devolución', path: '/activos' },
+    { icon: PlusCircle, label: 'Nuevo Préstamo', path: '/nuevo-prestamo', adminOnly: true },
+    { icon: History, label: 'Historial Global', path: '/historial', adminOnly: true },
   ].filter(item => {
     if (role === 'Docente') {
-      return ['Catálogo', 'Reservas', 'Panel de Mora', 'Mis Préstamos'].includes(item.label);
+      return ['Nueva Reserva', 'Panel de Mora', 'Mis Préstamos'].includes(item.label);
     }
     return true;
   });
