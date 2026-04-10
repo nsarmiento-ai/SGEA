@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { supabase, logAction } from '../lib/supabase';
-import { Equipment, Loan, Reservation } from '../types';
+import { Equipment, Loan, Reservation, Responsable } from '../types';
 import { useApp } from '../context/AppContext';
 import { generateLoanPDF } from '../lib/pdf';
 import { 

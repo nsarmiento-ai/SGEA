@@ -19,8 +19,8 @@ export const Sidebar: React.FC = () => {
   const role = profile?.rol;
 
   const menuItems = [
-    { icon: LayoutDashboard, label: 'Catálogo', path: '/' },
-    { icon: Calendar, label: 'Reservas', path: '/reservas' },
+    { icon: LayoutDashboard, label: 'Catálogo General', path: '/' },
+    { icon: Calendar, label: 'Catálogo de Reservas', path: '/reservas' },
     { icon: AlertTriangle, label: 'Panel de Mora', path: '/mora' },
     { icon: Clock, label: 'Mis Préstamos', path: '/activos' },
     { icon: PlusCircle, label: 'Nuevo Préstamo', path: '/nuevo-prestamo' },

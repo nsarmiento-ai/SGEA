@@ -10,6 +10,7 @@ interface AppContextType {
   userEmail: string | null;
   profile: Profile | null;
   setRole: (role: 'Pañolero' | 'Docente') => void;
+  toggleFavorite: (equipmentId: string) => Promise<void>;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -91,12 +92,29 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
   };
 
+  const toggleFavorite = async (equipmentId: string) => {
+    if (!profile) return;
+    const isFavorite = profile.favoritos?.includes(equipmentId);
+    const newFavorites = isFavorite 
+      ? profile.favoritos.filter(id => id !== equipmentId)
+      : [...(profile.favoritos || []), equipmentId];
+    
+    const { error } = await supabase
+      .from('profiles')
+      .update({ favoritos: newFavorites })
+      .eq('id', profile.id);
+    
+    if (!error) {
+      setProfile({ ...profile, favoritos: newFavorites });
+    }
+  };
+
   const setActiveResponsable = (name: string | null) => {
     setActiveResponsableState(name);
   };
 
   return (
-    <AppContext.Provider value={{ activeResponsable, setActiveResponsable, loading, role, userEmail, profile, setRole: setRoleAndSave }}>
+    <AppContext.Provider value={{ activeResponsable, setActiveResponsable, loading, role, userEmail, profile, setRole: setRoleAndSave, toggleFavorite }}>
       {children}
     </AppContext.Provider>
   );

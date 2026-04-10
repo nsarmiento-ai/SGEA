@@ -18,7 +18,8 @@ import {
   Clock,
   XCircle,
   Loader2,
-  Calendar
+  Calendar,
+  Star
 } from 'lucide-react';
 import { motion } from 'motion/react';
 import { cn } from '../lib/utils';
@@ -84,13 +85,14 @@ const InventoryMetrics: React.FC<{ equipments: Equipment[] }> = ({ equipments })
 };
 
 export const Catalog: React.FC = () => {
-  const { activeResponsable } = useApp();
+  const { activeResponsable, profile, toggleFavorite } = useApp();
   const [equipments, setEquipments] = useState<Equipment[]>([]);
   const [reservations, setReservations] = useState<Reservation[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [category, setCategory] = useState('Todas');
   const [showArchived, setShowArchived] = useState(false);
+  const [showFavorites, setShowFavorites] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<Equipment | null>(null);
 
@@ -127,7 +129,8 @@ export const Catalog: React.FC = () => {
                          eq.numero_serie.toLowerCase().includes(search.toLowerCase());
     const matchesCategory = category === 'Todas' || eq.categoria === category;
     const matchesArchived = showArchived ? eq.estado === 'Archivado' : eq.estado !== 'Archivado';
-    return matchesSearch && matchesCategory && matchesArchived;
+    const matchesFavorites = showFavorites ? profile?.favoritos?.includes(eq.id) : true;
+    return matchesSearch && matchesCategory && matchesArchived && matchesFavorites;
   });
 
   const handleDelete = async (id: string, name: string) => {
@@ -170,6 +173,18 @@ export const Catalog: React.FC = () => {
           <p className="text-slate-500">Gestione el inventario de la escuela.</p>
         </div>
         <div className="flex gap-2 self-start">
+          <button 
+            onClick={() => setShowFavorites(!showFavorites)}
+            className={cn(
+              "flex items-center gap-2 px-4 py-2 rounded-xl font-bold text-sm transition-all border",
+              showFavorites 
+                ? "bg-amber-500 text-white border-amber-600" 
+                : "bg-white text-slate-600 border-slate-200 hover:border-amber-500"
+            )}
+          >
+            <Star className={cn("w-4 h-4", showFavorites ? "fill-current" : "text-amber-500")} />
+            {showFavorites ? 'Viendo Habituales' : 'Ver Habituales'}
+          </button>
           <button 
             onClick={() => setShowArchived(!showArchived)}
             className={cn(
@@ -257,6 +272,15 @@ export const Catalog: React.FC = () => {
                     referrerPolicy="no-referrer"
                     className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
                   />
+                  <button 
+                    onClick={() => toggleFavorite(eq.id)}
+                    className="absolute top-3 left-3 p-2 bg-white/90 backdrop-blur-sm rounded-full shadow-sm border border-slate-100 transition-transform active:scale-90"
+                  >
+                    <Star className={cn(
+                      "w-4 h-4 transition-colors",
+                      profile?.favoritos?.includes(eq.id) ? "fill-amber-500 text-amber-500" : "text-slate-400"
+                    )} />
+                  </button>
                   <div className="absolute top-3 right-3 flex flex-col gap-2 items-end">
                     <div className={cn(
                       "flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold border shadow-sm",

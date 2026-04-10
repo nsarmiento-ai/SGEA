@@ -4,67 +4,70 @@ import { Reservation, Equipment } from '../types';
 import { useApp } from '../context/AppContext';
 import { 
   Calendar, 
-  Plus, 
   Search, 
-  User, 
   Clock, 
-  Package, 
   XCircle, 
   Loader2,
   AlertCircle,
-  CheckCircle2
+  CheckCircle2,
+  Star,
+  Filter,
+  ChevronRight,
+  Info
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
-import { cn, formatDate } from '../lib/utils';
-import { isWithinInterval, parseISO, areIntervalsOverlapping } from 'date-fns';
+import { cn } from '../lib/utils';
+import { parseISO, areIntervalsOverlapping, format } from 'date-fns';
 
 export const Reservations: React.FC = () => {
-  const { activeResponsable } = useApp();
+  const { activeResponsable, profile, toggleFavorite } = useApp();
+  const [equipments, setEquipments] = useState<Equipment[]>([]);
   const [reservations, setReservations] = useState<Reservation[]>([]);
-  const [equipments, setEquipments] = useState<Record<string, Equipment>>({});
-  const [allEquipments, setAllEquipments] = useState<Equipment[]>([]);
   const [loading, setLoading] = useState(true);
+  const [search, setSearch] = useState('');
+  const [category, setCategory] = useState('Todas');
+  const [showFavorites, setShowFavorites] = useState(false);
+  
+  const [selectedEquipment, setSelectedEquipment] = useState<Equipment | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const [formData, setFormData] = useState({
-    equipo_id: '',
     fecha_inicio: '',
     fecha_fin: '',
-    docente_nombre: activeResponsable || ''
   });
+
+  const categories = ['Todas', 'Cámaras', 'Sonido', 'Iluminación', 'Grip', 'Accesorios', 'Otros'];
 
   useEffect(() => {
     fetchData();
   }, []);
 
-  useEffect(() => {
-    if (activeResponsable && !formData.docente_nombre) {
-      setFormData(prev => ({ ...prev, docente_nombre: activeResponsable }));
-    }
-  }, [activeResponsable]);
-
   const fetchData = async () => {
     setLoading(true);
     try {
-      const [resData, eqData] = await Promise.all([
-        supabase.from('reservas').select('*, equipamiento(nombre, modelo)').order('fecha_inicio', { ascending: true }),
-        supabase.from('equipamiento').select('*').neq('estado', 'Archivado')
+      const [eqData, resData] = await Promise.all([
+        supabase.from('equipamiento').select('*').neq('estado', 'Archivado').order('nombre', { ascending: true }),
+        supabase.from('reservas').select('*').order('fecha_inicio', { ascending: true })
       ]);
 
-      if (resData.data) setReservations(resData.data as any);
-      if (eqData.data) {
-        setAllEquipments(eqData.data);
-        const eqMap = eqData.data.reduce((acc, eq) => ({ ...acc, [eq.id]: eq }), {});
-        setEquipments(eqMap);
-      }
+      if (eqData.data) setEquipments(eqData.data);
+      if (resData.data) setReservations(resData.data);
     } catch (err) {
-      console.error('Error fetching reservations:', err);
+      console.error('Error fetching data:', err);
     } finally {
       setLoading(false);
     }
   };
+
+  const filteredEquipments = equipments.filter(eq => {
+    const matchesSearch = eq.nombre.toLowerCase().includes(search.toLowerCase()) || 
+                         eq.modelo.toLowerCase().includes(search.toLowerCase());
+    const matchesCategory = category === 'Todas' || eq.categoria === category;
+    const matchesFavorites = showFavorites ? profile?.favoritos?.includes(eq.id) : true;
+    return matchesSearch && matchesCategory && matchesFavorites;
+  });
 
   const checkOverlap = (equipoId: string, start: string, end: string) => {
     const newStart = parseISO(start);
@@ -83,11 +86,17 @@ export const Reservations: React.FC = () => {
     });
   };
 
+  const handleOpenReserve = (eq: Equipment) => {
+    setSelectedEquipment(eq);
+    setIsModalOpen(true);
+    setError(null);
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
 
-    if (!formData.equipo_id || !formData.fecha_inicio || !formData.fecha_fin || !formData.docente_nombre) {
+    if (!selectedEquipment || !formData.fecha_inicio || !formData.fecha_fin) {
       setError('Todos los campos son obligatorios.');
       return;
     }
@@ -97,7 +106,7 @@ export const Reservations: React.FC = () => {
       return;
     }
 
-    if (checkOverlap(formData.equipo_id, formData.fecha_inicio, formData.fecha_fin)) {
+    if (checkOverlap(selectedEquipment.id, formData.fecha_inicio, formData.fecha_fin)) {
       setError('El equipo ya tiene una reserva en ese rango de fechas.');
       return;
     }
@@ -111,34 +120,27 @@ export const Reservations: React.FC = () => {
       }
 
       const newReservation = {
-        equipo_id: formData.equipo_id,
+        equipo_id: selectedEquipment.id,
         usuario_id: user.id,
         fecha_inicio: formData.fecha_inicio,
         fecha_fin: formData.fecha_fin,
-        docente_nombre: formData.docente_nombre || activeResponsable || '',
+        docente_nombre: activeResponsable || '',
         estado: 'Activa'
       };
-
-      console.log('Datos a enviar:', newReservation);
 
       const { error: insertError } = await supabase.from('reservas').insert([newReservation]);
       if (insertError) throw insertError;
 
       await logAction(activeResponsable!, 'NUEVA_RESERVA', { 
-        equipo: equipments[formData.equipo_id]?.nombre,
-        docente: newReservation.docente_nombre,
+        equipo: selectedEquipment.nombre,
         inicio: newReservation.fecha_inicio,
         fin: newReservation.fecha_fin
       });
 
       setIsModalOpen(false);
-      setFormData({
-        equipo_id: '',
-        fecha_inicio: '',
-        fecha_fin: '',
-        docente_nombre: activeResponsable || ''
-      });
+      setFormData({ fecha_inicio: '', fecha_fin: '' });
       fetchData();
+      alert('Reserva confirmada con éxito.');
     } catch (err: any) {
       setError(err.message || 'Error al guardar la reserva.');
     } finally {
@@ -146,203 +148,200 @@ export const Reservations: React.FC = () => {
     }
   };
 
-  const handleDelete = async (id: string) => {
-    if (!confirm('¿Está seguro de cancelar esta reserva?')) return;
-    
-    const { error: delError } = await supabase.from('reservas').delete().eq('id', id);
-    if (!delError) {
-      fetchData();
-    }
-  };
-
   return (
     <div className="p-8 max-w-7xl mx-auto">
       <header className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
         <div>
-          <h1 className="text-3xl font-display font-bold text-slate-900">Reservas / Agenda</h1>
-          <p className="text-slate-500">Gestione las reservas de equipos para docentes.</p>
+          <h1 className="text-3xl font-display font-bold text-slate-900">Catálogo de Reservas</h1>
+          <p className="text-slate-500">Solicite equipos para sus clases o proyectos.</p>
         </div>
         <button 
-          onClick={() => setIsModalOpen(true)}
-          className="btn-primary flex items-center gap-2 self-start"
+          onClick={() => setShowFavorites(!showFavorites)}
+          className={cn(
+            "flex items-center gap-2 px-6 py-3 rounded-2xl font-bold text-sm transition-all border shadow-sm",
+            showFavorites 
+              ? "bg-amber-500 text-white border-amber-600 shadow-amber-200" 
+              : "bg-white text-slate-600 border-slate-200 hover:border-amber-500"
+          )}
         >
-          <Plus className="w-5 h-5" />
-          Nueva Reserva
+          <Star className={cn("w-5 h-5", showFavorites ? "fill-current" : "text-amber-500")} />
+          {showFavorites ? 'Viendo mis habituales' : 'Ver mis habituales'}
         </button>
       </header>
+
+      <div className="flex flex-col md:flex-row gap-4 mb-8">
+        <div className="relative flex-1">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 w-5 h-5" />
+          <input
+            type="text"
+            placeholder="Buscar equipo para reservar..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="w-full pl-10 pr-4 py-3 bg-white border border-slate-200 rounded-2xl focus:ring-2 focus:ring-amber-500 outline-none shadow-sm"
+          />
+        </div>
+        <div className="flex gap-2 overflow-x-auto pb-2 md:pb-0">
+          {categories.map(cat => (
+            <button
+              key={cat}
+              onClick={() => setCategory(cat)}
+              className={cn(
+                "px-5 py-2.5 rounded-2xl text-sm font-bold transition-all whitespace-nowrap border shadow-sm",
+                category === cat 
+                  ? "bg-slate-900 text-white border-slate-900" 
+                  : "bg-white text-slate-600 border-slate-200 hover:border-amber-500"
+              )}
+            >
+              {cat}
+            </button>
+          ))}
+        </div>
+      </div>
 
       {loading ? (
         <div className="flex flex-col items-center justify-center py-20">
           <Loader2 className="w-10 h-10 animate-spin text-amber-500 mb-4" />
-          <p className="text-slate-500 font-medium">Cargando agenda...</p>
+          <p className="text-slate-500 font-medium">Cargando catálogo...</p>
         </div>
-      ) : reservations.length === 0 ? (
-        <div className="bg-white rounded-2xl p-12 text-center border border-dashed border-slate-300">
-          <Calendar className="w-12 h-12 text-slate-300 mx-auto mb-4" />
-          <h3 className="text-lg font-bold text-slate-900">No hay reservas programadas</h3>
-          <p className="text-slate-500">Comience creando una nueva reserva para un docente.</p>
+      ) : filteredEquipments.length === 0 ? (
+        <div className="bg-white rounded-3xl p-12 text-center border border-dashed border-slate-300">
+          <Filter className="w-12 h-12 text-slate-300 mx-auto mb-4" />
+          <h3 className="text-lg font-bold text-slate-900">No se encontraron equipos</h3>
+          <p className="text-slate-500">Intente ajustar los filtros o la búsqueda.</p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {reservations.map((res: any) => {
-            const eq = res.equipamiento || equipments[res.equipo_id];
-            const isNow = isWithinInterval(new Date(), {
-              start: parseISO(res.fecha_inicio),
-              end: parseISO(res.fecha_fin)
-            });
-
-            return (
-              <motion.div
-                layout
-                key={res.id}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                className={cn(
-                  "bg-white rounded-2xl border p-6 shadow-sm relative overflow-hidden",
-                  isNow ? "border-amber-500 ring-1 ring-amber-500" : "border-slate-200"
-                )}
-              >
-                {isNow && (
-                  <div className="absolute top-0 right-0 bg-amber-500 text-white px-3 py-1 text-[10px] font-black uppercase rounded-bl-xl">
-                    En Curso
-                  </div>
-                )}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
+          {filteredEquipments.map((eq) => (
+            <motion.div
+              layout
+              key={eq.id}
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              className="bg-white rounded-3xl border border-slate-200 overflow-hidden shadow-sm hover:shadow-xl transition-all group flex flex-col"
+            >
+              <div className="relative h-56 bg-slate-100 overflow-hidden">
+                <img
+                  src={eq.foto_url || 'https://picsum.photos/seed/camera/400/300'}
+                  alt={eq.nombre}
+                  referrerPolicy="no-referrer"
+                  className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+                />
+                <button 
+                  onClick={() => toggleFavorite(eq.id)}
+                  className="absolute top-4 right-4 p-2.5 bg-white/90 backdrop-blur-sm rounded-full shadow-lg border border-slate-100 transition-transform active:scale-90"
+                >
+                  <Star className={cn(
+                    "w-5 h-5 transition-colors",
+                    profile?.favoritos?.includes(eq.id) ? "fill-amber-500 text-amber-500" : "text-slate-400"
+                  )} />
+                </button>
+                <div className="absolute bottom-4 left-4">
+                  <span className="px-3 py-1 bg-slate-900/80 backdrop-blur-sm text-white text-[10px] font-black uppercase rounded-lg tracking-wider">
+                    {eq.categoria}
+                  </span>
+                </div>
+              </div>
+              
+              <div className="p-6 flex-1 flex flex-col">
+                <h3 className="font-black text-slate-900 text-lg leading-tight mb-1">{eq.nombre}</h3>
+                <p className="text-sm text-slate-500 mb-4">{eq.modelo}</p>
                 
-                <div className="flex items-start gap-4 mb-4">
-                  <div className="w-12 h-12 rounded-xl bg-slate-100 flex items-center justify-center text-slate-600 shrink-0">
-                    <Package className="w-6 h-6" />
+                <div className="mt-auto space-y-4">
+                  <div className="flex items-center gap-2 text-xs text-slate-600 bg-slate-50 p-3 rounded-xl border border-slate-100">
+                    <Info className="w-4 h-4 text-amber-500" />
+                    <span>{eq.descripcion || 'Sin descripción adicional.'}</span>
                   </div>
-                  <div className="min-w-0">
-                    <h3 className="font-bold text-slate-900 truncate">{eq?.nombre || 'Equipo no encontrado'}</h3>
-                    <p className="text-xs text-slate-500 truncate">{eq?.modelo || 'S/M'}</p>
-                  </div>
-                </div>
-
-                <div className="space-y-3 mb-6">
-                  <div className="flex items-center gap-3 text-sm text-slate-600">
-                    <User className="w-4 h-4 text-slate-400" />
-                    <span className="font-medium">{res.docente_nombre}</span>
-                  </div>
-                  <div className="flex items-center gap-3 text-sm text-slate-600">
-                    <Clock className="w-4 h-4 text-slate-400" />
-                    <div>
-                      <p className="text-[10px] uppercase font-bold text-slate-400">Desde</p>
-                      <p>{formatDate(res.fecha_inicio)}</p>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-3 text-sm text-slate-600">
-                    <Clock className="w-4 h-4 text-slate-400" />
-                    <div>
-                      <p className="text-[10px] uppercase font-bold text-slate-400">Hasta</p>
-                      <p>{formatDate(res.fecha_fin)}</p>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="flex justify-end pt-4 border-t border-slate-100">
+                  
                   <button 
-                    onClick={() => handleDelete(res.id)}
-                    className="text-xs font-bold text-red-500 hover:text-red-600 flex items-center gap-1"
+                    onClick={() => handleOpenReserve(eq)}
+                    className="w-full py-3 bg-slate-900 text-white rounded-2xl font-bold flex items-center justify-center gap-2 hover:bg-amber-500 transition-colors shadow-lg shadow-slate-200"
                   >
-                    <XCircle className="w-4 h-4" />
-                    Cancelar Reserva
+                    <Calendar className="w-5 h-5" />
+                    Reservar Equipo
                   </button>
                 </div>
-              </motion.div>
-            );
-          })}
+              </div>
+            </motion.div>
+          ))}
         </div>
       )}
 
       {/* Reservation Modal */}
       <AnimatePresence>
-        {isModalOpen && (
+        {isModalOpen && selectedEquipment && (
           <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
             <motion.div 
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.95 }}
-              className="bg-white rounded-2xl shadow-xl w-full max-w-md overflow-hidden"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: 20 }}
+              className="bg-white rounded-[2rem] shadow-2xl w-full max-w-lg overflow-hidden"
             >
-              <div className="p-6 border-b border-slate-100 flex justify-between items-center bg-slate-50">
-                <h2 className="text-xl font-bold text-slate-900">Nueva Reserva</h2>
-                <button onClick={() => setIsModalOpen(false)} className="text-slate-400 hover:text-slate-600">
-                  <XCircle className="w-6 h-6" />
+              <div className="p-8 border-b border-slate-100 flex justify-between items-center bg-slate-50">
+                <div className="flex items-center gap-4">
+                  <div className="w-12 h-12 rounded-2xl bg-amber-500 flex items-center justify-center text-white shadow-lg shadow-amber-200">
+                    <Calendar className="w-6 h-6" />
+                  </div>
+                  <div>
+                    <h2 className="text-xl font-black text-slate-900">Confirmar Reserva</h2>
+                    <p className="text-sm text-slate-500">{selectedEquipment.nombre}</p>
+                  </div>
+                </div>
+                <button onClick={() => setIsModalOpen(false)} className="text-slate-400 hover:text-slate-600 p-2 hover:bg-white rounded-full transition-colors">
+                  <XCircle className="w-7 h-7" />
                 </button>
               </div>
 
-              <form onSubmit={handleSubmit} className="p-6 space-y-4">
+              <form onSubmit={handleSubmit} className="p-8 space-y-6">
                 {error && (
-                  <div className="bg-red-50 border border-red-200 text-red-600 p-3 rounded-xl text-sm flex items-center gap-2">
-                    <AlertCircle className="w-4 h-4 shrink-0" />
+                  <div className="bg-red-50 border border-red-200 text-red-600 p-4 rounded-2xl text-sm flex items-center gap-3 font-medium">
+                    <AlertCircle className="w-5 h-5 shrink-0" />
                     {error}
                   </div>
                 )}
 
-                <div>
-                  <label className="block text-sm font-bold text-slate-700 mb-1">Equipo</label>
-                  <select
-                    required
-                    value={formData.equipo_id}
-                    onChange={e => setFormData({...formData, equipo_id: e.target.value})}
-                    className="w-full px-4 py-2 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-amber-500 bg-white"
-                  >
-                    <option value="">Seleccione un equipo...</option>
-                    {allEquipments.map(eq => (
-                      <option key={eq.id} value={eq.id}>{eq.nombre} ({eq.modelo})</option>
-                    ))}
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-bold text-slate-700 mb-1">Docente Responsable</label>
-                  <input
-                    required
-                    type="text"
-                    value={formData.docente_nombre}
-                    onChange={e => setFormData({...formData, docente_nombre: e.target.value})}
-                    className="w-full px-4 py-2 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-amber-500"
-                    placeholder="Nombre del docente"
-                  />
-                </div>
-
-                <div className="grid grid-cols-1 gap-4">
+                <div className="grid grid-cols-1 gap-6">
                   <div>
-                    <label className="block text-sm font-bold text-slate-700 mb-1">Fecha Inicio</label>
-                    <input
-                      required
-                      type="datetime-local"
-                      value={formData.fecha_inicio}
-                      onChange={e => setFormData({...formData, fecha_inicio: e.target.value})}
-                      className="w-full px-4 py-2 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-amber-500"
-                    />
+                    <label className="block text-sm font-black text-slate-700 mb-2 uppercase tracking-wider">Fecha Desde</label>
+                    <div className="relative">
+                      <Clock className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 w-5 h-5" />
+                      <input
+                        required
+                        type="datetime-local"
+                        value={formData.fecha_inicio}
+                        onChange={e => setFormData({...formData, fecha_inicio: e.target.value})}
+                        className="w-full pl-12 pr-4 py-4 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:ring-2 focus:ring-amber-500 font-medium"
+                      />
+                    </div>
                   </div>
                   <div>
-                    <label className="block text-sm font-bold text-slate-700 mb-1">Fecha Fin</label>
-                    <input
-                      required
-                      type="datetime-local"
-                      value={formData.fecha_fin}
-                      onChange={e => setFormData({...formData, fecha_fin: e.target.value})}
-                      className="w-full px-4 py-2 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-amber-500"
-                    />
+                    <label className="block text-sm font-black text-slate-700 mb-2 uppercase tracking-wider">Fecha Hasta</label>
+                    <div className="relative">
+                      <Clock className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 w-5 h-5" />
+                      <input
+                        required
+                        type="datetime-local"
+                        value={formData.fecha_fin}
+                        onChange={e => setFormData({...formData, fecha_fin: e.target.value})}
+                        className="w-full pl-12 pr-4 py-4 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:ring-2 focus:ring-amber-500 font-medium"
+                      />
+                    </div>
                   </div>
                 </div>
 
-                <div className="pt-4 flex gap-3">
+                <div className="pt-4 flex gap-4">
                   <button 
                     type="button" 
                     onClick={() => setIsModalOpen(false)} 
-                    className="flex-1 px-6 py-2 text-slate-600 font-bold hover:bg-slate-100 rounded-xl transition-all"
+                    className="flex-1 px-6 py-4 text-slate-600 font-black uppercase tracking-wider hover:bg-slate-100 rounded-2xl transition-all"
                   >
                     Cancelar
                   </button>
                   <button 
                     type="submit" 
                     disabled={submitting}
-                    className="flex-1 btn-primary flex items-center justify-center gap-2"
+                    className="flex-1 bg-amber-500 text-white font-black uppercase tracking-wider py-4 rounded-2xl flex items-center justify-center gap-2 hover:bg-amber-600 transition-all shadow-lg shadow-amber-200 disabled:opacity-50"
                   >
-                    {submitting ? <Loader2 className="w-5 h-5 animate-spin" /> : <CheckCircle2 className="w-5 h-5" />}
+                    {submitting ? <Loader2 className="w-6 h-6 animate-spin" /> : <CheckCircle2 className="w-6 h-6" />}
                     Confirmar
                   </button>
                 </div>
