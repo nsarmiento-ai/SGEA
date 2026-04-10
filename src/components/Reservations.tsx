@@ -32,6 +32,7 @@ export const Reservations: React.FC = () => {
   const [showFavorites, setShowFavorites] = useState(false);
   const [activeTab, setActiveTab] = useState<'catalogo' | 'mis-reservas'>('catalogo');
   const [currentUser, setCurrentUser] = useState<any>(null);
+  const [authLoading, setAuthLoading] = useState(true);
   
   const [cart, setCart] = useState<Equipment[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -49,6 +50,11 @@ export const Reservations: React.FC = () => {
     fetchData();
     supabase.auth.getUser().then(({ data: { user } }) => {
       setCurrentUser(user);
+      setAuthLoading(false);
+    }).catch((err) => {
+      console.error("Error fetching user:", err);
+      setCurrentUser(null);
+      setAuthLoading(false);
     });
   }, []);
 
@@ -134,13 +140,19 @@ export const Reservations: React.FC = () => {
 
     setSubmitting(true);
     try {
-      if (!currentUser?.id) {
-        throw new Error('No se pudo obtener el ID del usuario autenticado.');
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      if (!user) {
+        alert('Tu sesión ha expirado. Por favor, inicia sesión de nuevo.');
+        window.location.reload();
+        return;
       }
+
+      console.log('Intentando reserva con:', { user, carrito: cart });
 
       const newReservation = {
         equipos_ids: equiposIds,
-        usuario_id: currentUser.id,
+        usuario_id: user.id,
         fecha_inicio: new Date(formData.fecha_inicio).toISOString(),
         fecha_fin: new Date(formData.fecha_fin).toISOString(),
         docente_nombre: activeResponsable || '',
@@ -149,6 +161,8 @@ export const Reservations: React.FC = () => {
 
       const { data: insertedData, error: insertError } = await supabase.from('reservas').insert([newReservation]).select().single();
       if (insertError) throw insertError;
+
+      console.log('Reserva guardada con éxito', insertedData);
 
       await logAction(activeResponsable!, 'NUEVA_RESERVA_PENDIENTE', { 
         equipos: cart.map(eq => eq.nombre),
@@ -174,6 +188,36 @@ export const Reservations: React.FC = () => {
       setSubmitting(false);
     }
   };
+
+  if (authLoading) {
+    return (
+      <div className="flex flex-col items-center justify-center py-20">
+        <Loader2 className="w-10 h-10 animate-spin text-amber-500 mb-4" />
+        <p className="text-slate-500 font-medium">Verificando sesión...</p>
+      </div>
+    );
+  }
+
+  if (!currentUser) {
+    return (
+      <div className="p-8 max-w-3xl mx-auto mt-12">
+        <div className="bg-red-50 border border-red-200 rounded-3xl p-8 text-center">
+          <AlertCircle className="w-16 h-16 text-red-500 mx-auto mb-4" />
+          <h2 className="text-2xl font-black text-slate-900 mb-2">Sesión no encontrada</h2>
+          <p className="text-slate-600 mb-6">
+            No se pudo verificar tu identidad. Por favor, asegúrate de haber iniciado sesión correctamente.
+            Si el problema persiste, intenta recargar la página.
+          </p>
+          <button 
+            onClick={() => window.location.reload()}
+            className="bg-slate-900 text-white px-8 py-3 rounded-2xl font-bold hover:bg-slate-800 transition-colors"
+          >
+            Recargar Página
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="p-8 max-w-7xl mx-auto">

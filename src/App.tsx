@@ -40,16 +40,16 @@ function AppContent() {
       <Sidebar />
       <main className="flex-1 overflow-x-hidden">
         <Routes>
-          <Route path="/" element={role === 'Docente' ? <Navigate to="/reservas" /> : <Catalog />} />
+          <Route path="/" element={<Catalog />} />
           <Route path="/reservas" element={<Reservations />} />
-          <Route path="/reservas-pendientes" element={role === 'Pañolero' ? <PendingReservations /> : <Navigate to="/reservas" />} />
+          <Route path="/reservas-pendientes" element={<PendingReservations />} />
           <Route path="/mora" element={<ActiveLoans filterMora />} />
           <Route path="/activos" element={<ActiveLoans />} />
-          <Route path="/nuevo-prestamo" element={role === 'Pañolero' ? <LoanWizard /> : <Navigate to="/reservas" />} />
-          <Route path="/historial" element={role === 'Pañolero' ? <AuditLogs /> : <Navigate to="/reservas" />} />
-          <Route path="/admin" element={role === 'Pañolero' ? <Catalog /> : <Navigate to="/reservas" />} />
-          <Route path="/configuracion" element={role === 'Pañolero' ? <Catalog /> : <Navigate to="/reservas" />} />
-          <Route path="*" element={<Navigate to={role === 'Docente' ? "/reservas" : "/"} />} />
+          <Route path="/nuevo-prestamo" element={<LoanWizard />} />
+          <Route path="/historial" element={<AuditLogs />} />
+          <Route path="/admin" element={<Catalog />} />
+          <Route path="/configuracion" element={<Catalog />} />
+          <Route path="*" element={<Catalog />} />
         </Routes>
       </main>
     </div>

@@ -1,9 +1,13 @@
 import { createClient } from '@supabase/supabase-js';
 
-const supabaseUrl = (import.meta as any).env.VITE_SUPABASE_URL || 'https://cwqqoesirkichqzxkgdd.supabase.co';
-const supabaseAnonKey = (import.meta as any).env.VITE_SUPABASE_ANON_KEY || 'sb_publishable_zdeF1N3sbK6-mk67-lbM9g_aQlGgS9H';
+const supabaseUrl = (import.meta as any).env.VITE_SUPABASE_URL;
+const supabaseAnonKey = (import.meta as any).env.VITE_SUPABASE_ANON_KEY;
 
-export const supabase = createClient(supabaseUrl, supabaseAnonKey);
+if (!supabaseUrl || !supabaseAnonKey) {
+  console.error('Supabase environment variables are missing!');
+}
+
+export const supabase = createClient(supabaseUrl || '', supabaseAnonKey || '');
 
 // Helper for audit logging
 export async function logAction(responsable: string, action: string, details: any) {

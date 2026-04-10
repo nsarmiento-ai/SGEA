@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
 import { supabase } from '../lib/supabase';
 import { Responsable, Profile } from '../types';
 
@@ -21,6 +21,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [userEmail, setUserEmail] = useState<string | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
+  const lastSessionId = useRef<string | null>(null);
 
   useEffect(() => {
     // Check initial session
@@ -43,9 +44,17 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       setUserEmail(null);
       setProfile(null);
       setLoading(false);
+      lastSessionId.current = null;
       return;
     }
 
+    // Prevent redundant fetches if session hasn't changed
+    if (lastSessionId.current === session.user.id) {
+      setLoading(false);
+      return;
+    }
+
+    lastSessionId.current = session.user.id;
     const email = session.user.email;
     const fullName = session.user.user_metadata.full_name || session.user.email;
     setUserEmail(email);

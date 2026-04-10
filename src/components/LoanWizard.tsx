@@ -20,8 +20,11 @@ import { motion, AnimatePresence } from 'motion/react';
 import { cn } from '../lib/utils';
 import { addDays, format, isWithinInterval, parseISO, isAfter } from 'date-fns';
 
+import { useNavigate } from 'react-router-dom';
+
 export const LoanWizard: React.FC = () => {
   const { activeResponsable } = useApp();
+  const navigate = useNavigate();
   const [step, setStep] = useState(1);
   const [equipments, setEquipments] = useState<Equipment[]>([]);
   const [reservations, setReservations] = useState<Reservation[]>([]);
@@ -205,7 +208,7 @@ export const LoanWizard: React.FC = () => {
 
       // 5. Reset
       alert('Préstamo registrado con éxito. El comprobante se ha descargado.');
-      window.location.href = '/';
+      navigate('/');
     } catch (error) {
       console.error('Error al registrar el préstamo:', error);
       alert('Error al registrar el préstamo. Revisa la consola.');
