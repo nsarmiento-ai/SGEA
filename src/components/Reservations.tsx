@@ -83,13 +83,15 @@ export const Reservations: React.FC = () => {
   };
 
   const checkOverlap = (equiposIds: string[], start: string, end: string) => {
+    if (!start || !end) return false;
     const newStart = parseISO(start);
     const newEnd = parseISO(end);
 
-    return reservations.some(res => {
-      if (!res.equipos_ids.some(id => equiposIds.includes(id))) return false;
+    return (reservations || []).some(res => {
+      if (!(res.equipos_ids || []).some((id: string) => equiposIds.includes(id))) return false;
       if (res.estado === 'Cancelada') return false;
       
+      if (!res.fecha_inicio || !res.fecha_fin) return false;
       const resStart = parseISO(res.fecha_inicio);
       const resEnd = parseISO(res.fecha_fin);
 
@@ -104,8 +106,14 @@ export const Reservations: React.FC = () => {
     e.preventDefault();
     setError(null);
 
-    if (cart.length === 0 || !formData.fecha_inicio || !formData.fecha_fin) {
-      setError('Debe seleccionar equipos y fechas.');
+    if (!cart || cart.length === 0) {
+      setError('No has seleccionado ningún equipo.');
+      alert('No has seleccionado ningún equipo.');
+      return;
+    }
+
+    if (!formData.fecha_inicio || !formData.fecha_fin) {
+      setError('Debe seleccionar fechas de inicio y fin.');
       return;
     }
 
@@ -114,7 +122,7 @@ export const Reservations: React.FC = () => {
       return;
     }
 
-    const equiposIds = cart.map(eq => eq.id);
+    const equiposIds = (cart || []).map(eq => eq.id);
     if (checkOverlap(equiposIds, formData.fecha_inicio, formData.fecha_fin)) {
       setError('Uno o más equipos ya tienen una reserva en ese rango de fechas.');
       return;
