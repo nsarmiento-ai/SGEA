@@ -35,21 +35,46 @@ function AppContent() {
     return <RoleSelectionModal />;
   }
 
+  const isPañolero = role === 'Pañolero';
+
   return (
     <div className="flex min-h-screen">
       <Sidebar />
       <main className="flex-1 overflow-x-hidden">
         <Routes>
-          <Route path="/" element={<Catalog />} />
+          {/* Redirección inicial basada en el rol */}
+          <Route 
+            path="/" 
+            element={isPañolero ? <Navigate to="/catalogo" replace /> : <Navigate to="/reservas" replace />} 
+          />
+
+          {/* Rutas de Pañolero (Admin) */}
+          <Route 
+            path="/catalogo" 
+            element={isPañolero ? <Catalog /> : <Navigate to="/reservas" replace />} 
+          />
+          <Route 
+            path="/reservas-pendientes" 
+            element={isPañolero ? <PendingReservations /> : <Navigate to="/reservas" replace />} 
+          />
+          <Route 
+            path="/nuevo-prestamo" 
+            element={isPañolero ? <LoanWizard /> : <Navigate to="/reservas" replace />} 
+          />
+          <Route 
+            path="/historial" 
+            element={isPañolero ? <AuditLogs /> : <Navigate to="/reservas" replace />} 
+          />
+
+          {/* Rutas compartidas o específicas de Docente */}
           <Route path="/reservas" element={<Reservations />} />
-          <Route path="/reservas-pendientes" element={<PendingReservations />} />
           <Route path="/mora" element={<ActiveLoans filterMora />} />
           <Route path="/activos" element={<ActiveLoans />} />
-          <Route path="/nuevo-prestamo" element={<LoanWizard />} />
-          <Route path="/historial" element={<AuditLogs />} />
-          <Route path="/admin" element={<Catalog />} />
-          <Route path="/configuracion" element={<Catalog />} />
-          <Route path="*" element={<Catalog />} />
+
+          {/* Aliases y Fallbacks */}
+          <Route path="/admin" element={<Navigate to={isPañolero ? "/catalogo" : "/reservas"} replace />} />
+          <Route path="/configuracion" element={<Navigate to={isPañolero ? "/catalogo" : "/reservas"} replace />} />
+          <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </main>
     </div>
