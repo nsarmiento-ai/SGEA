@@ -104,17 +104,24 @@ export const Catalog: React.FC = () => {
 
   const fetchEquipments = async () => {
     setLoading(true);
+    console.log('Catalog: Iniciando fetch de equipos (tabla equipamiento) y reservas (tabla reservas)...');
     const [eqRes, resRes] = await Promise.all([
-      supabase.from('equipos').select('*').order('nombre', { ascending: true }),
+      supabase.from('equipamiento').select('*').order('nombre', { ascending: true }),
       supabase.from('reservas').select('*')
     ]);
     
+    console.log('Catalog: Respuesta cruda de Supabase (equipamiento):', eqRes);
+    console.log('Catalog: Respuesta cruda de Supabase (reservas):', resRes);
+
     if (!eqRes.error && eqRes.data) {
+      console.log(`Catalog: Se recibieron ${eqRes.data.length} equipos.`);
       const mappedData = eqRes.data.map(eq => ({
         ...eq,
         estado: mapStatus(eq.estado)
       }));
       setEquipments(mappedData);
+    } else if (eqRes.error) {
+      console.error('Catalog: Error Supabase (equipos):', eqRes.error);
     }
 
     if (!resRes.error && resRes.data) {
@@ -127,7 +134,7 @@ export const Catalog: React.FC = () => {
     const matchesSearch = (eq.nombre || '').toLowerCase().includes((search || '').toLowerCase()) || 
                          (eq.modelo || '').toLowerCase().includes((search || '').toLowerCase()) ||
                          (eq.numero_serie || '').toLowerCase().includes((search || '').toLowerCase());
-    const matchesCategory = category === 'Todas' || eq.categoria === category;
+    const matchesCategory = category === 'Todas' || (eq.categoria || 'Otros') === category;
     const matchesArchived = showArchived ? eq.estado === 'Archivado' : eq.estado !== 'Archivado';
     const matchesFavorites = showFavorites ? (profile?.favoritos || []).includes(eq.id) : true;
     return matchesSearch && matchesCategory && matchesArchived && matchesFavorites;
@@ -411,8 +418,8 @@ const EquipmentModal: React.FC<{ item: Equipment | null, onClose: () => void, on
     console.log(`Guardando equipo (${action}). Datos enviados a Supabase:`, dataToSave);
     
     const { error } = item 
-      ? await supabase.from('equipos').update(dataToSave).eq('id', item.id)
-      : await supabase.from('equipos').insert([dataToSave]);
+      ? await supabase.from('equipamiento').update(dataToSave).eq('id', item.id)
+      : await supabase.from('equipamiento').insert([dataToSave]);
 
     if (!error) {
       await logAction(activeResponsable!, action, dataToSave);

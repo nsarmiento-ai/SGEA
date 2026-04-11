@@ -34,7 +34,7 @@ export const PendingReservations: React.FC = () => {
     try {
       const [resData, eqData] = await Promise.all([
         supabase.from('reservas').select('*').eq('estado', 'Pendiente').order('fecha_inicio', { ascending: true }),
-        supabase.from('equipos').select('*')
+        supabase.from('equipamiento').select('*')
       ]);
 
       if (resData.data) setReservations(resData.data);

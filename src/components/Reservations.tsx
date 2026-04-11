@@ -23,7 +23,8 @@ import { cn } from '../lib/utils';
 import { parseISO, areIntervalsOverlapping } from 'date-fns';
 import { generateReservationPDF } from '../lib/pdf';
 
-const mapStatus = (status: string): EquipmentStatus => {
+const mapStatus = (status: string | null | undefined): EquipmentStatus => {
+  if (!status) return 'Disponible';
   const s = status.toLowerCase();
   if (s === 'roto' || s === 'en reparación' || s === 'perdido' || s === 'mantenimiento' || s === 'incompleto' || s === 'fuera de servicio') {
     return 'Fuera de Servicio';
@@ -72,22 +73,41 @@ export const Reservations: React.FC = () => {
 
   const fetchData = async () => {
     setLoading(true);
+    setError(null);
     try {
+      console.log('Iniciando fetch de equipos (tabla equipamiento) y reservas (tabla reservas)...');
       const [eqData, resData] = await Promise.all([
-        supabase.from('equipos').select('*').order('nombre', { ascending: true }),
+        supabase.from('equipamiento').select('*').order('nombre', { ascending: true }),
         supabase.from('reservas').select('*').order('fecha_inicio', { ascending: true })
       ]);
 
+      console.log('Respuesta cruda de Supabase (equipamiento):', eqData);
+      console.log('Respuesta cruda de Supabase (reservas):', resData);
+      
+      if (eqData.error) {
+        throw new Error(`Error Supabase (equipos): ${eqData.error.message}`);
+      }
+
       if (eqData.data) {
+        console.log(`Se recibieron ${eqData.data.length} equipos.`);
         const mappedData = eqData.data.map(eq => ({
           ...eq,
           estado: mapStatus(eq.estado)
         }));
         setEquipments(mappedData);
+      } else {
+        console.warn('No se recibieron datos de equipos.');
+        setEquipments([]);
       }
+
+      if (resData.error) {
+        console.error('Error Supabase (reservas):', resData.error);
+      }
+
       if (resData.data) setReservations(resData.data);
-    } catch (err) {
+    } catch (err: any) {
       console.error('Error fetching data:', err);
+      setError(`Error al cargar los datos: ${err.message || 'Error desconocido'}`);
     } finally {
       setLoading(false);
     }
@@ -96,10 +116,12 @@ export const Reservations: React.FC = () => {
   const filteredEquipments = (equipments || []).filter(eq => {
     const matchesSearch = (eq.nombre || '').toLowerCase().includes((search || '').toLowerCase()) || 
                          (eq.modelo || '').toLowerCase().includes((search || '').toLowerCase());
-    const matchesCategory = category === 'Todas' || eq.categoria === category;
+    const matchesCategory = category === 'Todas' || (eq.categoria || 'Otros') === category;
     const matchesFavorites = showFavorites ? (profile?.favoritos || []).includes(eq.id) : true;
     return matchesSearch && matchesCategory && matchesFavorites;
   });
+
+  console.log(`Equipos filtrados: ${filteredEquipments.length} de ${equipments.length}`);
 
   const addToCart = (eq: Equipment) => {
     if (cart.find(item => item.id === eq.id)) return;
@@ -299,6 +321,22 @@ export const Reservations: React.FC = () => {
           )}
         </div>
       </header>
+
+      {error && (
+        <div className="bg-red-50 border border-red-200 text-red-600 p-6 rounded-3xl mb-8 flex items-center gap-4 animate-in fade-in slide-in-from-top-4">
+          <AlertCircle className="w-8 h-8 shrink-0" />
+          <div>
+            <h3 className="font-bold text-lg">Error al cargar el catálogo</h3>
+            <p className="text-sm opacity-90">{error}</p>
+            <button 
+              onClick={() => fetchData()} 
+              className="mt-2 text-xs font-black uppercase tracking-wider bg-red-600 text-white px-4 py-2 rounded-xl hover:bg-red-700 transition-colors"
+            >
+              Reintentar
+            </button>
+          </div>
+        </div>
+      )}
 
       {activeTab === 'catalogo' ? (
         <>

@@ -80,7 +80,7 @@ export const LoanWizard: React.FC = () => {
   const fetchAvailable = async () => {
     setLoading(true);
     const [eqRes, resRes] = await Promise.all([
-      supabase.from('equipos').select('*').eq('estado', 'Disponible'),
+      supabase.from('equipamiento').select('*').eq('estado', 'Disponible'),
       supabase.from('reservas').select('*')
     ]);
     
@@ -179,7 +179,7 @@ export const LoanWizard: React.FC = () => {
       // 2. Update Equipments
       console.log('Actualizando equipos a "Prestado". IDs:', selectedIds);
       const { error: eqError } = await supabase
-        .from('equipos')
+        .from('equipamiento')
         .update({ estado: 'Prestado' })
         .in('id', selectedIds);
 
