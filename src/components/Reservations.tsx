@@ -63,7 +63,7 @@ export const Reservations: React.FC = () => {
     setLoading(true);
     try {
       const [eqData, resData] = await Promise.all([
-        supabase.from('equipamiento').select('*').neq('estado', 'Archivado').order('nombre', { ascending: true }),
+        supabase.from('equipos').select('*').neq('estado', 'Archivado').order('nombre', { ascending: true }),
         supabase.from('reservas').select('*').order('fecha_inicio', { ascending: true })
       ]);
 

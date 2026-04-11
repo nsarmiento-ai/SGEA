@@ -54,7 +54,7 @@ export const CalendarPage: React.FC = () => {
     try {
       const [resData, eqData] = await Promise.all([
         supabase.from('reservas').select('*').in('estado', ['Pendiente', 'Aprobada', 'Entregada']),
-        supabase.from('equipamiento').select('*')
+        supabase.from('equipos').select('*')
       ]);
 
       if (resData.data) setReservations(resData.data);

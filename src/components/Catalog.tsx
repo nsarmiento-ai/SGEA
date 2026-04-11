@@ -105,7 +105,7 @@ export const Catalog: React.FC = () => {
   const fetchEquipments = async () => {
     setLoading(true);
     const [eqRes, resRes] = await Promise.all([
-      supabase.from('equipamiento').select('*').order('nombre', { ascending: true }),
+      supabase.from('equipos').select('*').order('nombre', { ascending: true }),
       supabase.from('reservas').select('*')
     ]);
     
@@ -411,8 +411,8 @@ const EquipmentModal: React.FC<{ item: Equipment | null, onClose: () => void, on
     console.log(`Guardando equipo (${action}). Datos enviados a Supabase:`, dataToSave);
     
     const { error } = item 
-      ? await supabase.from('equipamiento').update(dataToSave).eq('id', item.id)
-      : await supabase.from('equipamiento').insert([dataToSave]);
+      ? await supabase.from('equipos').update(dataToSave).eq('id', item.id)
+      : await supabase.from('equipos').insert([dataToSave]);
 
     if (!error) {
       await logAction(activeResponsable!, action, dataToSave);

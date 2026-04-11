@@ -61,7 +61,7 @@ export const ActiveLoans: React.FC<{ filterMora?: boolean }> = ({ filterMora = f
 
       const eqIds = Array.from(new Set((finalLoans || []).flatMap(l => l.equipos_ids || [])));
       if (eqIds.length > 0) {
-        const { data: eqData } = await supabase.from('equipamiento').select('*').in('id', eqIds);
+        const { data: eqData } = await supabase.from('equipos').select('*').in('id', eqIds);
         if (eqData) {
           const eqMap = eqData.reduce((acc, eq) => ({ 
             ...acc, 
@@ -269,7 +269,7 @@ const ReceiveModal: React.FC<{ loan: Loan, equipmentsMap: Record<string, Equipme
         }
 
         console.log(`Actualizando equipo ${eqId} tras devolución. Nuevo estado:`, newEqStatus);
-        await supabase.from('equipamiento').update({ 
+        await supabase.from('equipos').update({ 
           estado: newEqStatus,
           piezas: eq.piezas 
         }).eq('id', String(eqId));
