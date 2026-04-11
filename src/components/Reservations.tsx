@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { supabase, logAction } from '../lib/supabase';
-import { Reservation, Equipment } from '../types';
+import { Reservation, Equipment, EquipmentStatus } from '../types';
 import { useApp } from '../context/AppContext';
 import { Link } from 'react-router-dom';
 import { 
@@ -22,6 +22,17 @@ import { motion, AnimatePresence } from 'motion/react';
 import { cn } from '../lib/utils';
 import { parseISO, areIntervalsOverlapping } from 'date-fns';
 import { generateReservationPDF } from '../lib/pdf';
+
+const mapStatus = (status: string): EquipmentStatus => {
+  const s = status.toLowerCase();
+  if (s === 'roto' || s === 'en reparación' || s === 'perdido' || s === 'mantenimiento' || s === 'incompleto' || s === 'fuera de servicio') {
+    return 'Fuera de Servicio';
+  }
+  if (s === 'eliminado' || s === 'archivado') return 'Archivado';
+  if (s === 'disponible') return 'Disponible';
+  if (s === 'prestado') return 'Prestado';
+  return status as EquipmentStatus;
+};
 
 export const Reservations: React.FC = () => {
   const { activeResponsable, profile, toggleFavorite } = useApp();
@@ -63,11 +74,17 @@ export const Reservations: React.FC = () => {
     setLoading(true);
     try {
       const [eqData, resData] = await Promise.all([
-        supabase.from('equipos').select('*').neq('estado', 'Archivado').order('nombre', { ascending: true }),
+        supabase.from('equipos').select('*').order('nombre', { ascending: true }),
         supabase.from('reservas').select('*').order('fecha_inicio', { ascending: true })
       ]);
 
-      if (eqData.data) setEquipments(eqData.data);
+      if (eqData.data) {
+        const mappedData = eqData.data.map(eq => ({
+          ...eq,
+          estado: mapStatus(eq.estado)
+        }));
+        setEquipments(mappedData);
+      }
       if (resData.data) setReservations(resData.data);
     } catch (err) {
       console.error('Error fetching data:', err);
@@ -285,6 +302,40 @@ export const Reservations: React.FC = () => {
 
       {activeTab === 'catalogo' ? (
         <>
+          {/* Date selection at the top */}
+          <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm mb-8">
+            <div className="flex flex-col md:flex-row items-end gap-6">
+              <div className="flex-1 w-full">
+                <label className="block text-xs font-black text-slate-500 mb-2 uppercase tracking-wider">¿Para cuándo necesitas el equipo?</label>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="relative">
+                    <Clock className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 w-5 h-5" />
+                    <input
+                      type="datetime-local"
+                      value={formData.fecha_inicio}
+                      onChange={e => setFormData({...formData, fecha_inicio: e.target.value})}
+                      className="w-full pl-12 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:ring-2 focus:ring-amber-500 font-medium text-sm"
+                    />
+                  </div>
+                  <div className="relative">
+                    <Clock className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 w-5 h-5" />
+                    <input
+                      type="datetime-local"
+                      value={formData.fecha_fin}
+                      onChange={e => setFormData({...formData, fecha_fin: e.target.value})}
+                      className="w-full pl-12 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:ring-2 focus:ring-amber-500 font-medium text-sm"
+                    />
+                  </div>
+                </div>
+              </div>
+              <div className="hidden md:block pb-1">
+                <div className="p-3 bg-amber-50 rounded-2xl border border-amber-100" title="Selecciona fechas para verificar disponibilidad en tiempo real">
+                  <Info className="w-5 h-5 text-amber-500" />
+                </div>
+              </div>
+            </div>
+          </div>
+
           <div className="flex flex-col md:flex-row gap-4 mb-8">
             <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 w-5 h-5" />
@@ -329,6 +380,11 @@ export const Reservations: React.FC = () => {
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
               {(filteredEquipments || []).map((eq) => {
                 const isInCart = (cart || []).find(item => item.id === eq.id);
+                const isReservedForDates = checkOverlap([eq.id], formData.fecha_inicio, formData.fecha_fin);
+                const isOutOfService = eq.estado === 'Fuera de Servicio';
+                const isArchived = eq.estado === 'Archivado';
+                const isUnavailable = isReservedForDates || isOutOfService || isArchived;
+
                 return (
                   <motion.div
                     layout
@@ -337,7 +393,8 @@ export const Reservations: React.FC = () => {
                     animate={{ opacity: 1, scale: 1 }}
                     className={cn(
                       "bg-white rounded-3xl border overflow-hidden shadow-sm hover:shadow-xl transition-all group flex flex-col",
-                      isInCart ? "border-amber-500 ring-2 ring-amber-500/20" : "border-slate-200"
+                      isInCart ? "border-amber-500 ring-2 ring-amber-500/20" : "border-slate-200",
+                      isUnavailable && !isInCart && "opacity-75 grayscale-[0.5]"
                     )}
                   >
                     <div className="relative h-56 bg-slate-100 overflow-hidden">
@@ -356,10 +413,18 @@ export const Reservations: React.FC = () => {
                           (profile?.favoritos || []).includes(eq.id) ? "fill-amber-500 text-amber-500" : "text-slate-400"
                         )} />
                       </button>
-                      <div className="absolute bottom-4 left-4">
-                        <span className="px-3 py-1 bg-slate-900/80 backdrop-blur-sm text-white text-[10px] font-black uppercase rounded-lg tracking-wider">
+                      <div className="absolute bottom-4 left-4 flex flex-col gap-2">
+                        <span className="px-3 py-1 bg-slate-900/80 backdrop-blur-sm text-white text-[10px] font-black uppercase rounded-lg tracking-wider w-fit">
                           {eq.categoria}
                         </span>
+                        {isUnavailable && (
+                          <span className={cn(
+                            "px-3 py-1 text-white text-[10px] font-black uppercase rounded-lg tracking-wider w-fit shadow-lg",
+                            isArchived ? "bg-slate-600" : isOutOfService ? "bg-red-600" : "bg-amber-600"
+                          )}>
+                            {isArchived ? 'Archivado' : isOutOfService ? 'Fuera de Servicio' : 'Ocupado en estas fechas'}
+                          </span>
+                        )}
                       </div>
                     </div>
                     
@@ -384,10 +449,25 @@ export const Reservations: React.FC = () => {
                         ) : (
                           <button 
                             onClick={() => addToCart(eq)}
-                            className="w-full py-3 bg-slate-900 text-white rounded-2xl font-bold flex items-center justify-center gap-2 hover:bg-amber-500 transition-colors shadow-lg shadow-slate-200"
+                            disabled={isUnavailable}
+                            className={cn(
+                              "w-full py-3 rounded-2xl font-bold flex items-center justify-center gap-2 transition-all shadow-lg",
+                              isUnavailable 
+                                ? "bg-slate-100 text-slate-400 cursor-not-allowed shadow-none" 
+                                : "bg-slate-900 text-white hover:bg-amber-500 shadow-slate-200"
+                            )}
                           >
-                            <Plus className="w-5 h-5" />
-                            Añadir a la reserva
+                            {isUnavailable ? (
+                              <>
+                                <XCircle className="w-5 h-5" />
+                                No disponible
+                              </>
+                            ) : (
+                              <>
+                                <Plus className="w-5 h-5" />
+                                Añadir a la reserva
+                              </>
+                            )}
                           </button>
                         )}
                       </div>
