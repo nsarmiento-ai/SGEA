@@ -20,6 +20,7 @@ export const Sidebar: React.FC = () => {
 
   const menuItems = [
     { icon: LayoutDashboard, label: 'Catálogo General', path: '/catalogo', adminOnly: true },
+    { icon: Calendar, label: 'Calendario', path: '/calendario' },
     { icon: Calendar, label: 'Nueva Reserva', path: '/reservas' },
     { icon: Clock, label: 'Reservas Pendientes', path: '/reservas-pendientes', adminOnly: true },
     { icon: AlertTriangle, label: 'Panel de Mora', path: '/mora' },
@@ -28,7 +29,7 @@ export const Sidebar: React.FC = () => {
     { icon: History, label: 'Historial Global', path: '/historial', adminOnly: true },
   ].filter(item => {
     if (role === 'Docente') {
-      return ['Nueva Reserva', 'Panel de Mora', 'Mis Préstamos'].includes(item.label);
+      return ['Calendario', 'Nueva Reserva', 'Panel de Mora', 'Mis Préstamos'].includes(item.label);
     }
     return true;
   });

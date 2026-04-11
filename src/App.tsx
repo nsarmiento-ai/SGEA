@@ -14,6 +14,7 @@ import { ActiveLoans } from './components/ActiveLoans';
 import { AuditLogs } from './components/AuditLogs';
 import { Reservations } from './components/Reservations';
 import { PendingReservations } from './components/PendingReservations';
+import { CalendarPage } from './components/CalendarPage';
 import { Loader2 } from 'lucide-react';
 
 function AppContent() {
@@ -68,6 +69,7 @@ function AppContent() {
 
           {/* Rutas compartidas o específicas de Docente */}
           <Route path="/reservas" element={<Reservations />} />
+          <Route path="/calendario" element={<CalendarPage />} />
           <Route path="/mora" element={<ActiveLoans filterMora />} />
           <Route path="/activos" element={<ActiveLoans />} />
 

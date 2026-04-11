@@ -261,6 +261,15 @@ export const Reservations: React.FC = () => {
               {showFavorites ? 'Viendo habituales' : 'Ver habituales'}
             </button>
           )}
+          {activeTab === 'catalogo' && (
+            <button 
+              onClick={() => window.open(window.location.origin + '/calendario', '_blank')}
+              className="flex items-center gap-2 px-6 py-3 rounded-2xl font-bold text-sm transition-all border shadow-sm bg-white text-slate-600 border-slate-200 hover:border-amber-500"
+            >
+              <Calendar className="w-5 h-5 text-amber-500" />
+              Consultar Disponibilidad
+            </button>
+          )}
           {activeTab === 'catalogo' && cart.length > 0 && (
             <button 
               onClick={() => setIsModalOpen(true)}
