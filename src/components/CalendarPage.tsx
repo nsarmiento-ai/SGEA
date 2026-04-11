@@ -53,8 +53,8 @@ export const CalendarPage: React.FC = () => {
     setLoading(true);
     try {
       const [resData, eqData] = await Promise.all([
-        supabase.from('reservations').select('*').neq('estado', 'Cancelada'),
-        supabase.from('equipments').select('*')
+        supabase.from('reservas').select('*').in('estado', ['Pendiente', 'Aprobada', 'Entregada']),
+        supabase.from('equipamiento').select('*')
       ]);
 
       if (resData.data) setReservations(resData.data);
@@ -130,6 +130,7 @@ export const CalendarPage: React.FC = () => {
         
         // Find reservations for this day
         const dayReservations = (reservations || []).filter(res => {
+          if (!res.fecha_inicio || !res.fecha_fin) return false;
           const start = startOfDay(parseISO(res.fecha_inicio));
           const end = endOfDay(parseISO(res.fecha_fin));
           return isWithinInterval(cloneDay, { start, end });
