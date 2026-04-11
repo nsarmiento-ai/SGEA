@@ -135,8 +135,8 @@ export const PendingReservations: React.FC = () => {
                     <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">Equipamiento Solicitado</p>
                   </div>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mb-6">
-                    {res.equipos_ids.map(id => {
-                      const eq = equipments.find(e => e.id === id);
+                    {(res.equipos_ids || []).map(id => {
+                      const eq = (equipments || []).find(e => e.id === id);
                       return (
                         <div key={id} className="flex items-center gap-2 bg-slate-50 p-2 rounded-xl border border-slate-100">
                           <div className="w-8 h-8 rounded-lg bg-slate-200 overflow-hidden flex-shrink-0">

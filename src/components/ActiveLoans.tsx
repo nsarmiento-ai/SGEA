@@ -59,7 +59,7 @@ export const ActiveLoans: React.FC<{ filterMora?: boolean }> = ({ filterMora = f
       const finalLoans = filterMora ? processedLoans.filter(l => l.isMora) : processedLoans;
       setLoans(finalLoans);
 
-      const eqIds = Array.from(new Set(finalLoans.flatMap(l => l.equipos_ids)));
+      const eqIds = Array.from(new Set((finalLoans || []).flatMap(l => l.equipos_ids || [])));
       if (eqIds.length > 0) {
         const { data: eqData } = await supabase.from('equipamiento').select('*').in('id', eqIds);
         if (eqData) {
@@ -168,12 +168,12 @@ export const ActiveLoans: React.FC<{ filterMora?: boolean }> = ({ filterMora = f
                   </div>
 
                   <div className="space-y-2">
-                    <p className="text-[10px] uppercase font-bold text-slate-400 mb-2">Equipos ({loan.equipos_ids.length})</p>
+                    <p className="text-[10px] uppercase font-bold text-slate-400 mb-2">Equipos ({(loan.equipos_ids || []).length})</p>
                     <div className="space-y-2 max-h-32 overflow-y-auto pr-2">
-                      {loan.equipos_ids.map(id => (
+                      {(loan.equipos_ids || []).map(id => (
                         <div key={id} className="flex items-center gap-2 text-xs bg-slate-50 p-2 rounded-lg border border-slate-100">
                           <Package className="w-3 h-3 text-slate-400" />
-                          <span className="font-medium truncate">{equipments[id]?.nombre || 'Cargando...'}</span>
+                          <span className="font-medium truncate">{(equipments && equipments[id])?.nombre || 'Cargando...'}</span>
                         </div>
                       ))}
                     </div>
@@ -219,8 +219,8 @@ const ReceiveModal: React.FC<{ loan: Loan, equipmentsMap: Record<string, Equipme
   // State to track the status of each piece of each equipment
   const [equipmentStates, setEquipmentStates] = useState<Record<string, Equipment>>(() => {
     const initialState: Record<string, Equipment> = {};
-    loan.equipos_ids.forEach(id => {
-      if (equipmentsMap[id]) {
+    (loan.equipos_ids || []).forEach(id => {
+      if (equipmentsMap && equipmentsMap[id]) {
         // Deep copy to avoid mutating the original map
         initialState[id] = JSON.parse(JSON.stringify(equipmentsMap[id]));
       }
@@ -316,8 +316,8 @@ const ReceiveModal: React.FC<{ loan: Loan, equipmentsMap: Record<string, Equipme
         </div>
         
         <div className="p-6 overflow-y-auto flex-1 space-y-6">
-          {loan.equipos_ids.map(eqId => {
-            const eq = equipmentStates[eqId];
+          {(loan.equipos_ids || []).map(eqId => {
+            const eq = equipmentStates && equipmentStates[eqId];
             if (!eq) return null;
 
             return (

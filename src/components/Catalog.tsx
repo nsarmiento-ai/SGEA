@@ -123,13 +123,13 @@ export const Catalog: React.FC = () => {
     setLoading(false);
   };
 
-  const filteredEquipments = equipments.filter(eq => {
-    const matchesSearch = eq.nombre.toLowerCase().includes(search.toLowerCase()) || 
-                         eq.modelo.toLowerCase().includes(search.toLowerCase()) ||
-                         eq.numero_serie.toLowerCase().includes(search.toLowerCase());
+  const filteredEquipments = (equipments || []).filter(eq => {
+    const matchesSearch = (eq.nombre || '').toLowerCase().includes((search || '').toLowerCase()) || 
+                         (eq.modelo || '').toLowerCase().includes((search || '').toLowerCase()) ||
+                         (eq.numero_serie || '').toLowerCase().includes((search || '').toLowerCase());
     const matchesCategory = category === 'Todas' || eq.categoria === category;
     const matchesArchived = showArchived ? eq.estado === 'Archivado' : eq.estado !== 'Archivado';
-    const matchesFavorites = showFavorites ? profile?.favoritos?.includes(eq.id) : true;
+    const matchesFavorites = showFavorites ? (profile?.favoritos || []).includes(eq.id) : true;
     return matchesSearch && matchesCategory && matchesArchived && matchesFavorites;
   });
 
@@ -245,15 +245,15 @@ export const Catalog: React.FC = () => {
         </div>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-          {filteredEquipments.map((eq) => {
-            const eqReservations = reservations.filter(r => r.equipos_ids.includes(eq.id));
-            const isReservedNow = eqReservations.some(r => 
+          {(filteredEquipments || []).map((eq) => {
+            const eqReservations = (reservations || []).filter(r => (r.equipos_ids || []).includes(eq.id));
+            const isReservedNow = (eqReservations || []).some(r => 
               isWithinInterval(new Date(), {
                 start: parseISO(r.fecha_inicio),
                 end: parseISO(r.fecha_fin)
               })
             );
-            const hasFutureReservations = eqReservations.some(r => 
+            const hasFutureReservations = (eqReservations || []).some(r => 
               isAfter(parseISO(r.fecha_inicio), new Date())
             );
 
@@ -278,7 +278,7 @@ export const Catalog: React.FC = () => {
                   >
                     <Star className={cn(
                       "w-4 h-4 transition-colors",
-                      profile?.favoritos?.includes(eq.id) ? "fill-amber-500 text-amber-500" : "text-slate-400"
+                      (profile?.favoritos || []).includes(eq.id) ? "fill-amber-500 text-amber-500" : "text-slate-400"
                     )} />
                   </button>
                   <div className="absolute top-3 right-3 flex flex-col gap-2 items-end">

@@ -34,10 +34,10 @@ export const AuditLogs: React.FC = () => {
     setLoading(false);
   };
 
-  const filteredLogs = logs.filter(log => 
-    log.responsable_nombre.toLowerCase().includes(search.toLowerCase()) ||
-    log.accion.toLowerCase().includes(search.toLowerCase()) ||
-    JSON.stringify(log.detalles).toLowerCase().includes(search.toLowerCase())
+  const filteredLogs = (logs || []).filter(log => 
+    (log.responsable_nombre || '').toLowerCase().includes((search || '').toLowerCase()) ||
+    (log.accion || '').toLowerCase().includes((search || '').toLowerCase()) ||
+    JSON.stringify(log.detalles || {}).toLowerCase().includes((search || '').toLowerCase())
   );
 
   return (

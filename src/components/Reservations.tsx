@@ -75,11 +75,11 @@ export const Reservations: React.FC = () => {
     }
   };
 
-  const filteredEquipments = equipments.filter(eq => {
-    const matchesSearch = eq.nombre.toLowerCase().includes(search.toLowerCase()) || 
-                         eq.modelo.toLowerCase().includes(search.toLowerCase());
+  const filteredEquipments = (equipments || []).filter(eq => {
+    const matchesSearch = (eq.nombre || '').toLowerCase().includes((search || '').toLowerCase()) || 
+                         (eq.modelo || '').toLowerCase().includes((search || '').toLowerCase());
     const matchesCategory = category === 'Todas' || eq.categoria === category;
-    const matchesFavorites = showFavorites ? profile?.favoritos?.includes(eq.id) : true;
+    const matchesFavorites = showFavorites ? (profile?.favoritos || []).includes(eq.id) : true;
     return matchesSearch && matchesCategory && matchesFavorites;
   });
 
@@ -317,8 +317,8 @@ export const Reservations: React.FC = () => {
             </div>
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
-              {filteredEquipments.map((eq) => {
-                const isInCart = cart.find(item => item.id === eq.id);
+              {(filteredEquipments || []).map((eq) => {
+                const isInCart = (cart || []).find(item => item.id === eq.id);
                 return (
                   <motion.div
                     layout
@@ -343,7 +343,7 @@ export const Reservations: React.FC = () => {
                       >
                         <Star className={cn(
                           "w-5 h-5 transition-colors",
-                          profile?.favoritos?.includes(eq.id) ? "fill-amber-500 text-amber-500" : "text-slate-400"
+                          (profile?.favoritos || []).includes(eq.id) ? "fill-amber-500 text-amber-500" : "text-slate-400"
                         )} />
                       </button>
                       <div className="absolute bottom-4 left-4">
@@ -390,7 +390,7 @@ export const Reservations: React.FC = () => {
         </>
       ) : (
         <div className="space-y-6">
-          {reservations.filter(r => r.docente_nombre === activeResponsable).length === 0 ? (
+          {(reservations || []).filter(r => r.docente_nombre === activeResponsable).length === 0 ? (
             <div className="bg-white rounded-3xl p-12 text-center border border-dashed border-slate-300">
               <Calendar className="w-12 h-12 text-slate-300 mx-auto mb-4" />
               <h3 className="text-lg font-bold text-slate-900">No tienes reservas</h3>
@@ -398,7 +398,7 @@ export const Reservations: React.FC = () => {
             </div>
           ) : (
             <div className="grid grid-cols-1 gap-4">
-              {reservations.filter(r => r.docente_nombre === activeResponsable).map(res => (
+              {(reservations || []).filter(r => r.docente_nombre === activeResponsable).map(res => (
                 <div key={res.id} className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm flex flex-col md:flex-row gap-6">
                   <div className="flex-1">
                     <div className="flex items-center gap-3 mb-4">
@@ -416,8 +416,8 @@ export const Reservations: React.FC = () => {
                       </span>
                     </div>
                     <div className="flex flex-wrap gap-2">
-                      {res.equipos_ids.map(id => {
-                        const eq = equipments.find(e => e.id === id);
+                      {(res.equipos_ids || []).map(id => {
+                        const eq = (equipments || []).find(e => e.id === id);
                         return eq ? (
                           <div key={id} className="flex items-center gap-2 bg-slate-50 px-3 py-2 rounded-xl border border-slate-100">
                             <span className="text-sm font-bold text-slate-700">{eq.nombre}</span>
@@ -428,7 +428,7 @@ export const Reservations: React.FC = () => {
                   </div>
                   <div className="flex items-center justify-end">
                     <button 
-                      onClick={() => generateReservationPDF(res, equipments.filter(e => res.equipos_ids.includes(e.id)))}
+                      onClick={() => generateReservationPDF(res, (equipments || []).filter(e => (res.equipos_ids || []).includes(e.id)))}
                       className="flex items-center gap-2 px-4 py-2 text-sm font-bold text-slate-600 hover:text-amber-600 bg-slate-50 hover:bg-amber-50 rounded-xl transition-colors"
                     >
                       Descargar Comprobante
@@ -505,7 +505,7 @@ export const Reservations: React.FC = () => {
 
                 <div className="max-h-40 overflow-y-auto space-y-2 pr-2">
                   <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-2">Equipos en el pedido</p>
-                  {cart.map(eq => (
+                  {(cart || []).map(eq => (
                     <div key={eq.id} className="flex items-center justify-between bg-slate-50 p-3 rounded-xl border border-slate-100">
                       <div className="flex items-center gap-3">
                         <div className="w-8 h-8 rounded-lg bg-slate-200 overflow-hidden">

@@ -91,7 +91,7 @@ export const LoanWizard: React.FC = () => {
 
   const toggleSelect = (id: string) => {
     setSelectedIds(prev => 
-      prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]
+      (prev || []).includes(id) ? prev.filter(i => i !== id) : [...(prev || []), id]
     );
   };
 
@@ -102,9 +102,9 @@ export const LoanWizard: React.FC = () => {
     const returnDate = parseISO(formData.fechaDevolucion);
     const salidaDate = new Date();
 
-    selectedIds.forEach(id => {
-      const conflictRes = reservations.find(r => 
-        r.equipos_ids.includes(id) && 
+    (selectedIds || []).forEach(id => {
+      const conflictRes = (reservations || []).find(r => 
+        (r.equipos_ids || []).includes(id) && 
         r.estado === 'Activa' &&
         isAfter(returnDate, parseISO(r.fecha_inicio)) &&
         isAfter(parseISO(r.fecha_fin), salidaDate)
@@ -135,16 +135,16 @@ export const LoanWizard: React.FC = () => {
     const returnDate = parseISO(formData.fechaDevolucion);
     const salidaDate = new Date();
     
-    for (const id of selectedIds) {
-      const conflictRes = reservations.find(r => 
-        r.equipos_ids.includes(id) && 
+    for (const id of (selectedIds || [])) {
+      const conflictRes = (reservations || []).find(r => 
+        (r.equipos_ids || []).includes(id) && 
         r.estado === 'Activa' &&
         isAfter(returnDate, parseISO(r.fecha_inicio)) &&
         isAfter(parseISO(r.fecha_fin), salidaDate)
       );
       
       if (conflictRes) {
-        const eq = equipments.find(e => e.id === id);
+        const eq = (equipments || []).find(e => e.id === id);
         alert(`Error: El equipo ${eq?.nombre} no puede prestarse hasta el ${format(parseISO(conflictRes.fecha_inicio), 'dd/MM')} porque tiene una reserva de ${conflictRes.docente_nombre} el día ${format(parseISO(conflictRes.fecha_inicio), 'dd/MM')}.`);
         return;
       }
@@ -203,7 +203,7 @@ export const LoanWizard: React.FC = () => {
       });
 
       // 4. Generate PDF
-      const selectedEquipments = equipments.filter(e => selectedIds.includes(e.id));
+      const selectedEquipments = (equipments || []).filter(e => (selectedIds || []).includes(e.id));
       generateLoanPDF(loan as Loan, selectedEquipments);
 
       // 5. Reset
@@ -217,9 +217,9 @@ export const LoanWizard: React.FC = () => {
     }
   };
 
-  const filtered = equipments.filter(e => 
-    e.nombre.toLowerCase().includes(search.toLowerCase()) ||
-    e.modelo.toLowerCase().includes(search.toLowerCase())
+  const filtered = (equipments || []).filter(e => 
+    (e.nombre || '').toLowerCase().includes((search || '').toLowerCase()) ||
+    (e.modelo || '').toLowerCase().includes((search || '').toLowerCase())
   );
 
   return (
@@ -273,16 +273,16 @@ export const LoanWizard: React.FC = () => {
               <div className="max-h-[500px] overflow-y-auto p-4 grid grid-cols-1 sm:grid-cols-2 gap-3">
                 {loading ? (
                   <div className="col-span-full py-10 flex justify-center"><Loader2 className="animate-spin text-amber-500" /></div>
-                ) : filtered.map(eq => {
-                  const isReservedNow = reservations.some(r => 
-                    r.equipos_ids.includes(eq.id) &&
+                ) : (filtered || []).map(eq => {
+                  const isReservedNow = (reservations || []).some(r => 
+                    (r.equipos_ids || []).includes(eq.id) &&
                     isWithinInterval(new Date(), {
                       start: parseISO(r.fecha_inicio),
                       end: parseISO(r.fecha_fin)
                     })
                   );
-                  const nextRes = reservations
-                    .filter(r => r.equipos_ids.includes(eq.id) && r.estado === 'Activa' && isAfter(parseISO(r.fecha_inicio), new Date()))
+                  const nextRes = (reservations || [])
+                    .filter(r => (r.equipos_ids || []).includes(eq.id) && r.estado === 'Activa' && isAfter(parseISO(r.fecha_inicio), new Date()))
                     .sort((a, b) => parseISO(a.fecha_inicio).getTime() - parseISO(b.fecha_inicio).getTime())[0];
 
                   return (
@@ -349,8 +349,8 @@ export const LoanWizard: React.FC = () => {
           >
             <div className="md:col-span-2 space-y-6">
               <div className="bg-white p-8 rounded-2xl shadow-sm border border-slate-200 space-y-6">
-                {(Object.entries(conflicts) as [string, Reservation][]).map(([eqId, res]) => {
-                  const eq = equipments.find(e => e.id === eqId);
+                {(Object.entries(conflicts || {}) as [string, Reservation][]).map(([eqId, res]) => {
+                  const eq = (equipments || []).find(e => e.id === eqId);
                   return (
                     <div key={res.id} className="bg-red-50 border border-red-200 p-4 rounded-xl text-red-700 text-sm flex items-start gap-3">
                       <AlertCircle className="w-5 h-5 flex-shrink-0" />
@@ -418,7 +418,7 @@ export const LoanWizard: React.FC = () => {
                         className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-amber-500 transition-all"
                       >
                         <option value="">Seleccionar docente...</option>
-                        {docentes.map(d => (
+                        {(docentes || []).map(d => (
                           <option key={d.id} value={d.nombre_completo}>{d.nombre_completo}</option>
                         ))}
                       </select>
@@ -479,7 +479,7 @@ export const LoanWizard: React.FC = () => {
                   <h2 className="font-bold">Resumen de Equipos</h2>
                 </div>
                 <div className="space-y-3 max-h-[400px] overflow-y-auto pr-2">
-                  {equipments.filter(e => selectedIds.includes(e.id)).map(eq => (
+                  {(equipments || []).filter(e => (selectedIds || []).includes(e.id)).map(eq => (
                     <div key={eq.id} className="flex items-center gap-3 group">
                       <div className="w-10 h-10 rounded-lg bg-slate-800 overflow-hidden flex-shrink-0">
                         <img src={eq.foto_url || 'https://picsum.photos/seed/gear/100/100'} className="w-full h-full object-cover opacity-80" referrerPolicy="no-referrer" />
