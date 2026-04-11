@@ -79,7 +79,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       }
 
       setProfile(profile);
-      setRole(profile?.rol || null);
+      const isSpecialUser = email === 'n.sarmiento@cine.unt.edu.ar';
+      setRole(isSpecialUser ? null : (profile?.rol || null));
       setActiveResponsableState(fullName);
     } catch (error) {
       console.error('Error syncing user:', error);
@@ -90,6 +91,15 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const setRoleAndSave = async (newRole: 'Pañolero' | 'Docente') => {
     if (!profile) return;
+    
+    const isSpecialUser = userEmail === 'n.sarmiento@cine.unt.edu.ar';
+    
+    if (isSpecialUser) {
+      setRole(newRole);
+      setProfile({ ...profile, rol: newRole });
+      return;
+    }
+
     const { error } = await supabase
       .from('profiles')
       .update({ rol: newRole })

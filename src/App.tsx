@@ -31,7 +31,7 @@ function AppContent() {
     return <ResponsableModal />;
   }
 
-  if (profile && profile.rol === null) {
+  if (activeResponsable && role === null) {
     return <RoleSelectionModal />;
   }
 
