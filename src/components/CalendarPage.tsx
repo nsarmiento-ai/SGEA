@@ -171,7 +171,10 @@ export const CalendarPage: React.FC = () => {
                     )}
                   >
                     {isPañolero ? `${res.docente_nombre}: ` : ''}
-                    {(res.equipos_ids || []).map(id => (equipments || []).find(e => e.id === id)?.nombre).filter(Boolean).join(', ')}
+                    {(res.equipos_ids || []).map(id => {
+                      const eq = (equipments || []).find(e => e.id === id);
+                      return eq ? `${eq.nombre} - ${res.materia}` : null;
+                    }).filter(Boolean).join(', ')}
                   </div>
                 );
               })}
@@ -254,6 +257,9 @@ export const CalendarPage: React.FC = () => {
                               res.estado === 'Pendiente' ? "bg-amber-100 text-amber-700" : "bg-blue-100 text-blue-700"
                             )}>
                               {res.estado}
+                            </span>
+                            <span className="text-xs font-bold text-slate-900">
+                              {res.materia}
                             </span>
                           </div>
                           <div className="flex items-center gap-2 text-xs text-slate-500 font-medium">

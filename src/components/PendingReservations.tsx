@@ -69,6 +69,7 @@ export const PendingReservations: React.FC = () => {
     const params = new URLSearchParams();
     params.set('resId', res.id);
     params.set('docente', res.docente_nombre);
+    params.set('materia', res.materia);
     params.set('equipos', res.equipos_ids.join(','));
     params.set('fin', res.fecha_fin);
     navigate(`/nuevo-prestamo?${params.toString()}`);
@@ -115,6 +116,7 @@ export const PendingReservations: React.FC = () => {
                     <div>
                       <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">Docente</p>
                       <p className="font-bold text-slate-900">{res.docente_nombre}</p>
+                      <p className="text-xs font-medium text-amber-600 mt-1">{res.materia}</p>
                     </div>
                   </div>
                   <div className="space-y-3">

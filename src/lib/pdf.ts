@@ -99,9 +99,10 @@ export const generateReservationPDF = (reservation: any, equipments: Equipment[]
   doc.setFontSize(10);
   doc.setTextColor(100);
   doc.text(`Docente: ${reservation.docente_nombre}`, 20, 45);
-  doc.text(`Fecha Desde: ${formatDate(reservation.fecha_inicio)}`, 20, 52);
-  doc.text(`Fecha Hasta: ${formatDate(reservation.fecha_fin)}`, 20, 59);
-  doc.text(`Estado: ${reservation.estado.toUpperCase()}`, 20, 66);
+  doc.text(`Materia: ${reservation.materia || 'N/A'}`, 20, 52);
+  doc.text(`Fecha Desde: ${formatDate(reservation.fecha_inicio)}`, 20, 59);
+  doc.text(`Fecha Hasta: ${formatDate(reservation.fecha_fin)}`, 20, 66);
+  doc.text(`Estado: ${reservation.estado.toUpperCase()}`, 20, 73);
 
   // Equipment Table
   const tableData = equipments.map((eq, index) => [
@@ -112,7 +113,7 @@ export const generateReservationPDF = (reservation: any, equipments: Equipment[]
   ]);
 
   autoTable(doc, {
-    startY: 75,
+    startY: 82,
     head: [['#', 'Equipo', 'Modelo', 'Categoría']],
     body: tableData,
     headStyles: { fillColor: [15, 23, 42] },

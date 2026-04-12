@@ -22,6 +22,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { cn } from '../lib/utils';
 import { parseISO, areIntervalsOverlapping } from 'date-fns';
 import { generateReservationPDF } from '../lib/pdf';
+import { MATERIAS } from '../constants';
 
 const mapStatus = (status: string | null | undefined): EquipmentStatus => {
   if (!status) return 'Disponible';
@@ -55,9 +56,10 @@ export const Reservations: React.FC = () => {
   const [formData, setFormData] = useState({
     fecha_inicio: '',
     fecha_fin: '',
+    materia: '',
   });
 
-  const categories = ['Todas', 'Cámaras', 'Sonido', 'Iluminación', 'Grip', 'Accesorios', 'Otros'];
+  const categories = ['Todas', 'Cámaras', 'Sonido', 'Iluminación', 'Grip', 'Accesorios', 'Espacio/Aula', 'Otros'];
 
   useEffect(() => {
     fetchData();
@@ -162,8 +164,8 @@ export const Reservations: React.FC = () => {
       return;
     }
 
-    if (!formData.fecha_inicio || !formData.fecha_fin) {
-      setError('Debe seleccionar fechas de inicio y fin.');
+    if (!formData.fecha_inicio || !formData.fecha_fin || !formData.materia) {
+      setError('Debe completar todos los campos, incluyendo la materia.');
       return;
     }
 
@@ -172,32 +174,36 @@ export const Reservations: React.FC = () => {
       return;
     }
 
-    const equiposIds = (cart || []).map(eq => eq.id);
-    if (checkOverlap(equiposIds, formData.fecha_inicio, formData.fecha_fin)) {
-      setError('Uno o más equipos ya tienen una reserva en ese rango de fechas.');
-      return;
-    }
+      const equiposIds = (cart || []).map(eq => eq.id);
+      const aula = (cart || []).find(e => e.categoria === 'Espacio/Aula');
 
-    setSubmitting(true);
-    try {
-      const { data: { user } } = await supabase.auth.getUser();
-      
-      if (!user) {
-        alert('Tu sesión ha expirado. Por favor, inicia sesión de nuevo.');
-        window.location.reload();
+      if (checkOverlap(equiposIds, formData.fecha_inicio, formData.fecha_fin)) {
+        setError('Uno o más equipos ya tienen una reserva en ese rango de fechas.');
         return;
       }
 
-      console.log('Intentando reserva con:', { user, carrito: cart });
+      setSubmitting(true);
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        
+        if (!user) {
+          alert('Tu sesión ha expirado. Por favor, inicia sesión de nuevo.');
+          window.location.reload();
+          return;
+        }
 
-      const newReservation = {
-        equipos_ids: equiposIds,
-        usuario_id: user.id,
-        fecha_inicio: new Date(formData.fecha_inicio).toISOString(),
-        fecha_fin: new Date(formData.fecha_fin).toISOString(),
-        docente_nombre: activeResponsable || '',
-        estado: 'Pendiente'
-      };
+        console.log('Intentando reserva con:', { user, carrito: cart });
+
+        const newReservation = {
+          equipos_ids: equiposIds,
+          usuario_id: user.id,
+          fecha_inicio: new Date(formData.fecha_inicio).toISOString(),
+          fecha_fin: new Date(formData.fecha_fin).toISOString(),
+          docente_nombre: activeResponsable || '',
+          materia: formData.materia,
+          aula_asignada: aula ? aula.nombre : null,
+          estado: 'Pendiente'
+        };
 
       const { data: insertedData, error: insertError } = await supabase.from('reservas').insert([newReservation]).select().single();
       if (insertError) throw insertError;
@@ -215,7 +221,7 @@ export const Reservations: React.FC = () => {
 
       setIsModalOpen(false);
       setCart([]);
-      setFormData({ fecha_inicio: '', fecha_fin: '' });
+      setFormData({ fecha_inicio: '', fecha_fin: '', materia: '' });
       await fetchData(); // Ensure data is fetched before switching tab
       setActiveTab('mis-reservas');
       alert('Reserva realizada con éxito. Se ha descargado tu comprobante.');
@@ -527,22 +533,25 @@ export const Reservations: React.FC = () => {
           ) : (
             <div className="grid grid-cols-1 gap-4">
               {(reservations || []).filter(r => r.docente_nombre === activeResponsable).map(res => (
-                <div key={res.id} className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm flex flex-col md:flex-row gap-6">
-                  <div className="flex-1">
-                    <div className="flex items-center gap-3 mb-4">
-                      <span className={cn(
-                        "px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider",
-                        res.estado === 'Pendiente' ? "bg-amber-100 text-amber-700" :
-                        res.estado === 'Entregada' ? "bg-green-100 text-green-700" :
-                        res.estado === 'Cancelada' ? "bg-red-100 text-red-700" :
-                        "bg-blue-100 text-blue-700"
-                      )}>
-                        {res.estado}
-                      </span>
-                      <span className="text-sm text-slate-500">
-                        {new Date(res.fecha_inicio).toLocaleDateString()} - {new Date(res.fecha_fin).toLocaleDateString()}
-                      </span>
-                    </div>
+                  <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm flex flex-col md:flex-row gap-6">
+                    <div className="flex-1">
+                      <div className="flex items-center gap-3 mb-2">
+                        <span className={cn(
+                          "px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider",
+                          res.estado === 'Pendiente' ? "bg-amber-100 text-amber-700" :
+                          res.estado === 'Entregada' ? "bg-green-100 text-green-700" :
+                          res.estado === 'Cancelada' ? "bg-red-100 text-red-700" :
+                          "bg-blue-100 text-blue-700"
+                        )}>
+                          {res.estado}
+                        </span>
+                        <span className="text-sm font-bold text-slate-900">
+                          {res.materia}
+                        </span>
+                        <span className="text-sm text-slate-500">
+                          {new Date(res.fecha_inicio).toLocaleDateString()} - {new Date(res.fecha_fin).toLocaleDateString()}
+                        </span>
+                      </div>
                     <div className="flex flex-wrap gap-2">
                       {(res.equipos_ids || []).map(id => {
                         const eq = (equipments || []).find(e => e.id === id);
@@ -631,6 +640,25 @@ export const Reservations: React.FC = () => {
                   </div>
                 </div>
 
+                <div>
+                  <label className="block text-sm font-black text-slate-700 mb-2 uppercase tracking-wider">Materia / Cátedra</label>
+                  <select
+                    required
+                    value={formData.materia}
+                    onChange={e => setFormData({...formData, materia: e.target.value})}
+                    className="w-full px-4 py-4 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:ring-2 focus:ring-amber-500 font-medium appearance-none"
+                  >
+                    <option value="">Seleccione una materia...</option>
+                    {Object.entries(MATERIAS).map(([group, list]) => (
+                      <optgroup key={group} label={group}>
+                        {list.map(m => (
+                          <option key={m} value={m}>{m}</option>
+                        ))}
+                      </optgroup>
+                    ))}
+                  </select>
+                </div>
+
                 <div className="max-h-40 overflow-y-auto space-y-2 pr-2">
                   <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-2">Equipos en el pedido</p>
                   {(cart || []).map(eq => (
@@ -658,7 +686,7 @@ export const Reservations: React.FC = () => {
                   </button>
                   <button 
                     type="submit" 
-                    disabled={submitting || !currentUser}
+                    disabled={submitting || !currentUser || !formData.materia}
                     className="flex-1 bg-slate-900 text-white font-black uppercase tracking-wider py-4 rounded-2xl flex items-center justify-center gap-2 hover:bg-amber-500 transition-all shadow-lg shadow-slate-200 disabled:opacity-50"
                   >
                     {submitting ? <Loader2 className="w-6 h-6 animate-spin" /> : <CheckCircle2 className="w-6 h-6" />}

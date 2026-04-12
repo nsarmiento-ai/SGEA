@@ -19,6 +19,7 @@ import {
 import { motion, AnimatePresence } from 'motion/react';
 import { cn } from '../lib/utils';
 import { addDays, format, isWithinInterval, parseISO, isAfter } from 'date-fns';
+import { MATERIAS } from '../constants';
 
 import { useNavigate } from 'react-router-dom';
 
@@ -51,6 +52,7 @@ export const LoanWizard: React.FC = () => {
     const preselectedId = params.get('id');
     const resId = params.get('resId');
     const resDocente = params.get('docente');
+    const resMateria = params.get('materia');
     const resEquipos = params.get('equipos');
     const resFin = params.get('fin');
 
@@ -63,6 +65,7 @@ export const LoanWizard: React.FC = () => {
       setFormData(prev => ({
         ...prev,
         docente_responsable: resDocente || '',
+        materia: resMateria || '',
         fechaDevolucion: resFin ? format(parseISO(resFin), "yyyy-MM-dd'T'HH:mm") : prev.fechaDevolucion
       }));
       // Store resId in a ref or state if needed to update it later
@@ -397,14 +400,21 @@ export const LoanWizard: React.FC = () => {
                         <FileText className="w-4 h-4 text-amber-500" />
                         Materia
                       </label>
-                      <input
+                      <select
                         required
-                        type="text"
                         value={formData.materia || ''}
                         onChange={e => setFormData({...formData, materia: e.target.value})}
-                        className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-amber-500 transition-all"
-                        placeholder="Ej: Dirección de Cine"
-                      />
+                        className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-amber-500 transition-all appearance-none"
+                      >
+                        <option value="">Seleccionar materia...</option>
+                        {Object.entries(MATERIAS).map(([group, list]) => (
+                          <optgroup key={group} label={group}>
+                            {list.map(m => (
+                              <option key={m} value={m}>{m}</option>
+                            ))}
+                          </optgroup>
+                        ))}
+                      </select>
                     </div>
                     <div>
                       <label className="flex items-center gap-2 text-sm font-bold text-slate-700 mb-2">

@@ -63,6 +63,8 @@ export interface Reservation {
   equipos_ids: string[]; // Array of equipment IDs
   usuario_id: string;
   docente_nombre: string;
+  materia: string;
+  aula_asignada?: string;
   fecha_inicio: string;
   fecha_fin: string;
   estado: 'Pendiente' | 'Entregada' | 'Cancelada' | 'Activa';
