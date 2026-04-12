@@ -20,7 +20,11 @@ import {
   Loader2,
   Calendar,
   Star,
-  ArrowRight
+  ArrowRight,
+  LayoutGrid,
+  List,
+  CheckSquare,
+  Square
 } from 'lucide-react';
 import { motion } from 'motion/react';
 import { cn } from '../lib/utils';
@@ -94,6 +98,8 @@ export const Catalog: React.FC = () => {
   const [category, setCategory] = useState('Todas');
   const [showArchived, setShowArchived] = useState(false);
   const [showFavorites, setShowFavorites] = useState(false);
+  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isHistoryOpen, setIsHistoryOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<Equipment | null>(null);
@@ -143,6 +149,284 @@ export const Catalog: React.FC = () => {
     return matchesSearch && matchesCategory && matchesArchived && matchesFavorites;
   });
 
+  const favoriteEquipments = filteredEquipments.filter(eq => (profile?.favoritos || []).includes(eq.id));
+  const otherEquipments = filteredEquipments.filter(eq => !(profile?.favoritos || []).includes(eq.id));
+
+  const toggleSelection = (id: string) => {
+    const newSelected = new Set(selectedIds);
+    if (newSelected.has(id)) {
+      newSelected.delete(id);
+    } else {
+      newSelected.add(id);
+    }
+    setSelectedIds(newSelected);
+  };
+
+  const handleBulkReserve = () => {
+    // This will be handled by adding to a global cart or navigating to reservations
+    // For now, let's assume we want to "Add to Cart"
+    const selectedItems = equipments.filter(eq => selectedIds.has(eq.id));
+    // We need access to the cart from Reservations.tsx or a global state.
+    // Since cart is local to Reservations.tsx, we might need to move it to AppContext or use a custom event.
+    // Let's use a custom event for now or just alert.
+    window.dispatchEvent(new CustomEvent('add-to-cart-bulk', { detail: selectedItems }));
+    setSelectedIds(new Set());
+    alert(`${selectedItems.length} equipos añadidos al carrito.`);
+  };
+
+  const renderEquipmentItem = (eq: Equipment) => {
+    const eqReservations = (reservations || []).filter(r => (r.equipos_ids || []).includes(eq.id));
+    const isReservedNow = (eqReservations || []).some(r => 
+      isWithinInterval(new Date(), {
+        start: parseISO(r.fecha_inicio),
+        end: parseISO(r.fecha_fin)
+      })
+    );
+    const hasFutureReservations = (eqReservations || []).some(r => 
+      isAfter(parseISO(r.fecha_inicio), new Date())
+    );
+    const isSelected = selectedIds.has(eq.id);
+
+    if (viewMode === 'list') {
+      return (
+        <motion.div
+          layout
+          key={eq.id}
+          initial={{ opacity: 0, x: -20 }}
+          animate={{ opacity: 1, x: 0 }}
+          className={cn(
+            "bg-white rounded-2xl border border-slate-200 p-3 flex items-center gap-4 hover:border-amber-500 transition-all group",
+            isSelected && "bg-amber-50 border-amber-200 ring-1 ring-amber-100",
+            isReservedNow && "opacity-75"
+          )}
+        >
+          <button 
+            onClick={() => toggleSelection(eq.id)}
+            className="flex-shrink-0 text-slate-300 hover:text-amber-500 transition-colors"
+          >
+            {isSelected ? <CheckSquare className="w-6 h-6 text-amber-500" /> : <Square className="w-6 h-6" />}
+          </button>
+
+          <div className="w-16 h-16 rounded-xl bg-slate-100 overflow-hidden flex-shrink-0 border border-slate-100">
+            <img 
+              src={eq.foto_url || 'https://picsum.photos/seed/camera/100/100'} 
+              alt={eq.nombre} 
+              className="w-full h-full object-cover"
+              referrerPolicy="no-referrer"
+            />
+          </div>
+
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2 mb-0.5">
+              <span className="text-[10px] font-black text-amber-600 uppercase tracking-tighter">{eq.categoria}</span>
+              <span className="text-[10px] font-bold text-slate-400">ID: {eq.numero_serie}</span>
+            </div>
+            <h3 className="font-bold text-slate-900 truncate">{eq.nombre}</h3>
+            <p className="text-xs text-slate-500 truncate">{eq.modelo}</p>
+          </div>
+
+          <div className="hidden md:flex flex-col items-end gap-1 px-4 border-l border-slate-100">
+            <div className={cn(
+              "flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-black uppercase border",
+              isReservedNow 
+                ? "bg-amber-500 text-white border-amber-600"
+                : (statusConfig[eq.estado] || { color: 'text-slate-600 bg-slate-50 border-slate-200' }).color
+            )}>
+              {isReservedNow ? 'Reservado' : (statusConfig[eq.estado] || { label: eq.estado }).label}
+            </div>
+            <span className="text-[10px] font-bold text-slate-400">{eq.ubicacion}</span>
+          </div>
+
+          <div className="flex items-center gap-1">
+            <button 
+              onClick={() => toggleFavorite(eq.id)}
+              className="p-2 hover:bg-slate-100 rounded-xl transition-colors"
+            >
+              <Star className={cn("w-4 h-4", (profile?.favoritos || []).includes(eq.id) ? "fill-amber-500 text-amber-500" : "text-slate-300")} />
+            </button>
+            <button 
+              onClick={() => {
+                setHistoryItem(eq);
+                setIsHistoryOpen(true);
+              }}
+              className="p-2 hover:bg-slate-100 rounded-xl text-slate-400 hover:text-amber-600 transition-colors"
+            >
+              <History className="w-4 h-4" />
+            </button>
+            <div className="relative group/menu">
+              <button className="p-2 hover:bg-slate-100 rounded-xl text-slate-400">
+                <MoreVertical className="w-4 h-4" />
+              </button>
+              <div className="absolute right-0 top-full mt-1 bg-white rounded-xl shadow-xl border border-slate-100 py-2 w-40 z-20 hidden group-hover/menu:block">
+                <button 
+                  onClick={() => { setEditingItem(eq); setIsModalOpen(true); }}
+                  className="w-full px-4 py-2 text-left text-xs font-bold text-slate-600 hover:bg-slate-50 flex items-center gap-2"
+                >
+                  <Edit2 className="w-3.5 h-3.5" /> Editar
+                </button>
+                {eq.estado === 'Archivado' ? (
+                  <button 
+                    onClick={() => handleRestore(eq.id, eq.nombre)}
+                    className="w-full px-4 py-2 text-left text-xs font-bold text-green-600 hover:bg-green-50 flex items-center gap-2"
+                  >
+                    <History className="w-3.5 h-3.5" /> Restaurar
+                  </button>
+                ) : (
+                  <button 
+                    onClick={() => handleDelete(eq.id, eq.nombre)}
+                    className="w-full px-4 py-2 text-left text-xs font-bold text-red-600 hover:bg-red-50 flex items-center gap-2"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" /> Archivar
+                  </button>
+                )}
+              </div>
+            </div>
+          </div>
+        </motion.div>
+      );
+    }
+
+    return (
+      <motion.div
+        layout
+        key={eq.id}
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        className={cn(
+          "card group relative", 
+          isReservedNow && "ring-2 ring-amber-500",
+          isSelected && "ring-2 ring-amber-400 bg-amber-50/30"
+        )}
+      >
+        <div className="relative h-48 bg-slate-100 overflow-hidden">
+          <img
+            src={eq.foto_url || 'https://picsum.photos/seed/camera/400/300'}
+            alt={eq.nombre}
+            referrerPolicy="no-referrer"
+            className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+          />
+          
+          {/* Checkbox Overlay */}
+          <button 
+            onClick={() => toggleSelection(eq.id)}
+            className={cn(
+              "absolute top-3 right-3 p-2 rounded-xl backdrop-blur-md transition-all z-10",
+              isSelected ? "bg-amber-500 text-white shadow-lg" : "bg-white/80 text-slate-400 opacity-0 group-hover:opacity-100"
+            )}
+          >
+            {isSelected ? <CheckSquare className="w-5 h-5" /> : <Square className="w-5 h-5" />}
+          </button>
+
+          <button 
+            onClick={() => toggleFavorite(eq.id)}
+            className="absolute top-3 left-3 p-2 bg-white/90 backdrop-blur-sm rounded-full shadow-sm border border-slate-100 transition-transform active:scale-90 z-10"
+          >
+            <Star className={cn(
+              "w-4 h-4 transition-colors",
+              (profile?.favoritos || []).includes(eq.id) ? "fill-amber-500 text-amber-500" : "text-slate-400"
+            )} />
+          </button>
+
+          <div className="absolute bottom-3 right-3 flex flex-col gap-2 items-end">
+            <div className={cn(
+              "flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold border shadow-sm",
+              isReservedNow 
+                ? "bg-amber-500 text-white border-amber-600"
+                : (statusConfig[eq.estado] || { color: 'text-slate-600 bg-slate-50 border-slate-200' }).color
+            )}>
+              {isReservedNow ? (
+                <Calendar className="w-3.5 h-3.5" />
+              ) : (
+                React.createElement((statusConfig[eq.estado] || { icon: AlertCircle }).icon, { className: "w-3.5 h-3.5" })
+              )}
+              {isReservedNow ? 'Reservado' : (statusConfig[eq.estado] || { label: eq.estado }).label}
+            </div>
+            {hasFutureReservations && !isReservedNow && (
+              <div className="bg-white/90 backdrop-blur-sm text-slate-900 p-1.5 rounded-full shadow-sm border border-slate-200" title="Tiene reservas futuras">
+                <Calendar className="w-4 h-4 text-amber-500" />
+              </div>
+            )}
+          </div>
+        </div>
+      
+      <div className="p-4">
+        <div className="flex justify-between items-start mb-1">
+          <span className="text-[10px] uppercase tracking-wider font-bold text-amber-600">{eq.categoria}</span>
+          <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+            <button 
+              onClick={() => { setEditingItem(eq); setIsModalOpen(true); }}
+              className="p-1.5 hover:bg-slate-100 rounded-lg text-slate-600"
+            >
+              <Edit2 className="w-4 h-4" />
+            </button>
+            {eq.estado === 'Archivado' ? (
+              <button 
+                onClick={() => handleRestore(eq.id, eq.nombre)}
+                className="p-1.5 hover:bg-green-50 rounded-lg text-green-600"
+                title="Restaurar"
+              >
+                <History className="w-4 h-4" />
+              </button>
+            ) : (
+              <button 
+                onClick={() => handleDelete(eq.id, eq.nombre)}
+                className="p-1.5 hover:bg-red-50 rounded-lg text-red-500"
+                title="Archivar"
+              >
+                <Trash2 className="w-4 h-4" />
+              </button>
+            )}
+          </div>
+        </div>
+        
+        <h3 className="font-bold text-slate-900 leading-tight mb-1">{eq.nombre}</h3>
+        <p className="text-xs text-slate-500 mb-3">{eq.modelo}</p>
+        
+        <div className="space-y-1.5">
+          <div className="flex items-center gap-2 text-xs text-slate-600">
+            <Tag className="w-3.5 h-3.5 text-slate-400" />
+            <span>S/N: {eq.numero_serie}</span>
+          </div>
+          <div className="flex items-center gap-2 text-xs text-slate-600">
+            <MapPin className="w-3.5 h-3.5 text-slate-400" />
+            <span>{eq.ubicacion}</span>
+          </div>
+          {eq.last_observation && (
+            <div className="mt-2 p-2 bg-amber-50 rounded-lg border border-amber-100">
+              <p className="text-[10px] font-black text-amber-800 uppercase tracking-wider mb-1 flex items-center gap-1">
+                <AlertCircle className="w-3 h-3" />
+                Última Observación
+              </p>
+              <p className="text-[10px] text-amber-700 italic line-clamp-2">"{eq.last_observation}"</p>
+            </div>
+          )}
+        </div>
+      </div>
+      
+        <div className="px-4 py-3 bg-slate-50 border-t border-slate-100 flex justify-between items-center">
+          <div className="flex flex-col">
+            <span className="text-[10px] font-bold text-slate-400">
+              {eq.piezas && eq.piezas.length > 0 ? `KIT: ${eq.piezas.length} PIEZAS` : 'SIN PIEZAS'}
+            </span>
+            {isReservedNow && (
+              <span className="text-[10px] font-black text-amber-600 uppercase">Reservado Hoy</span>
+            )}
+          </div>
+          <button 
+            onClick={() => {
+              setHistoryItem(eq);
+              setIsHistoryOpen(true);
+            }}
+            className="text-xs font-semibold text-amber-600 hover:text-amber-700 flex items-center gap-1"
+          >
+            <History className="w-3.5 h-3.5" />
+            Historial
+          </button>
+        </div>
+      </motion.div>
+    );
+  };
+
   const handleDelete = async (id: string, name: string) => {
     if (!confirm(`¿Está seguro de archivar "${name}"? No aparecerá en el inventario activo.`)) return;
     
@@ -183,6 +467,22 @@ export const Catalog: React.FC = () => {
           <p className="text-slate-500">Gestione el inventario de la escuela.</p>
         </div>
         <div className="flex gap-2 self-start">
+          <div className="flex bg-white border border-slate-200 rounded-xl p-1 mr-2">
+            <button 
+              onClick={() => setViewMode('grid')}
+              className={cn("p-2 rounded-lg transition-all", viewMode === 'grid' ? "bg-slate-100 text-slate-900" : "text-slate-400 hover:text-slate-600")}
+              title="Vista Cuadrícula"
+            >
+              <LayoutGrid className="w-4 h-4" />
+            </button>
+            <button 
+              onClick={() => setViewMode('list')}
+              className={cn("p-2 rounded-lg transition-all", viewMode === 'list' ? "bg-slate-100 text-slate-900" : "text-slate-400 hover:text-slate-600")}
+              title="Vista Lista Compacta"
+            >
+              <List className="w-4 h-4" />
+            </button>
+          </div>
           <button 
             onClick={() => setShowFavorites(!showFavorites)}
             className={cn(
@@ -231,6 +531,15 @@ export const Catalog: React.FC = () => {
           />
         </div>
         <div className="flex gap-2 overflow-x-auto pb-2 md:pb-0">
+          {selectedIds.size > 0 && (
+            <button 
+              onClick={handleBulkReserve}
+              className="bg-amber-500 text-white px-4 py-2 rounded-xl font-bold text-sm shadow-lg shadow-amber-200 flex items-center gap-2 animate-in fade-in slide-in-from-right-4"
+            >
+              <CheckSquare className="w-4 h-4" />
+              Reservar Seleccionados ({selectedIds.size})
+            </button>
+          )}
           {categories.map(cat => (
             <button
               key={cat}
@@ -254,146 +563,48 @@ export const Catalog: React.FC = () => {
           <p className="text-slate-500 font-medium">Cargando inventario...</p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-          {(filteredEquipments || []).map((eq) => {
-            const eqReservations = (reservations || []).filter(r => (r.equipos_ids || []).includes(eq.id));
-            const isReservedNow = (eqReservations || []).some(r => 
-              isWithinInterval(new Date(), {
-                start: parseISO(r.fecha_inicio),
-                end: parseISO(r.fecha_fin)
-              })
-            );
-            const hasFutureReservations = (eqReservations || []).some(r => 
-              isAfter(parseISO(r.fecha_inicio), new Date())
-            );
-
-            return (
-              <motion.div
-                layout
-                key={eq.id}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                className={cn("card group", isReservedNow && "ring-2 ring-amber-500")}
-              >
-                <div className="relative h-48 bg-slate-100 overflow-hidden">
-                  <img
-                    src={eq.foto_url || 'https://picsum.photos/seed/camera/400/300'}
-                    alt={eq.nombre}
-                    referrerPolicy="no-referrer"
-                    className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
-                  />
-                  <button 
-                    onClick={() => toggleFavorite(eq.id)}
-                    className="absolute top-3 left-3 p-2 bg-white/90 backdrop-blur-sm rounded-full shadow-sm border border-slate-100 transition-transform active:scale-90"
-                  >
-                    <Star className={cn(
-                      "w-4 h-4 transition-colors",
-                      (profile?.favoritos || []).includes(eq.id) ? "fill-amber-500 text-amber-500" : "text-slate-400"
-                    )} />
-                  </button>
-                  <div className="absolute top-3 right-3 flex flex-col gap-2 items-end">
-                    <div className={cn(
-                      "flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold border shadow-sm",
-                      isReservedNow 
-                        ? "bg-amber-500 text-white border-amber-600"
-                        : (statusConfig[eq.estado] || { color: 'text-slate-600 bg-slate-50 border-slate-200' }).color
-                    )}>
-                      {isReservedNow ? (
-                        <Calendar className="w-3.5 h-3.5" />
-                      ) : (
-                        React.createElement((statusConfig[eq.estado] || { icon: AlertCircle }).icon, { className: "w-3.5 h-3.5" })
-                      )}
-                      {isReservedNow ? 'Reservado' : (statusConfig[eq.estado] || { label: eq.estado }).label}
-                    </div>
-                    {hasFutureReservations && !isReservedNow && (
-                      <div className="bg-white/90 backdrop-blur-sm text-slate-900 p-1.5 rounded-full shadow-sm border border-slate-200" title="Tiene reservas futuras">
-                        <Calendar className="w-4 h-4 text-amber-500" />
-                      </div>
-                    )}
-                  </div>
-                </div>
-              
-              <div className="p-4">
-                <div className="flex justify-between items-start mb-1">
-                  <span className="text-[10px] uppercase tracking-wider font-bold text-amber-600">{eq.categoria}</span>
-                  <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                    {isReservedNow && (
-                      <div className="px-2 py-1 bg-amber-50 text-amber-700 text-[10px] font-black rounded border border-amber-200 uppercase">
-                        Reservado por Docente
-                      </div>
-                    )}
-                    <button 
-                      onClick={() => { setEditingItem(eq); setIsModalOpen(true); }}
-                      className="p-1.5 hover:bg-slate-100 rounded-lg text-slate-600"
-                    >
-                      <Edit2 className="w-4 h-4" />
-                    </button>
-                    {eq.estado === 'Archivado' ? (
-                      <button 
-                        onClick={() => handleRestore(eq.id, eq.nombre)}
-                        className="p-1.5 hover:bg-green-50 rounded-lg text-green-600"
-                        title="Restaurar"
-                      >
-                        <History className="w-4 h-4" />
-                      </button>
-                    ) : (
-                      <button 
-                        onClick={() => handleDelete(eq.id, eq.nombre)}
-                        className="p-1.5 hover:bg-red-50 rounded-lg text-red-500"
-                        title="Archivar"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
-                    )}
-                  </div>
-                </div>
-                
-                <h3 className="font-bold text-slate-900 leading-tight mb-1">{eq.nombre}</h3>
-                <p className="text-xs text-slate-500 mb-3">{eq.modelo}</p>
-                
-                <div className="space-y-1.5">
-                  <div className="flex items-center gap-2 text-xs text-slate-600">
-                    <Tag className="w-3.5 h-3.5 text-slate-400" />
-                    <span>S/N: {eq.numero_serie}</span>
-                  </div>
-                  <div className="flex items-center gap-2 text-xs text-slate-600">
-                    <MapPin className="w-3.5 h-3.5 text-slate-400" />
-                    <span>{eq.ubicacion}</span>
-                  </div>
-                  {eq.last_observation && (
-                    <div className="mt-2 p-2 bg-amber-50 rounded-lg border border-amber-100">
-                      <p className="text-[10px] font-black text-amber-800 uppercase tracking-wider mb-1 flex items-center gap-1">
-                        <AlertCircle className="w-3 h-3" />
-                        Última Observación
-                      </p>
-                      <p className="text-[10px] text-amber-700 italic line-clamp-2">"{eq.last_observation}"</p>
-                    </div>
-                  )}
-                </div>
+        <div className="space-y-12">
+          {/* Favorites Section */}
+          {favoriteEquipments.length > 0 && !showFavorites && (
+            <section>
+              <div className="flex items-center gap-2 mb-6">
+                <Star className="w-5 h-5 text-amber-500 fill-current" />
+                <h2 className="text-xl font-black text-slate-900 uppercase tracking-tight">Mis Favoritos / Habituales</h2>
+                <div className="h-px bg-slate-100 flex-1 ml-4" />
               </div>
-              
-                <div className="px-4 py-3 bg-slate-50 border-t border-slate-100 flex justify-between items-center">
-                  <div className="flex flex-col">
-                    <span className="text-[10px] font-bold text-slate-400">
-                      {eq.piezas && eq.piezas.length > 0 ? `KIT: ${eq.piezas.length} PIEZAS` : 'SIN PIEZAS'}
-                    </span>
-                    {isReservedNow && (
-                      <span className="text-[10px] font-black text-amber-600 uppercase">Reservado Hoy</span>
-                    )}
-                  </div>
-                  <button 
-                    onClick={() => {
-                      setHistoryItem(eq);
-                      setIsHistoryOpen(true);
-                    }}
-                    className="text-xs font-semibold text-amber-600 hover:text-amber-700 flex items-center gap-1"
-                  >
-                    <History className="w-3.5 h-3.5" />
-                    Historial
-                  </button>
-                </div>
-            </motion.div>
-          )})}
+              <div className={cn(
+                viewMode === 'grid' 
+                  ? "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6"
+                  : "flex flex-col gap-3"
+              )}>
+                {favoriteEquipments.map(eq => renderEquipmentItem(eq))}
+              </div>
+            </section>
+          )}
+
+          {/* Main Inventory Section */}
+          <section>
+            {(favoriteEquipments.length > 0 && !showFavorites) && (
+              <div className="flex items-center gap-2 mb-6">
+                <Package className="w-5 h-5 text-slate-400" />
+                <h2 className="text-xl font-black text-slate-900 uppercase tracking-tight">Resto del Inventario</h2>
+                <div className="h-px bg-slate-100 flex-1 ml-4" />
+              </div>
+            )}
+            <div className={cn(
+              viewMode === 'grid' 
+                ? "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6"
+                : "flex flex-col gap-3"
+            )}>
+              {otherEquipments.map(eq => renderEquipmentItem(eq))}
+            </div>
+            {filteredEquipments.length === 0 && (
+              <div className="text-center py-20 bg-slate-50 rounded-3xl border border-dashed border-slate-200">
+                <Search className="w-12 h-12 text-slate-300 mx-auto mb-4" />
+                <p className="text-slate-500 font-medium">No se encontraron equipos con los filtros actuales.</p>
+              </div>
+            )}
+          </section>
         </div>
       )}
 
@@ -603,7 +814,7 @@ const EquipmentModal: React.FC<{ item: Equipment | null, onClose: () => void, on
               onChange={e => setFormData({...formData, categoria: e.target.value})}
               className="w-full px-4 py-2 border border-slate-200 rounded-lg outline-none focus:ring-2 focus:ring-amber-500"
             >
-              {['Cámaras', 'Sonido', 'Iluminación', 'Grip', 'Accesorios', 'Otros'].map(c => <option key={c} value={c}>{c}</option>)}
+              {['Cámaras', 'Sonido', 'Iluminación', 'Grip', 'Accesorios', 'Espacio/Aula', 'Otros'].map(c => <option key={c} value={c}>{c}</option>)}
             </select>
           </div>
           <div>
