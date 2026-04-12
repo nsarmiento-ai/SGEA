@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { supabase, logAction } from '../lib/supabase';
-import { Equipment, EquipmentStatus, Pieza } from '../types';
+import { Equipment, EquipmentStatus, Pieza, ResourceHistory } from '../types';
 import { useApp } from '../context/AppContext';
 import { 
   Plus, 
@@ -19,7 +19,8 @@ import {
   XCircle,
   Loader2,
   Calendar,
-  Star
+  Star,
+  ArrowRight
 } from 'lucide-react';
 import { motion } from 'motion/react';
 import { cn } from '../lib/utils';
@@ -94,7 +95,9 @@ export const Catalog: React.FC = () => {
   const [showArchived, setShowArchived] = useState(false);
   const [showFavorites, setShowFavorites] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isHistoryOpen, setIsHistoryOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<Equipment | null>(null);
+  const [historyItem, setHistoryItem] = useState<Equipment | null>(null);
 
   const categories = ['Todas', 'Cámaras', 'Sonido', 'Iluminación', 'Grip', 'Accesorios', 'Espacio/Aula', 'Otros'];
 
@@ -357,6 +360,15 @@ export const Catalog: React.FC = () => {
                     <MapPin className="w-3.5 h-3.5 text-slate-400" />
                     <span>{eq.ubicacion}</span>
                   </div>
+                  {eq.last_observation && (
+                    <div className="mt-2 p-2 bg-amber-50 rounded-lg border border-amber-100">
+                      <p className="text-[10px] font-black text-amber-800 uppercase tracking-wider mb-1 flex items-center gap-1">
+                        <AlertCircle className="w-3 h-3" />
+                        Última Observación
+                      </p>
+                      <p className="text-[10px] text-amber-700 italic line-clamp-2">"{eq.last_observation}"</p>
+                    </div>
+                  )}
                 </div>
               </div>
               
@@ -369,7 +381,13 @@ export const Catalog: React.FC = () => {
                       <span className="text-[10px] font-black text-amber-600 uppercase">Reservado Hoy</span>
                     )}
                   </div>
-                  <button className="text-xs font-semibold text-amber-600 hover:text-amber-700 flex items-center gap-1">
+                  <button 
+                    onClick={() => {
+                      setHistoryItem(eq);
+                      setIsHistoryOpen(true);
+                    }}
+                    className="text-xs font-semibold text-amber-600 hover:text-amber-700 flex items-center gap-1"
+                  >
                     <History className="w-3.5 h-3.5" />
                     Historial
                   </button>
@@ -387,6 +405,132 @@ export const Catalog: React.FC = () => {
           onSave={fetchEquipments} 
         />
       )}
+
+      {/* History Modal */}
+      {isHistoryOpen && historyItem && (
+        <HistoryModal 
+          item={historyItem} 
+          onClose={() => {
+            setIsHistoryOpen(false);
+            setHistoryItem(null);
+          }} 
+        />
+      )}
+    </div>
+  );
+};
+
+// Sub-component for History Modal
+const HistoryModal: React.FC<{ item: Equipment, onClose: () => void }> = ({ item, onClose }) => {
+  const [history, setHistory] = useState<ResourceHistory[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchHistory = async () => {
+      const { data, error } = await supabase
+        .from('historial_recursos')
+        .select('*')
+        .eq('recurso_id', item.id)
+        .order('fecha_movimiento', { ascending: false });
+      
+      if (!error && data) {
+        setHistory(data);
+      }
+      setLoading(false);
+    };
+    fetchHistory();
+  }, [item.id]);
+
+  return (
+    <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+      <motion.div 
+        initial={{ opacity: 0, scale: 0.95 }}
+        animate={{ opacity: 1, scale: 1 }}
+        className="bg-white rounded-[2rem] shadow-2xl w-full max-w-3xl max-h-[85vh] overflow-hidden flex flex-col"
+      >
+        <div className="p-8 border-b border-slate-100 flex justify-between items-center bg-slate-50">
+          <div className="flex items-center gap-4">
+            <div className="w-12 h-12 rounded-2xl bg-slate-900 flex items-center justify-center text-white shadow-lg">
+              <History className="w-6 h-6" />
+            </div>
+            <div>
+              <h2 className="text-xl font-black text-slate-900">Hoja de Vida: {item.nombre}</h2>
+              <p className="text-sm text-slate-500">S/N: {item.numero_serie}</p>
+            </div>
+          </div>
+          <button onClick={onClose} className="text-slate-400 hover:text-slate-600">
+            <XCircle className="w-7 h-7" />
+          </button>
+        </div>
+
+        <div className="p-8 overflow-y-auto flex-1">
+          {loading ? (
+            <div className="flex justify-center py-10"><Loader2 className="animate-spin text-amber-500 w-8 h-8" /></div>
+          ) : history.length === 0 ? (
+            <div className="text-center py-10">
+              <p className="text-slate-400 italic">No hay registros históricos para este recurso.</p>
+            </div>
+          ) : (
+            <div className="space-y-6 relative before:absolute before:left-[19px] before:top-2 before:bottom-2 before:w-0.5 before:bg-slate-100">
+              {history.map((entry) => (
+                <div key={entry.id} className="relative pl-12">
+                  <div className={cn(
+                    "absolute left-0 top-1 w-10 h-10 rounded-full border-4 border-white shadow-sm flex items-center justify-center z-10",
+                    entry.accion === 'Préstamo' ? "bg-blue-500 text-white" :
+                    entry.accion === 'Devolución' ? "bg-green-500 text-white" :
+                    entry.accion === 'Reserva' ? "bg-amber-500 text-white" : "bg-slate-500 text-white"
+                  )}>
+                    {entry.accion === 'Préstamo' ? <ArrowRight className="w-4 h-4" /> :
+                     entry.accion === 'Devolución' ? <CheckCircle2 className="w-4 h-4" /> :
+                     entry.accion === 'Reserva' ? <Calendar className="w-4 h-4" /> : <Tag className="w-4 h-4" />}
+                  </div>
+                  <div className="bg-slate-50 rounded-2xl p-4 border border-slate-100">
+                    <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center mb-2 gap-2">
+                      <span className="text-xs font-black uppercase tracking-widest text-slate-400">
+                        {new Date(entry.fecha_movimiento).toLocaleString()}
+                      </span>
+                      <span className={cn(
+                        "px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider",
+                        entry.accion === 'Préstamo' ? "bg-blue-100 text-blue-700" :
+                        entry.accion === 'Devolución' ? "bg-green-100 text-green-700" :
+                        entry.accion === 'Reserva' ? "bg-amber-100 text-amber-700" : "bg-slate-200 text-slate-700"
+                      )}>
+                        {entry.accion}
+                      </span>
+                    </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-3">
+                      <div>
+                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-tighter">Docente / Responsable</p>
+                        <p className="text-sm font-bold text-slate-800">{entry.usuario_responsable}</p>
+                      </div>
+                      <div>
+                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-tighter">Materia</p>
+                        <p className="text-sm font-bold text-slate-800">{entry.materia}</p>
+                      </div>
+                    </div>
+                    <div className="bg-white rounded-xl p-3 border border-slate-200">
+                      <p className="text-[10px] font-bold text-slate-400 uppercase tracking-tighter mb-1">Observación de Estado</p>
+                      <p className="text-sm text-slate-700 italic">"{entry.estado_detalle}"</p>
+                    </div>
+                    <div className="mt-3 flex items-center gap-2">
+                      <div className="w-5 h-5 rounded-full bg-slate-200 flex items-center justify-center text-[8px] font-bold">
+                        {entry.pañolero_turno.charAt(0)}
+                      </div>
+                      <p className="text-[10px] font-medium text-slate-500">Atendido por: <span className="font-bold">{entry.pañolero_turno}</span></p>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+        
+        <div className="p-6 bg-slate-50 border-t border-slate-100 flex justify-end">
+          <button onClick={onClose} className="px-8 py-3 bg-slate-900 text-white rounded-2xl font-bold text-sm hover:bg-amber-500 transition-all shadow-lg shadow-slate-200">
+            Cerrar Historial
+          </button>
+        </div>
+      </motion.div>
     </div>
   );
 };

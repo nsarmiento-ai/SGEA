@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { supabase, logAction } from '../lib/supabase';
+import { supabase, logAction, logResourceHistory } from '../lib/supabase';
 import { Equipment, Loan, Reservation, Responsable } from '../types';
 import { useApp } from '../context/AppContext';
 import { generateLoanPDF } from '../lib/pdf';
@@ -187,6 +187,18 @@ export const LoanWizard: React.FC = () => {
         .in('id', selectedIds);
 
       if (eqError) throw eqError;
+      
+      // 2.2 Log Resource History for each equipment
+      for (const id of selectedIds) {
+        await logResourceHistory({
+          recurso_id: id,
+          usuario_responsable: formData.docente_responsable,
+          materia: formData.materia,
+          accion: 'Préstamo',
+          estado_detalle: 'Entregado para uso',
+          pañolero_turno: activeResponsable!
+        });
+      }
 
       // 2.5 Update Reservation if exists
       if (reservationId) {

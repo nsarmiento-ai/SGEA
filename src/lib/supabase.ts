@@ -25,3 +25,31 @@ export async function logAction(responsable: string, action: string, details: an
     console.error('Error logging action:', error);
   }
 }
+
+export async function logResourceHistory(data: {
+  recurso_id: string;
+  usuario_responsable: string;
+  materia: string;
+  accion: 'Reserva' | 'Préstamo' | 'Devolución' | 'Service';
+  estado_detalle: string;
+  pañolero_turno: string;
+}) {
+  const { error } = await supabase
+    .from('historial_recursos')
+    .insert([
+      {
+        ...data,
+        fecha_movimiento: new Date().toISOString(),
+      },
+    ]);
+
+  if (error) {
+    console.error('Error logging resource history:', error);
+  }
+
+  // Also update the equipment's last observation for quick view
+  await supabase
+    .from('equipamiento')
+    .update({ last_observation: data.estado_detalle })
+    .eq('id', data.recurso_id);
+}

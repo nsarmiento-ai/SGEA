@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { supabase, logAction } from '../lib/supabase';
+import { supabase, logAction, logResourceHistory } from '../lib/supabase';
 import { Loan, Equipment, LoanStatus, PiezaEstado, EquipmentStatus } from '../types';
 import { useApp } from '../context/AppContext';
 import { generateReturnPDF } from '../lib/pdf';
@@ -215,6 +215,7 @@ export const ActiveLoans: React.FC<{ filterMora?: boolean }> = ({ filterMora = f
 const ReceiveModal: React.FC<{ loan: Loan, equipmentsMap: Record<string, Equipment>, onClose: () => void, onSuccess: () => void }> = ({ loan, equipmentsMap, onClose, onSuccess }) => {
   const { activeResponsable } = useApp();
   const [loading, setLoading] = useState(false);
+  const [observation, setObservation] = useState('');
   
   // State to track the status of each piece of each equipment
   const [equipmentStates, setEquipmentStates] = useState<Record<string, Equipment>>(() => {
@@ -274,6 +275,16 @@ const ReceiveModal: React.FC<{ loan: Loan, equipmentsMap: Record<string, Equipme
           piezas: eq.piezas 
         }).eq('id', String(eqId));
 
+        // Log Resource History
+        await logResourceHistory({
+          recurso_id: eqId,
+          usuario_responsable: loan.alumno_nombre,
+          materia: loan.materia,
+          accion: 'Devolución',
+          estado_detalle: observation,
+          pañolero_turno: activeResponsable!
+        });
+
         if (hasIssues) {
           await logAction(activeResponsable!, 'INCIDENCIA_EQUIPO', { 
             equipoId: eqId, 
@@ -316,6 +327,18 @@ const ReceiveModal: React.FC<{ loan: Loan, equipmentsMap: Record<string, Equipme
         </div>
         
         <div className="p-6 overflow-y-auto flex-1 space-y-6">
+          <div className="bg-amber-50 border border-amber-100 p-4 rounded-xl">
+            <label className="block text-xs font-black text-amber-700 mb-2 uppercase tracking-wider">Observación de Estado (Obligatorio)</label>
+            <textarea
+              required
+              rows={3}
+              value={observation}
+              onChange={e => setObservation(e.target.value)}
+              placeholder="Ej: Perfecto estado / Llega con el trípode flojo..."
+              className="w-full px-4 py-3 bg-white border border-amber-200 rounded-xl outline-none focus:ring-2 focus:ring-amber-500 font-medium resize-none text-sm"
+            />
+          </div>
+
           {(loan.equipos_ids || []).map(eqId => {
             const eq = equipmentStates && equipmentStates[eqId];
             if (!eq) return null;
@@ -370,8 +393,8 @@ const ReceiveModal: React.FC<{ loan: Loan, equipmentsMap: Record<string, Equipme
           <button onClick={onClose} className="px-6 py-2 text-slate-600 font-medium">Cancelar</button>
           <button 
             onClick={handleConfirm} 
-            disabled={loading} 
-            className="btn-primary min-w-[150px] flex justify-center"
+            disabled={loading || !observation.trim()} 
+            className="btn-primary min-w-[150px] flex justify-center disabled:opacity-50"
           >
             {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : 'Confirmar Recepción'}
           </button>

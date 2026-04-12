@@ -21,8 +21,20 @@ export interface Equipment {
   estado: EquipmentStatus;
   restriccion: string | boolean;
   piezas: Pieza[]; // JSONB array of objects
+  last_observation?: string;
   created_at?: string;
   updated_at?: string;
+}
+
+export interface ResourceHistory {
+  id: string;
+  recurso_id: string;
+  fecha_movimiento: string;
+  usuario_responsable: string;
+  materia: string;
+  accion: 'Reserva' | 'Préstamo' | 'Devolución' | 'Service';
+  estado_detalle: string;
+  pañolero_turno: string;
 }
 
 export interface Responsable {
