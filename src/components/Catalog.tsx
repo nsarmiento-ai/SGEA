@@ -24,7 +24,8 @@ import {
   List,
   CheckSquare,
   Square,
-  BookOpen
+  BookOpen,
+  Lock
 } from 'lucide-react';
 import { motion } from 'motion/react';
 import { cn } from '../lib/utils';
@@ -156,12 +157,12 @@ export const Catalog: React.FC = () => {
   };
 
   const filteredEquipments = (equipments || []).filter(eq => {
-    const matchesSearch = (eq.nombre || '').toLowerCase().includes((search || '').toLowerCase()) || 
-                         (eq.modelo || '').toLowerCase().includes((search || '').toLowerCase()) ||
-                         (eq.numero_serie || '').toLowerCase().includes((search || '').toLowerCase());
-    const matchesCategory = category === 'Todas' || (eq.categoria || 'Otros') === category;
-    const matchesArchived = showArchived ? eq.estado === 'Archivado' : eq.estado !== 'Archivado';
-    const matchesFavorites = showFavorites ? (profile?.favoritos || []).includes(eq.id) : true;
+    const matchesSearch = (eq?.nombre || '').toLowerCase().includes((search || '').toLowerCase()) || 
+                         (eq?.modelo || '').toLowerCase().includes((search || '').toLowerCase()) ||
+                         (eq?.numero_serie || '').toLowerCase().includes((search || '').toLowerCase());
+    const matchesCategory = category === 'Todas' || (eq?.categoria || 'Otros') === category;
+    const matchesArchived = showArchived ? eq?.estado === 'Archivado' : eq?.estado !== 'Archivado';
+    const matchesFavorites = showFavorites ? (profile?.favoritos || []).includes(eq?.id) : true;
     return matchesSearch && matchesCategory && matchesArchived && matchesFavorites;
   });
 

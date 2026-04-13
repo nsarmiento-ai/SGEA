@@ -15,7 +15,8 @@ import {
   Search,
   X,
   AlertCircle,
-  BookOpen
+  BookOpen,
+  Lock
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { cn } from '../lib/utils';
@@ -241,8 +242,8 @@ export const LoanWizard: React.FC = () => {
   };
 
   const filtered = (equipments || []).filter(e => 
-    (e.nombre || '').toLowerCase().includes((search || '').toLowerCase()) ||
-    (e.modelo || '').toLowerCase().includes((search || '').toLowerCase())
+    (e?.nombre || '').toLowerCase().includes((search || '').toLowerCase()) ||
+    (e?.modelo || '').toLowerCase().includes((search || '').toLowerCase())
   );
 
   return (

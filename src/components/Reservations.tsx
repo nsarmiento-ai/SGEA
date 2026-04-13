@@ -21,7 +21,8 @@ import {
   List,
   CheckSquare,
   Square,
-  BookOpen
+  BookOpen,
+  Lock
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { cn } from '../lib/utils';
@@ -123,10 +124,10 @@ export const Reservations: React.FC = () => {
   };
 
   const filteredEquipments = (equipments || []).filter(eq => {
-    const matchesSearch = (eq.nombre || '').toLowerCase().includes((search || '').toLowerCase()) || 
-                         (eq.modelo || '').toLowerCase().includes((search || '').toLowerCase());
-    const matchesCategory = category === 'Todas' || (eq.categoria || 'Otros') === category;
-    const matchesFavorites = showFavorites ? (profile?.favoritos || []).includes(eq.id) : true;
+    const matchesSearch = (eq?.nombre || '').toLowerCase().includes((search || '').toLowerCase()) || 
+                         (eq?.modelo || '').toLowerCase().includes((search || '').toLowerCase());
+    const matchesCategory = category === 'Todas' || (eq?.categoria || 'Otros') === category;
+    const matchesFavorites = showFavorites ? (profile?.favoritos || []).includes(eq?.id) : true;
     return matchesSearch && matchesCategory && matchesFavorites;
   });
 
