@@ -19,20 +19,19 @@ export const Sidebar: React.FC = () => {
   const role = profile?.rol;
 
   const menuItems = [
-    { icon: LayoutDashboard, label: 'Catálogo General', path: '/catalogo', adminOnly: true },
-    { icon: Calendar, label: 'Calendario', path: '/calendario' },
-    { icon: Calendar, label: 'Nueva Reserva', path: '/reservas' },
-    { icon: Clock, label: 'Reservas Pendientes', path: '/reservas-pendientes', adminOnly: true },
-    { icon: AlertTriangle, label: 'Panel de Mora', path: '/mora' },
-    { icon: Clock, label: role === 'Docente' ? 'Mis Préstamos' : 'Devolución', path: '/activos' },
-    { icon: PlusCircle, label: 'Nuevo Préstamo', path: '/nuevo-prestamo', adminOnly: true },
-    { icon: History, label: 'Historial Global', path: '/historial', adminOnly: true },
-  ].filter(item => {
-    if (role === 'Docente') {
-      return ['Calendario', 'Nueva Reserva', 'Panel de Mora', 'Mis Préstamos'].includes(item.label);
-    }
-    return true;
-  });
+    // Docente Items
+    { icon: LayoutDashboard, label: 'Catálogo y Reservas', path: '/reservas', role: 'Docente' },
+    { icon: Calendar, label: 'Calendario', path: '/calendario', role: 'Docente' },
+    { icon: Clock, label: 'Mis Préstamos', path: '/activos', role: 'Docente' },
+
+    // Pañolero Items
+    { icon: LayoutDashboard, label: 'Consola de Despacho', path: '/activos', role: 'Pañolero' },
+    { icon: Clock, label: 'Reservas Pendientes', path: '/reservas-pendientes', role: 'Pañolero' },
+    { icon: PlusCircle, label: 'Préstamo Rápido', path: '/nuevo-prestamo', role: 'Pañolero' },
+    { icon: Camera, label: 'Inventario', path: '/catalogo', role: 'Pañolero' },
+    { icon: History, label: 'Hoja de Vida', path: '/historial', role: 'Pañolero' },
+    { icon: AlertTriangle, label: 'Auditoría', path: '/auditoria', role: 'Pañolero' },
+  ].filter(item => item.role === role);
 
   return (
     <aside className="w-64 bg-slate-900 h-screen sticky top-0 flex flex-col text-slate-300">

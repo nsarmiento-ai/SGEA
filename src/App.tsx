@@ -15,6 +15,7 @@ import { AuditLogs } from './components/AuditLogs';
 import { Reservations } from './components/Reservations';
 import { PendingReservations } from './components/PendingReservations';
 import { CalendarPage } from './components/CalendarPage';
+import { ResourceHistoryPage } from './components/ResourceHistory';
 import { Loader2 } from 'lucide-react';
 
 function AppContent() {
@@ -46,7 +47,7 @@ function AppContent() {
           {/* Redirección inicial basada en el rol */}
           <Route 
             path="/" 
-            element={isPañolero ? <Navigate to="/catalogo" replace /> : <Navigate to="/reservas" replace />} 
+            element={isPañolero ? <Navigate to="/activos" replace /> : <Navigate to="/reservas" replace />} 
           />
 
           {/* Rutas de Pañolero (Admin) */}
@@ -64,13 +65,20 @@ function AppContent() {
           />
           <Route 
             path="/historial" 
+            element={isPañolero ? <ResourceHistoryPage /> : <Navigate to="/reservas" replace />} 
+          />
+          <Route 
+            path="/auditoria" 
             element={isPañolero ? <AuditLogs /> : <Navigate to="/reservas" replace />} 
           />
 
           {/* Rutas compartidas o específicas de Docente */}
-          <Route path="/reservas" element={<Reservations />} />
+          <Route 
+            path="/reservas" 
+            element={!isPañolero ? <Reservations /> : <Navigate to="/activos" replace />} 
+          />
           <Route path="/calendario" element={<CalendarPage />} />
-          <Route path="/mora" element={<ActiveLoans filterMora />} />
+          <Route path="/mora" element={isPañolero ? <ActiveLoans filterMora /> : <Navigate to="/activos" replace />} />
           <Route path="/activos" element={<ActiveLoans />} />
 
           {/* Aliases y Fallbacks */}

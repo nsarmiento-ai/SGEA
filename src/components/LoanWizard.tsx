@@ -14,7 +14,8 @@ import {
   Loader2,
   Search,
   X,
-  AlertCircle
+  AlertCircle,
+  PlusCircle
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { cn } from '../lib/utils';
@@ -239,24 +240,32 @@ export const LoanWizard: React.FC = () => {
 
   return (
     <div className="p-8 max-w-5xl mx-auto">
-      <header className="mb-8">
-        <h1 className="text-3xl font-display font-bold text-slate-900">Nuevo Préstamo</h1>
+      <header className="mb-10">
+        <div className="flex items-center gap-3 mb-2">
+          <div className="w-12 h-12 rounded-2xl bg-slate-900 flex items-center justify-center shadow-lg shadow-slate-200">
+            <PlusCircle className="w-6 h-6 text-amber-500" />
+          </div>
+          <h1 className="text-4xl font-black text-slate-900 tracking-tight">Despacho de Equipos</h1>
+        </div>
         <div className="flex items-center gap-4 mt-4">
-          <div className={cn(
-            "flex items-center gap-2 px-4 py-2 rounded-full text-sm font-bold transition-all",
-            step === 1 ? "bg-amber-500 text-white" : "bg-slate-200 text-slate-500"
-          )}>
-            <span className="w-6 h-6 rounded-full bg-white/20 flex items-center justify-center text-xs">1</span>
-            Selección de Equipos
-          </div>
-          <ChevronRight className="text-slate-300 w-5 h-5" />
-          <div className={cn(
-            "flex items-center gap-2 px-4 py-2 rounded-full text-sm font-bold transition-all",
-            step === 2 ? "bg-amber-500 text-white" : "bg-slate-200 text-slate-500"
-          )}>
-            <span className="w-6 h-6 rounded-full bg-white/20 flex items-center justify-center text-xs">2</span>
-            Registro de Alumno
-          </div>
+          {[1, 2].map(s => (
+            <div key={s} className="flex items-center gap-2">
+              <div className={cn(
+                "w-8 h-8 rounded-full flex items-center justify-center text-xs font-black transition-all",
+                step === s ? "bg-amber-500 text-white shadow-lg shadow-amber-200 scale-110" : 
+                step > s ? "bg-slate-900 text-white" : "bg-slate-200 text-slate-400"
+              )}>
+                {step > s ? <Check className="w-4 h-4" /> : s}
+              </div>
+              <span className={cn(
+                "text-[10px] font-black uppercase tracking-widest",
+                step === s ? "text-slate-900" : "text-slate-400"
+              )}>
+                {s === 1 ? 'Equipos' : 'Responsables'}
+              </span>
+              {s === 1 && <div className="w-8 h-px bg-slate-200 mx-2" />}
+            </div>
+          ))}
         </div>
       </header>
 
@@ -267,28 +276,31 @@ export const LoanWizard: React.FC = () => {
             initial={{ opacity: 0, x: -20 }}
             animate={{ opacity: 1, x: 0 }}
             exit={{ opacity: 0, x: 20 }}
+            className="space-y-6"
           >
-            <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
-              <div className="p-4 border-b border-slate-100 flex items-center gap-4 bg-slate-50">
-                <div className="relative flex-1">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 w-4 h-4" />
-                  <input
-                    type="text"
-                    placeholder="Filtrar equipos disponibles..."
-                    value={search}
-                    onChange={(e) => setSearch(e.target.value)}
-                    className="w-full pl-9 pr-4 py-2 bg-white border border-slate-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-amber-500"
-                  />
-                </div>
-                <div className="text-sm font-bold text-slate-500">
-                  {selectedIds.length} seleccionados
-                </div>
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+              <div>
+                <h2 className="text-2xl font-black text-slate-900">Selección de Equipos</h2>
+                <p className="text-slate-500 text-sm">Seleccione los elementos para el despacho inmediato.</p>
               </div>
+              <div className="relative w-full md:w-72">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 w-4 h-4" />
+                <input 
+                  type="text"
+                  placeholder="Buscar equipo..."
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  className="w-full pl-10 pr-4 py-2 bg-slate-100 border-none rounded-xl text-sm focus:ring-2 focus:ring-amber-500 outline-none"
+                />
+              </div>
+            </div>
 
-              <div className="max-h-[500px] overflow-y-auto p-4 grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div className="bg-slate-50 rounded-[2rem] p-2 border border-slate-100">
+              <div className="max-h-[450px] overflow-y-auto pr-2 custom-scrollbar space-y-1 p-2">
                 {loading ? (
-                  <div className="col-span-full py-10 flex justify-center"><Loader2 className="animate-spin text-amber-500" /></div>
+                  <div className="py-20 flex justify-center"><Loader2 className="animate-spin text-amber-500 w-10 h-10" /></div>
                 ) : (filtered || []).map(eq => {
+                  const isSelected = (selectedIds || []).includes(eq.id);
                   const isReservedNow = (reservations || []).some(r => 
                     (r.equipos_ids || []).includes(eq.id) &&
                     isWithinInterval(new Date(), {
@@ -296,62 +308,64 @@ export const LoanWizard: React.FC = () => {
                       end: parseISO(r.fecha_fin)
                     })
                   );
-                  const nextRes = (reservations || [])
-                    .filter(r => (r.equipos_ids || []).includes(eq.id) && r.estado === 'Activa' && isAfter(parseISO(r.fecha_inicio), new Date()))
-                    .sort((a, b) => parseISO(a.fecha_inicio).getTime() - parseISO(b.fecha_inicio).getTime())[0];
-
+                  const conflict = conflicts[eq.id];
+                  
                   return (
-                    <button
+                    <div 
                       key={eq.id}
-                      disabled={isReservedNow}
-                      onClick={() => toggleSelect(eq.id)}
+                      onClick={() => !isReservedNow && !conflict && toggleSelect(eq.id)}
                       className={cn(
-                        "flex items-center gap-4 p-3 rounded-xl border transition-all text-left relative",
-                        selectedIds.includes(eq.id) 
-                          ? "border-amber-500 bg-amber-50 ring-1 ring-amber-500" 
-                          : isReservedNow
-                            ? "border-slate-200 bg-slate-50 opacity-75 cursor-not-allowed"
-                            : "border-slate-200 hover:border-slate-300 bg-white"
+                        "flex items-center gap-4 p-4 rounded-2xl transition-all cursor-pointer border",
+                        isSelected ? "bg-amber-50 border-amber-200 shadow-sm" : "bg-white border-transparent hover:border-slate-200",
+                        (isReservedNow || conflict) && "opacity-50 cursor-not-allowed bg-red-50 border-red-100"
                       )}
                     >
-                      <div className="w-12 h-12 rounded-lg bg-slate-100 overflow-hidden flex-shrink-0">
+                      <div className={cn(
+                        "w-6 h-6 rounded-lg border-2 flex items-center justify-center transition-colors",
+                        isSelected ? "bg-amber-500 border-amber-500 text-white" : "border-slate-200"
+                      )}>
+                        {isSelected && <Check className="w-4 h-4" />}
+                      </div>
+                      
+                      <div className="w-14 h-14 rounded-xl bg-slate-100 overflow-hidden border border-slate-100 flex-shrink-0">
                         <img src={eq.foto_url || 'https://picsum.photos/seed/gear/100/100'} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
                       </div>
+
                       <div className="flex-1 min-w-0">
-                        <p className="font-bold text-slate-900 truncate text-sm">{eq.nombre}</p>
-                        <p className="text-xs text-slate-500 truncate">
-                          {isReservedNow ? (
-                            <span className="text-amber-600 font-bold flex items-center gap-1">
-                              <AlertCircle className="w-3 h-3" />
-                              Reservado por Docente
-                            </span>
-                          ) : nextRes ? (
-                            <span className="text-slate-400 font-medium">
-                              Próxima reserva: {format(parseISO(nextRes.fecha_inicio), 'dd/MM HH:mm')}
-                            </span>
-                          ) : eq.modelo}
-                        </p>
+                        <p className="text-sm font-black text-slate-900 truncate">{eq.nombre}</p>
+                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{eq.categoria} • S/N: {eq.numero_serie}</p>
                       </div>
-                      {selectedIds.includes(eq.id) && (
-                        <div className="bg-amber-500 rounded-full p-1">
-                          <Check className="w-3 h-3 text-white" />
+
+                      {isReservedNow && (
+                        <div className="px-3 py-1 bg-red-100 text-red-600 rounded-full text-[10px] font-black uppercase flex items-center gap-1">
+                          <AlertCircle className="w-3 h-3" />
+                          Ocupado
                         </div>
                       )}
-                    </button>
+                    </div>
                   );
                 })}
               </div>
+            </div>
 
-              <div className="p-6 bg-slate-50 border-t border-slate-100 flex justify-end">
-                <button
-                  disabled={selectedIds.length === 0}
-                  onClick={() => setStep(2)}
-                  className="btn-primary flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  Siguiente paso
-                  <ChevronRight className="w-5 h-5" />
-                </button>
+            <div className="flex items-center justify-between bg-slate-900 p-6 rounded-[2rem] text-white shadow-xl shadow-slate-200">
+              <div className="flex items-center gap-4">
+                <div className="w-12 h-12 rounded-2xl bg-white/10 flex items-center justify-center">
+                  <ShoppingCart className="w-6 h-6 text-amber-500" />
+                </div>
+                <div>
+                  <p className="text-xl font-black">{selectedIds.length} Ítems</p>
+                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Listos para despachar</p>
+                </div>
               </div>
+              <button 
+                disabled={selectedIds.length === 0}
+                onClick={() => setStep(2)}
+                className="bg-amber-500 hover:bg-amber-600 disabled:bg-slate-700 disabled:text-slate-500 text-white px-8 py-4 rounded-2xl font-black text-sm transition-all flex items-center gap-3 group"
+              >
+                CONTINUAR
+                <ChevronRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+              </button>
             </div>
           </motion.div>
         ) : (
@@ -360,65 +374,36 @@ export const LoanWizard: React.FC = () => {
             initial={{ opacity: 0, x: 20 }}
             animate={{ opacity: 1, x: 0 }}
             exit={{ opacity: 0, x: -20 }}
-            className="grid grid-cols-1 md:grid-cols-3 gap-8"
+            className="space-y-8"
           >
-            <div className="md:col-span-2 space-y-6">
-              <div className="bg-white p-8 rounded-2xl shadow-sm border border-slate-200 space-y-6">
-                {(Object.entries(conflicts || {}) as [string, Reservation][]).map(([eqId, res]) => {
-                  const eq = (equipments || []).find(e => e.id === eqId);
-                  return (
-                    <div key={res.id} className="bg-red-50 border border-red-200 p-4 rounded-xl text-red-700 text-sm flex items-start gap-3">
-                      <AlertCircle className="w-5 h-5 flex-shrink-0" />
-                      <p>
-                        <strong>⚠️ Conflicto de Reserva:</strong> El equipo {eq?.nombre} está reservado por el docente {res.docente_nombre} a partir del {format(parseISO(res.fecha_inicio), 'dd/MM HH:mm')}. Debes ajustar la fecha de devolución para que sea previa a este compromiso.
-                      </p>
-                    </div>
-                  );
-                })}
-                <div className="space-y-4">
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <label className="flex items-center gap-2 text-sm font-bold text-slate-700 mb-2">
-                        <User className="w-4 h-4 text-amber-500" />
-                        Nombre del Alumno
-                      </label>
-                      <input
-                        required
-                        type="text"
-                        value={formData.alumno_nombre || ''}
-                        onChange={e => setFormData({...formData, alumno_nombre: e.target.value})}
-                        className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-amber-500 transition-all"
-                        placeholder="Ej: Nicolás Sarmiento"
-                      />
-                    </div>
-                    <div>
-                      <label className="flex items-center gap-2 text-sm font-bold text-slate-700 mb-2">
-                        <User className="w-4 h-4 text-amber-500" />
-                        DNI
-                      </label>
-                      <input
-                        required
-                        type="text"
-                        value={formData.alumno_dni || ''}
-                        onChange={e => setFormData({...formData, alumno_dni: e.target.value})}
-                        className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-amber-500 transition-all"
-                        placeholder="Ej: 38.123.456"
-                      />
-                    </div>
-                  </div>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <label className="flex items-center gap-2 text-sm font-bold text-slate-700 mb-2">
-                        <FileText className="w-4 h-4 text-amber-500" />
-                        Materia
-                      </label>
-                      <select
-                        required
-                        value={formData.materia || ''}
-                        onChange={e => setFormData({...formData, materia: e.target.value})}
-                        className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-amber-500 transition-all appearance-none"
+            <div>
+              <h2 className="text-2xl font-black text-slate-900">Datos del Préstamo</h2>
+              <p className="text-slate-500 text-sm">Complete la información del docente y alumno.</p>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+              <div className="space-y-6">
+                <div className="bg-white p-8 rounded-[2rem] border border-slate-200 shadow-sm space-y-6">
+                  <div className="space-y-4">
+                    <label className="block">
+                      <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Docente Responsable</span>
+                      <select 
+                        value={formData.docente_responsable}
+                        onChange={(e) => setFormData({...formData, docente_responsable: e.target.value})}
+                        className="w-full mt-2 px-4 py-3 bg-slate-50 border border-slate-100 rounded-2xl outline-none focus:ring-2 focus:ring-amber-500 font-bold text-slate-700"
                       >
-                        <option value="">Seleccionar materia...</option>
+                        <option value="">Seleccione Docente</option>
+                        {docentes.map(d => <option key={d.id} value={d.nombre}>{d.nombre}</option>)}
+                      </select>
+                    </label>
+
+                    <label className="block">
+                      <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Materia</span>
+                      <select 
+                        value={formData.materia}
+                        onChange={(e) => setFormData({...formData, materia: e.target.value})}
+                        className="w-full mt-2 px-4 py-3 bg-slate-50 border border-slate-100 rounded-2xl outline-none focus:ring-2 focus:ring-amber-500 font-bold text-slate-700"
+                      >
+                        <option value="">Seleccione Materia</option>
                         {Object.entries(MATERIAS).map(([group, list]) => (
                           <optgroup key={group} label={group}>
                             {list.map(m => (
@@ -427,102 +412,76 @@ export const LoanWizard: React.FC = () => {
                           </optgroup>
                         ))}
                       </select>
-                    </div>
-                    <div>
-                      <label className="flex items-center gap-2 text-sm font-bold text-slate-700 mb-2">
-                        <User className="w-4 h-4 text-amber-500" />
-                        Docente Responsable
-                      </label>
-                      <select
-                        required
-                        value={formData.docente_responsable || ''}
-                        onChange={e => setFormData({...formData, docente_responsable: e.target.value})}
-                        className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-amber-500 transition-all"
-                      >
-                        <option value="">Seleccionar docente...</option>
-                        {(docentes || []).map(d => (
-                          <option key={d.id} value={d.nombre_completo}>{d.nombre_completo}</option>
-                        ))}
-                      </select>
-                    </div>
-                  </div>
-                  <div>
-                    <label className="flex items-center gap-2 text-sm font-bold text-slate-700 mb-2">
-                      <Calendar className="w-4 h-4 text-amber-500" />
-                      Fecha de Devolución Estimada
                     </label>
-                    <input
-                      required
-                      type="datetime-local"
-                      value={formData.fechaDevolucion || ''}
-                      onChange={e => setFormData({...formData, fechaDevolucion: e.target.value})}
-                      className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-amber-500 transition-all"
-                    />
-                  </div>
-                  <div>
-                    <label className="flex items-center gap-2 text-sm font-bold text-slate-700 mb-2">
-                      <FileText className="w-4 h-4 text-amber-500" />
-                      Comentarios / Observaciones
+
+                    <label className="block">
+                      <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Fecha/Hora Devolución</span>
+                      <input 
+                        type="datetime-local"
+                        value={formData.fechaDevolucion}
+                        onChange={(e) => setFormData({...formData, fechaDevolucion: e.target.value})}
+                        className="w-full mt-2 px-4 py-3 bg-slate-50 border border-slate-100 rounded-2xl outline-none focus:ring-2 focus:ring-amber-500 font-bold text-slate-700"
+                      />
                     </label>
-                    <textarea
-                      rows={3}
-                      value={formData.comentarios}
-                      onChange={e => setFormData({...formData, comentarios: e.target.value})}
-                      className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-amber-500 transition-all resize-none"
-                      placeholder="Estado de las baterías, accesorios extra, etc."
-                    />
                   </div>
                 </div>
               </div>
 
-              <div className="flex justify-between">
-                <button
-                  onClick={() => setStep(1)}
-                  className="flex items-center gap-2 px-6 py-3 text-slate-600 font-bold hover:bg-slate-100 rounded-xl transition-all"
-                >
-                  <ChevronLeft className="w-5 h-5" />
-                  Volver a selección
-                </button>
-                <button
-                  disabled={!isFormValid()}
-                  onClick={handleFinish}
-                  className="btn-primary flex items-center gap-2 px-8 py-3 disabled:opacity-50"
-                >
-                  {submitting ? <Loader2 className="w-5 h-5 animate-spin" /> : <Check className="w-5 h-5" />}
-                  Finalizar y Generar PDF
-                </button>
+              <div className="space-y-6">
+                <div className="bg-white p-8 rounded-[2rem] border border-slate-200 shadow-sm space-y-6">
+                  <div className="space-y-4">
+                    <label className="block">
+                      <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Nombre del Alumno</span>
+                      <input 
+                        type="text"
+                        placeholder="Ej: Juan Pérez"
+                        value={formData.alumno_nombre}
+                        onChange={(e) => setFormData({...formData, alumno_nombre: e.target.value})}
+                        className="w-full mt-2 px-4 py-3 bg-slate-50 border border-slate-100 rounded-2xl outline-none focus:ring-2 focus:ring-amber-500 font-bold text-slate-700"
+                      />
+                    </label>
+
+                    <label className="block">
+                      <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">DNI del Alumno</span>
+                      <input 
+                        type="text"
+                        placeholder="Sin puntos ni espacios"
+                        value={formData.alumno_dni}
+                        onChange={(e) => setFormData({...formData, alumno_dni: e.target.value})}
+                        className="w-full mt-2 px-4 py-3 bg-slate-50 border border-slate-100 rounded-2xl outline-none focus:ring-2 focus:ring-amber-500 font-bold text-slate-700"
+                      />
+                    </label>
+
+                    <label className="block">
+                      <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Observaciones de Entrega</span>
+                      <textarea 
+                        placeholder="Ej: Trípode con detalle en zapata..."
+                        value={formData.comentarios}
+                        onChange={(e) => setFormData({...formData, comentarios: e.target.value})}
+                        className="w-full mt-2 px-4 py-3 bg-slate-50 border border-slate-100 rounded-2xl outline-none focus:ring-2 focus:ring-amber-500 font-bold text-slate-700 h-24 resize-none"
+                      />
+                    </label>
+                  </div>
+                </div>
               </div>
             </div>
 
-            <div className="space-y-4">
-              <div className="bg-slate-900 text-white p-6 rounded-2xl shadow-lg">
-                <div className="flex items-center gap-2 mb-4 border-b border-slate-800 pb-4">
-                  <ShoppingCart className="w-5 h-5 text-amber-500" />
-                  <h2 className="font-bold">Resumen de Equipos</h2>
-                </div>
-                <div className="space-y-3 max-h-[400px] overflow-y-auto pr-2">
-                  {(equipments || []).filter(e => (selectedIds || []).includes(e.id)).map(eq => (
-                    <div key={eq.id} className="flex items-center gap-3 group">
-                      <div className="w-10 h-10 rounded-lg bg-slate-800 overflow-hidden flex-shrink-0">
-                        <img src={eq.foto_url || 'https://picsum.photos/seed/gear/100/100'} className="w-full h-full object-cover opacity-80" referrerPolicy="no-referrer" />
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium text-slate-200 truncate">{eq.nombre}</p>
-                        <p className="text-[10px] text-slate-500 truncate">{eq.modelo}</p>
-                      </div>
-                      <button 
-                        onClick={() => toggleSelect(eq.id)}
-                        className="text-slate-600 hover:text-red-400 opacity-0 group-hover:opacity-100 transition-all"
-                      >
-                        <X className="w-4 h-4" />
-                      </button>
-                    </div>
-                  ))}
-                </div>
-                <div className="mt-6 pt-4 border-t border-slate-800 text-center">
-                  <p className="text-xs text-slate-500">Total de ítems: <span className="text-amber-500 font-bold">{selectedIds.length}</span></p>
-                </div>
-              </div>
+            <div className="flex items-center justify-between bg-slate-50 p-6 rounded-[2rem] border border-slate-200">
+              <button 
+                onClick={() => setStep(1)}
+                className="flex items-center gap-2 px-6 py-4 text-slate-500 font-black text-sm hover:text-slate-900 transition-colors"
+              >
+                <ChevronLeft className="w-5 h-5" />
+                VOLVER
+              </button>
+              <button 
+                disabled={!isFormValid() || submitting}
+                onClick={handleFinish}
+                className="bg-slate-900 hover:bg-amber-500 disabled:bg-slate-300 text-white px-10 py-4 rounded-2xl font-black text-sm transition-all flex items-center gap-3 shadow-xl shadow-slate-200"
+              >
+                {submitting ? <Loader2 className="w-5 h-5 animate-spin" /> : <Check className="w-5 h-5" />}
+                FINALIZAR Y DESPACHAR
+              </button>
             </div>
           </motion.div>
         )}
