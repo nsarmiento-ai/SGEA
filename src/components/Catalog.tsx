@@ -267,35 +267,6 @@ export const Catalog: React.FC = () => {
 
       <InventoryMetrics equipments={equipments} />
 
-      {/* Favoritos del Pañolero */}
-      {profile?.rol === 'Pañolero' && (profile?.favoritos || []).length > 0 && !showFavorites && (
-        <div className="mb-10">
-          <div className="flex items-center gap-2 mb-6">
-            <Star className="w-5 h-5 text-amber-500 fill-current" />
-            <h2 className="text-xl font-bold text-slate-900">Acceso Rápido (Favoritos)</h2>
-            <div className="h-px flex-1 bg-slate-200 ml-4"></div>
-          </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            {equipments
-              .filter(e => profile.favoritos.includes(e.id) && e.estado !== 'Archivado')
-              .map(eq => (
-                <div key={`fav-${eq.id}`} className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-lg bg-slate-100 overflow-hidden shrink-0">
-                    <img src={eq.foto_url || 'https://picsum.photos/seed/gear/100/100'} className="w-full h-full object-cover" />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-bold text-slate-900 truncate">{eq.nombre}</p>
-                    <p className="text-[10px] text-slate-500 uppercase font-bold">{eq.categoria}</p>
-                  </div>
-                  <button onClick={() => toggleFavorite(eq.id)} className="text-amber-500">
-                    <Star className="w-4 h-4 fill-current" />
-                  </button>
-                </div>
-              ))}
-          </div>
-        </div>
-      )}
-
       <div className="flex flex-col md:flex-row gap-4 mb-8">
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 w-5 h-5" />
@@ -378,7 +349,10 @@ export const Catalog: React.FC = () => {
       ) : viewMode === 'grid' ? (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
           {(filteredEquipments || []).map((eq) => {
-            const eqReservations = (reservations || []).filter(r => (r.equipos_ids || []).includes(eq.id));
+            const eqReservations = (reservations || []).filter(r => 
+              (r.equipos_ids || []).includes(eq.id) && 
+              (r.estado === 'Pendiente' || r.estado === 'Activa')
+            );
             const isReservedNow = (eqReservations || []).some(r => 
               isWithinInterval(new Date(), {
                 start: parseISO(r.fecha_inicio),
@@ -465,7 +439,17 @@ export const Catalog: React.FC = () => {
                 </div>
                 
                 <h3 className="font-bold text-slate-900 leading-tight mb-1">{eq.nombre}</h3>
-                <p className="text-xs text-slate-500 mb-3">{eq.modelo}</p>
+                <p className="text-xs text-slate-500 mb-2">{eq.modelo}</p>
+
+                {eq.permiso_uso !== 'Libre uso' && (
+                  <div className={cn(
+                    "mb-3 flex items-center gap-1.5 px-2 py-1 rounded-lg text-[10px] font-bold border w-fit",
+                    eq.permiso_uso === 'Restringido' ? "bg-blue-50 text-blue-700 border-blue-100" : "bg-red-50 text-red-700 border-red-100"
+                  )}>
+                    <Lock className="w-3 h-3" />
+                    {eq.permiso_uso}
+                  </div>
+                )}
                 
                 <div className="space-y-1.5">
                   <div className="flex items-center gap-2 text-xs text-slate-600">
@@ -520,11 +504,22 @@ export const Catalog: React.FC = () => {
                     </span>
                   </td>
                   <td className="p-4">
-                    <div className={cn(
-                      "inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold border",
-                      (statusConfig[eq.estado] || { color: 'text-slate-600 bg-slate-50 border-slate-200' }).color
-                    )}>
-                      {eq.estado}
+                    <div className="flex flex-col gap-1">
+                      <div className={cn(
+                        "inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold border w-fit",
+                        (statusConfig[eq.estado] || { color: 'text-slate-600 bg-slate-50 border-slate-200' }).color
+                      )}>
+                        {eq.estado}
+                      </div>
+                      {eq.permiso_uso !== 'Libre uso' && (
+                        <div className={cn(
+                          "inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[9px] font-bold border w-fit",
+                          eq.permiso_uso === 'Restringido' ? "bg-blue-50 text-blue-700 border-blue-100" : "bg-red-50 text-red-700 border-red-100"
+                        )}>
+                          <Lock className="w-2.5 h-2.5" />
+                          {eq.permiso_uso}
+                        </div>
+                      )}
                     </div>
                   </td>
                   <td className="p-4 text-right">
@@ -630,14 +625,14 @@ const HistoryModal: React.FC<{ equipment: Equipment, onClose: () => void }> = ({
                     <div className="flex flex-wrap justify-between items-start gap-4 mb-4">
                       <div>
                         <p className="text-sm font-black text-slate-900 uppercase tracking-wider mb-1">
-                          {entry.docente_nombre}
+                          {entry.docente_nombre} {entry.alumno_nombre && <span className="text-slate-400 font-normal">/ {entry.alumno_nombre}</span>}
                         </p>
                         <p className="text-xs text-slate-500 font-bold flex items-center gap-1">
                           <BookOpen className="w-3 h-3" /> {entry.materia}
                         </p>
                       </div>
                       <div className="text-right">
-                        <p className="text-xs font-black text-slate-400 uppercase tracking-widest mb-1">Fecha Salida</p>
+                        <p className="text-xs font-black text-slate-400 uppercase tracking-widest mb-1">{entry.tipo_accion || 'Salida'}</p>
                         <p className="text-sm font-bold text-slate-700">{new Date(entry.fecha_salida).toLocaleString()}</p>
                       </div>
                     </div>
@@ -693,7 +688,7 @@ const EquipmentModal: React.FC<{ item: Equipment | null, onClose: () => void, on
     descripcion: '',
     foto_url: '',
     estado: 'Disponible',
-    restriccion: false,
+    permiso_uso: 'Libre uso',
     piezas: []
   });
 
@@ -701,7 +696,7 @@ const EquipmentModal: React.FC<{ item: Equipment | null, onClose: () => void, on
     e.preventDefault();
     setLoading(true);
 
-    const { piezas, restriccion, ...dataToSave } = formData;
+    const dataToSave = { ...formData };
     const action = item ? 'EDICION_EQUIPO' : 'ALTA_EQUIPO';
     
     console.log(`Guardando equipo (${action}). Datos enviados a Supabase:`, dataToSave);
@@ -762,6 +757,18 @@ const EquipmentModal: React.FC<{ item: Equipment | null, onClose: () => void, on
               <option value="Prestado">Prestado</option>
               <option value="Fuera de Servicio">Fuera de Servicio</option>
               <option value="Archivado">Archivado</option>
+            </select>
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-slate-700 mb-1">Permiso de Uso</label>
+            <select
+              value={formData.permiso_uso}
+              onChange={e => setFormData({...formData, permiso_uso: e.target.value as any})}
+              className="w-full px-4 py-2 border border-slate-200 rounded-lg outline-none focus:ring-2 focus:ring-amber-500"
+            >
+              <option value="Libre uso">Libre uso</option>
+              <option value="Restringido">Restringido (Solo Docentes)</option>
+              <option value="No habilitado">No habilitado (Mantenimiento)</option>
             </select>
           </div>
           <div>

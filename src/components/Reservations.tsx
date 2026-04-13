@@ -490,7 +490,8 @@ export const Reservations: React.FC = () => {
                     const isReservedForDates = checkOverlap([eq.id], formData.fecha_inicio, formData.fecha_fin);
                     const isOutOfService = eq.estado === 'Fuera de Servicio';
                     const isArchived = eq.estado === 'Archivado';
-                    const isUnavailable = isReservedForDates || isOutOfService || isArchived;
+                    const isNoHabilitado = eq.permiso_uso === 'No habilitado';
+                    const isUnavailable = isReservedForDates || isOutOfService || isArchived || isNoHabilitado;
 
                     return (
                       <motion.div
@@ -515,7 +516,7 @@ export const Reservations: React.FC = () => {
                             onClick={() => toggleFavorite(eq.id)}
                             className="absolute top-4 right-4 p-2.5 bg-white/90 backdrop-blur-sm rounded-full shadow-lg border border-slate-100 transition-transform active:scale-90"
                           >
-                            <Star className="w-5 h-5 fill-amber-500 text-amber-500" />
+                            <Star className={cn("w-5 h-5", (profile?.favoritos || []).includes(eq.id) ? "fill-amber-500 text-amber-500" : "text-slate-400")} />
                           </button>
                           <div className="absolute bottom-4 left-4 flex flex-col gap-2">
                             <span className="px-3 py-1 bg-slate-900/80 backdrop-blur-sm text-white text-[10px] font-black uppercase rounded-lg tracking-wider w-fit">
@@ -526,7 +527,17 @@ export const Reservations: React.FC = () => {
                         
                         <div className="p-5 flex-1 flex flex-col">
                           <h3 className="font-black text-slate-900 text-base leading-tight mb-1">{eq.nombre}</h3>
-                          <p className="text-xs text-slate-500 mb-4">{eq.modelo}</p>
+                          <p className="text-xs text-slate-500 mb-2">{eq.modelo}</p>
+
+                          {eq.permiso_uso !== 'Libre uso' && (
+                            <div className={cn(
+                              "mb-4 flex items-center gap-1.5 px-2 py-1 rounded-lg text-[10px] font-bold border w-fit",
+                              eq.permiso_uso === 'Restringido' ? "bg-blue-50 text-blue-700 border-blue-100" : "bg-red-50 text-red-700 border-red-100"
+                            )}>
+                              <Lock className="w-3 h-3" />
+                              {eq.permiso_uso}
+                            </div>
+                          )}
                           
                           <div className="mt-auto">
                             {isInCart ? (
@@ -585,7 +596,8 @@ export const Reservations: React.FC = () => {
                 const isReservedForDates = checkOverlap([eq.id], formData.fecha_inicio, formData.fecha_fin);
                 const isOutOfService = eq.estado === 'Fuera de Servicio';
                 const isArchived = eq.estado === 'Archivado';
-                const isUnavailable = isReservedForDates || isOutOfService || isArchived;
+                const isNoHabilitado = eq.permiso_uso === 'No habilitado';
+                const isUnavailable = isReservedForDates || isOutOfService || isArchived || isNoHabilitado;
 
                 return (
                   <motion.div
@@ -633,9 +645,9 @@ export const Reservations: React.FC = () => {
                         {isUnavailable && (
                           <span className={cn(
                             "px-3 py-1 text-white text-[10px] font-black uppercase rounded-lg tracking-wider w-fit shadow-lg",
-                            isArchived ? "bg-slate-600" : isOutOfService ? "bg-red-600" : "bg-amber-600"
+                            isArchived ? "bg-slate-600" : isOutOfService ? "bg-red-600" : isNoHabilitado ? "bg-red-800" : "bg-amber-600"
                           )}>
-                            {isArchived ? 'Archivado' : isOutOfService ? 'Fuera de Servicio' : 'Ocupado en estas fechas'}
+                            {isArchived ? 'Archivado' : isOutOfService ? 'Fuera de Servicio' : isNoHabilitado ? 'No habilitado' : 'Ocupado en estas fechas'}
                           </span>
                         )}
                       </div>
@@ -643,7 +655,17 @@ export const Reservations: React.FC = () => {
                     
                     <div className="p-6 flex-1 flex flex-col">
                       <h3 className="font-black text-slate-900 text-lg leading-tight mb-1">{eq.nombre}</h3>
-                      <p className="text-sm text-slate-500 mb-4">{eq.modelo}</p>
+                      <p className="text-sm text-slate-500 mb-2">{eq.modelo}</p>
+
+                      {eq.permiso_uso !== 'Libre uso' && (
+                        <div className={cn(
+                          "mb-4 flex items-center gap-1.5 px-2 py-1 rounded-lg text-[10px] font-bold border w-fit",
+                          eq.permiso_uso === 'Restringido' ? "bg-blue-50 text-blue-700 border-blue-100" : "bg-red-50 text-red-700 border-red-100"
+                        )}>
+                          <Lock className="w-3 h-3" />
+                          {eq.permiso_uso}
+                        </div>
+                      )}
                       
                       <div className="mt-auto space-y-4">
                         <div className="flex items-center gap-2 text-xs text-slate-600 bg-slate-50 p-3 rounded-xl border border-slate-100">

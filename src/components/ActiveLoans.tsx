@@ -215,6 +215,8 @@ export const ActiveLoans: React.FC<{ filterMora?: boolean }> = ({ filterMora = f
 const ReceiveModal: React.FC<{ loan: Loan, equipmentsMap: Record<string, Equipment>, onClose: () => void, onSuccess: () => void }> = ({ loan, equipmentsMap, onClose, onSuccess }) => {
   const { activeResponsable } = useApp();
   const [loading, setLoading] = useState(false);
+  const [observaciones, setObservaciones] = useState('');
+  const [hasDamage, setHasDamage] = useState(false);
   
   // State to track the status of each piece of each equipment
   const [equipmentStates, setEquipmentStates] = useState<Record<string, Equipment>>(() => {
@@ -240,18 +242,32 @@ const ReceiveModal: React.FC<{ loan: Loan, equipmentsMap: Record<string, Equipme
   };
 
   const handleConfirm = async () => {
+    if (!observaciones.trim()) {
+      alert('Por favor, ingrese las observaciones de la devolución.');
+      return;
+    }
+
     setLoading(true);
     try {
       // 1. Update loan status
-      await supabase.from('prestamos').update({ estado: 'Finalizado' }).eq('id', loan.id);
+      const { error: loanError } = await supabase
+        .from('prestamos') 
+        .update({ 
+          estado: 'Finalizado',
+          observaciones_devolucion: observaciones,
+          tiene_incidencias: hasDamage
+        })
+        .eq('id', loan.id);
+
+      if (loanError) throw loanError;
 
       // 2. Update each equipment
       for (const eqId of loan.equipos_ids) {
         const eq = equipmentStates[eqId];
         if (!eq) continue;
 
-        let newEqStatus: EquipmentStatus = 'Disponible';
-        let hasIssues = false;
+        let newEqStatus: EquipmentStatus = hasDamage ? 'Fuera de Servicio' : 'Disponible';
+        let hasIssues = hasDamage;
         let issueDetails = [];
 
         if (eq.piezas && eq.piezas.length > 0) {
@@ -269,10 +285,33 @@ const ReceiveModal: React.FC<{ loan: Loan, equipmentsMap: Record<string, Equipme
         }
 
         console.log(`Actualizando equipo ${eqId} tras devolución. Nuevo estado:`, newEqStatus);
-        await supabase.from('equipamiento').update({ 
+        const { error: eqUpdateError } = await supabase.from('equipamiento').update({ 
           estado: newEqStatus,
           piezas: eq.piezas 
         }).eq('id', String(eqId));
+
+        if (eqUpdateError) throw eqUpdateError;
+
+        // 2.6 Log to Resource History (Hoja de Vida) - DEVOLUCION
+        const { error: historyError } = await supabase
+          .from('historial_recursos')
+          .insert([{
+            recurso_id: eqId,
+            docente_nombre: loan.docente_responsable,
+            materia: loan.materia,
+            pañolero_entrega: loan.responsable_nombre,
+            pañolero_recibe: activeResponsable!,
+            fecha_salida: loan.fecha_salida,
+            fecha_entrada: new Date().toISOString(),
+            alumno_nombre: loan.alumno_nombre,
+            estado_salida: 'Bueno', // This should ideally be tracked from the loan start
+            estado_entrada: newEqStatus === 'Disponible' ? 'Bueno' : 'Con Incidencias',
+            observaciones_entrada: observaciones,
+            prestamo_id: loan.id,
+            tipo_accion: 'Devolución'
+          }]);
+
+        if (historyError) console.error('Error logging resource history:', historyError);
 
         if (hasIssues) {
           await logAction(activeResponsable!, 'INCIDENCIA_EQUIPO', { 
@@ -281,13 +320,17 @@ const ReceiveModal: React.FC<{ loan: Loan, equipmentsMap: Record<string, Equipme
             loanId: loan.id,
             alumno_nombre: loan.alumno_nombre,
             alumno_dni: loan.alumno_dni,
-            detalles: `Problemas detectados al recibir: ${issueDetails.join(', ')}` 
+            detalles: `Problemas detectados al recibir: ${issueDetails.join(', ')}. Obs: ${observaciones}` 
           });
         }
       }
 
       // 3. Log the general return action
-      await logAction(activeResponsable!, 'DEVOLUCION_PRESTAMO', { loanId: loan.id, alumno: `${loan.alumno_nombre} (${loan.alumno_dni})` });
+      await logAction(activeResponsable!, 'DEVOLUCION_PRESTAMO', { 
+        loanId: loan.id, 
+        alumno: `${loan.alumno_nombre} (${loan.alumno_dni})`,
+        observaciones 
+      });
       
       // 4. Generate Return PDF
       const returnedEquipments = Object.values(equipmentStates) as Equipment[];
@@ -364,6 +407,44 @@ const ReceiveModal: React.FC<{ loan: Loan, equipmentsMap: Record<string, Equipme
               </div>
             );
           })}
+
+          <div className="space-y-4 pt-4 border-t border-slate-100">
+            <div>
+              <label className="flex items-center gap-2 text-sm font-bold text-slate-700 mb-2">
+                <AlertCircle className="w-4 h-4 text-amber-500" />
+                Observaciones de Devolución (Obligatorio)
+              </label>
+              <textarea
+                required
+                value={observaciones}
+                onChange={e => setObservaciones(e.target.value)}
+                className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-amber-500 transition-all resize-none"
+                placeholder="Describa el estado en que se recibe el equipo..."
+                rows={3}
+              />
+            </div>
+
+            <label className="flex items-center justify-between p-4 bg-slate-50 rounded-xl border border-slate-200 cursor-pointer group">
+              <div className="flex items-center gap-3">
+                <div className={cn(
+                  "w-10 h-10 rounded-full flex items-center justify-center transition-colors",
+                  hasDamage ? "bg-red-100 text-red-600" : "bg-slate-200 text-slate-500"
+                )}>
+                  <XCircle className="w-5 h-5" />
+                </div>
+                <div>
+                  <p className="text-sm font-bold text-slate-900">¿Faltante o Rotura?</p>
+                  <p className="text-xs text-slate-500">Marque si el equipo requiere mantenimiento o tiene piezas faltantes.</p>
+                </div>
+              </div>
+              <input
+                type="checkbox"
+                checked={hasDamage}
+                onChange={e => setHasDamage(e.target.checked)}
+                className="w-6 h-6 rounded border-slate-300 text-amber-500 focus:ring-amber-500"
+              />
+            </label>
+          </div>
         </div>
 
         <div className="p-6 border-t border-slate-100 flex justify-end gap-3 shrink-0 bg-slate-50 rounded-b-2xl">

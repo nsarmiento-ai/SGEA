@@ -202,11 +202,13 @@ export const LoanWizard: React.FC = () => {
       const historyEntries = selectedIds.map(id => ({
         recurso_id: id,
         docente_nombre: formData.docente_responsable,
+        alumno_nombre: formData.alumno_nombre,
         materia: formData.materia,
         pañolero_entrega: activeResponsable!,
         fecha_salida: new Date().toISOString(),
         estado_salida: 'Bueno', // Default or from equipment state
-        prestamo_id: loan.id
+        prestamo_id: loan.id,
+        tipo_accion: 'Salida'
       }));
 
       const { error: historyError } = await supabase
@@ -244,293 +246,244 @@ export const LoanWizard: React.FC = () => {
   );
 
   return (
-    <div className="p-8 max-w-5xl mx-auto">
+    <div className="p-8 max-w-7xl mx-auto">
       <header className="mb-8">
-        <h1 className="text-3xl font-display font-bold text-slate-900">Nuevo Préstamo</h1>
-        <div className="flex items-center gap-4 mt-4">
-          <div className={cn(
-            "flex items-center gap-2 px-4 py-2 rounded-full text-sm font-bold transition-all",
-            step === 1 ? "bg-amber-500 text-white" : "bg-slate-200 text-slate-500"
-          )}>
-            <span className="w-6 h-6 rounded-full bg-white/20 flex items-center justify-center text-xs">1</span>
-            Selección de Equipos
-          </div>
-          <ChevronRight className="text-slate-300 w-5 h-5" />
-          <div className={cn(
-            "flex items-center gap-2 px-4 py-2 rounded-full text-sm font-bold transition-all",
-            step === 2 ? "bg-amber-500 text-white" : "bg-slate-200 text-slate-500"
-          )}>
-            <span className="w-6 h-6 rounded-full bg-white/20 flex items-center justify-center text-xs">2</span>
-            Registro de Alumno
-          </div>
-        </div>
+        <h1 className="text-3xl font-display font-bold text-slate-900">Despacho de Equipos</h1>
+        <p className="text-slate-500">Complete la información para registrar el préstamo.</p>
       </header>
 
-      <AnimatePresence mode="wait">
-        {step === 1 ? (
-          <motion.div
-            key="step1"
-            initial={{ opacity: 0, x: -20 }}
-            animate={{ opacity: 1, x: 0 }}
-            exit={{ opacity: 0, x: 20 }}
-          >
-            <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
-              <div className="p-4 border-b border-slate-100 flex items-center gap-4 bg-slate-50">
-                <div className="relative flex-1">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 w-4 h-4" />
-                  <input
-                    type="text"
-                    placeholder="Filtrar equipos disponibles..."
-                    value={search}
-                    onChange={(e) => setSearch(e.target.value)}
-                    className="w-full pl-9 pr-4 py-2 bg-white border border-slate-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-amber-500"
-                  />
-                </div>
-                <div className="text-sm font-bold text-slate-500">
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+        {/* Left Column: Selection */}
+        <div className="lg:col-span-5 space-y-6">
+          <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden flex flex-col h-[600px]">
+            <div className="p-4 border-b border-slate-100 bg-slate-50 space-y-4">
+              <div className="flex items-center justify-between">
+                <h2 className="font-bold text-slate-900 flex items-center gap-2">
+                  <ShoppingCart className="w-5 h-5 text-amber-500" />
+                  Selección de Equipos
+                </h2>
+                <span className="text-xs font-bold bg-amber-100 text-amber-700 px-2 py-1 rounded-lg">
                   {selectedIds.length} seleccionados
-                </div>
+                </span>
               </div>
-
-              <div className="max-h-[500px] overflow-y-auto p-4 grid grid-cols-1 sm:grid-cols-2 gap-3">
-                {loading ? (
-                  <div className="col-span-full py-10 flex justify-center"><Loader2 className="animate-spin text-amber-500" /></div>
-                ) : (filtered || []).map(eq => {
-                  const isReservedNow = (reservations || []).some(r => 
-                    (r.equipos_ids || []).includes(eq.id) &&
-                    isWithinInterval(new Date(), {
-                      start: parseISO(r.fecha_inicio),
-                      end: parseISO(r.fecha_fin)
-                    })
-                  );
-                  const nextRes = (reservations || [])
-                    .filter(r => (r.equipos_ids || []).includes(eq.id) && r.estado === 'Activa' && isAfter(parseISO(r.fecha_inicio), new Date()))
-                    .sort((a, b) => parseISO(a.fecha_inicio).getTime() - parseISO(b.fecha_inicio).getTime())[0];
-
-                  return (
-                    <button
-                      key={eq.id}
-                      disabled={isReservedNow}
-                      onClick={() => toggleSelect(eq.id)}
-                      className={cn(
-                        "flex items-center gap-4 p-3 rounded-xl border transition-all text-left relative",
-                        selectedIds.includes(eq.id) 
-                          ? "border-amber-500 bg-amber-50 ring-1 ring-amber-500" 
-                          : isReservedNow
-                            ? "border-slate-200 bg-slate-50 opacity-75 cursor-not-allowed"
-                            : "border-slate-200 hover:border-slate-300 bg-white"
-                      )}
-                    >
-                      <div className="w-12 h-12 rounded-lg bg-slate-100 overflow-hidden flex-shrink-0">
-                        <img src={eq.foto_url || 'https://picsum.photos/seed/gear/100/100'} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="font-bold text-slate-900 truncate text-sm">{eq.nombre}</p>
-                        <p className="text-xs text-slate-500 truncate">
-                          {isReservedNow ? (
-                            <span className="text-amber-600 font-bold flex items-center gap-1">
-                              <AlertCircle className="w-3 h-3" />
-                              Reservado por Docente
-                            </span>
-                          ) : nextRes ? (
-                            <span className="text-slate-400 font-medium">
-                              Próxima reserva: {format(parseISO(nextRes.fecha_inicio), 'dd/MM HH:mm')}
-                            </span>
-                          ) : eq.modelo}
-                        </p>
-                      </div>
-                      {selectedIds.includes(eq.id) && (
-                        <div className="bg-amber-500 rounded-full p-1">
-                          <Check className="w-3 h-3 text-white" />
-                        </div>
-                      )}
-                    </button>
-                  );
-                })}
-              </div>
-
-              <div className="p-6 bg-slate-50 border-t border-slate-100 flex justify-end">
-                <button
-                  disabled={selectedIds.length === 0}
-                  onClick={() => setStep(2)}
-                  className="btn-primary flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  Siguiente paso
-                  <ChevronRight className="w-5 h-5" />
-                </button>
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 w-4 h-4" />
+                <input
+                  type="text"
+                  placeholder="Buscar equipos disponibles..."
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  className="w-full pl-9 pr-4 py-2 bg-white border border-slate-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-amber-500"
+                />
               </div>
             </div>
-          </motion.div>
-        ) : (
-          <motion.div
-            key="step2"
-            initial={{ opacity: 0, x: 20 }}
-            animate={{ opacity: 1, x: 0 }}
-            exit={{ opacity: 0, x: -20 }}
-            className="grid grid-cols-1 md:grid-cols-3 gap-8"
-          >
-            <div className="md:col-span-2 space-y-6">
-              <div className="bg-white p-8 rounded-2xl shadow-sm border border-slate-200 space-y-6">
-                {(Object.entries(conflicts || {}) as [string, Reservation][]).map(([eqId, res]) => {
-                  const eq = (equipments || []).find(e => e.id === eqId);
-                  return (
-                    <div key={res.id} className="bg-red-50 border border-red-200 p-4 rounded-xl text-red-700 text-sm flex items-start gap-3">
-                      <AlertCircle className="w-5 h-5 flex-shrink-0" />
-                      <p>
-                        <strong>⚠️ Conflicto de Reserva:</strong> El equipo {eq?.nombre} está reservado por el docente {res.docente_nombre} a partir del {format(parseISO(res.fecha_inicio), 'dd/MM HH:mm')}. Debes ajustar la fecha de devolución para que sea previa a este compromiso.
+
+            <div className="flex-1 overflow-y-auto p-4 space-y-2">
+              {loading ? (
+                <div className="py-10 flex justify-center"><Loader2 className="animate-spin text-amber-500" /></div>
+              ) : filtered.length === 0 ? (
+                <div className="py-10 text-center text-slate-400 text-sm italic">No se encontraron equipos disponibles.</div>
+              ) : filtered.map(eq => {
+                const isReservedNow = (reservations || []).some(r => 
+                  (r.equipos_ids || []).includes(eq.id) &&
+                  (r.estado === 'Pendiente' || r.estado === 'Activa') &&
+                  isWithinInterval(new Date(), {
+                    start: parseISO(r.fecha_inicio),
+                    end: parseISO(r.fecha_fin)
+                  })
+                );
+                const nextRes = (reservations || [])
+                  .filter(r => (r.equipos_ids || []).includes(eq.id) && (r.estado === 'Pendiente' || r.estado === 'Activa') && isAfter(parseISO(r.fecha_inicio), new Date()))
+                  .sort((a, b) => parseISO(a.fecha_inicio).getTime() - parseISO(b.fecha_inicio).getTime())[0];
+
+                const isNoHabilitado = eq.permiso_uso === 'No habilitado';
+                const isDisabled = isReservedNow || isNoHabilitado;
+
+                return (
+                  <button
+                    key={eq.id}
+                    disabled={isDisabled}
+                    onClick={() => toggleSelect(eq.id)}
+                    className={cn(
+                      "w-full flex items-center gap-3 p-2 rounded-xl border transition-all text-left",
+                      selectedIds.includes(eq.id) 
+                        ? "border-amber-500 bg-amber-50 ring-1 ring-amber-500" 
+                        : isDisabled
+                          ? "border-slate-100 bg-slate-50 opacity-60 cursor-not-allowed"
+                          : "border-slate-100 hover:border-slate-200 bg-white"
+                    )}
+                  >
+                    <div className="w-10 h-10 rounded-lg bg-slate-100 overflow-hidden flex-shrink-0">
+                      <img src={eq.foto_url || 'https://picsum.photos/seed/gear/100/100'} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-1.5">
+                        <p className="font-bold text-slate-900 truncate text-xs">{eq.nombre}</p>
+                        {eq.permiso_uso === 'Restringido' && <Lock className="w-2.5 h-2.5 text-blue-500" title="Restringido" />}
+                      </div>
+                      <p className="text-[10px] text-slate-500 truncate">
+                        {isReservedNow ? (
+                          <span className="text-amber-600 font-bold flex items-center gap-1">
+                            <AlertCircle className="w-3 h-3" />
+                            Reservado
+                          </span>
+                        ) : isNoHabilitado ? (
+                          <span className="text-red-600 font-bold flex items-center gap-1">
+                            <AlertCircle className="w-3 h-3" />
+                            No habilitado
+                          </span>
+                        ) : nextRes ? (
+                          <span className="text-slate-400 font-medium">
+                            Prox: {format(parseISO(nextRes.fecha_inicio), 'dd/MM HH:mm')}
+                          </span>
+                        ) : eq.modelo}
                       </p>
                     </div>
-                  );
-                })}
-                <div className="space-y-4">
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <label className="flex items-center gap-2 text-sm font-bold text-slate-700 mb-2">
-                        <User className="w-4 h-4 text-amber-500" />
-                        Nombre del Alumno
-                      </label>
-                      <input
-                        required
-                        type="text"
-                        value={formData.alumno_nombre || ''}
-                        onChange={e => setFormData({...formData, alumno_nombre: e.target.value})}
-                        className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-amber-500 transition-all"
-                        placeholder="Ej: Nicolás Sarmiento"
-                      />
-                    </div>
-                    <div>
-                      <label className="flex items-center gap-2 text-sm font-bold text-slate-700 mb-2">
-                        <User className="w-4 h-4 text-amber-500" />
-                        DNI
-                      </label>
-                      <input
-                        required
-                        type="text"
-                        value={formData.alumno_dni || ''}
-                        onChange={e => setFormData({...formData, alumno_dni: e.target.value})}
-                        className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-amber-500 transition-all"
-                        placeholder="Ej: 38.123.456"
-                      />
-                    </div>
-                  </div>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <label className="flex items-center gap-2 text-sm font-bold text-slate-700 mb-2">
-                        <BookOpen className="w-4 h-4 text-amber-500" />
-                        Materia
-                      </label>
-                      <select
-                        required
-                        value={formData.materia || ''}
-                        onChange={e => setFormData({...formData, materia: e.target.value})}
-                        className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-amber-500 transition-all appearance-none"
-                      >
-                        <option value="">Seleccionar materia...</option>
-                        {Object.entries(MATERIAS_CATEGORIES).map(([cat, materias]) => (
-                          <optgroup key={cat} label={cat}>
-                            {materias.map(m => <option key={m} value={m}>{m}</option>)}
-                          </optgroup>
-                        ))}
-                      </select>
-                    </div>
-                    <div>
-                      <label className="flex items-center gap-2 text-sm font-bold text-slate-700 mb-2">
-                        <User className="w-4 h-4 text-amber-500" />
-                        Docente Responsable
-                      </label>
-                      <select
-                        required
-                        value={formData.docente_responsable || ''}
-                        onChange={e => setFormData({...formData, docente_responsable: e.target.value})}
-                        className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-amber-500 transition-all"
-                      >
-                        <option value="">Seleccionar docente...</option>
-                        {(docentes || []).map(d => (
-                          <option key={d.id} value={d.nombre_completo}>{d.nombre_completo}</option>
-                        ))}
-                      </select>
-                    </div>
-                  </div>
-                  <div>
-                    <label className="flex items-center gap-2 text-sm font-bold text-slate-700 mb-2">
-                      <Calendar className="w-4 h-4 text-amber-500" />
-                      Fecha de Devolución Estimada
-                    </label>
-                    <input
-                      required
-                      type="datetime-local"
-                      value={formData.fechaDevolucion || ''}
-                      onChange={e => setFormData({...formData, fechaDevolucion: e.target.value})}
-                      className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-amber-500 transition-all"
-                    />
-                  </div>
-                  <div>
-                    <label className="flex items-center gap-2 text-sm font-bold text-slate-700 mb-2">
-                      <FileText className="w-4 h-4 text-amber-500" />
-                      Comentarios / Observaciones
-                    </label>
-                    <textarea
-                      rows={3}
-                      value={formData.comentarios}
-                      onChange={e => setFormData({...formData, comentarios: e.target.value})}
-                      className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-amber-500 transition-all resize-none"
-                      placeholder="Estado de las baterías, accesorios extra, etc."
-                    />
-                  </div>
+                    {selectedIds.includes(eq.id) && (
+                      <div className="bg-amber-500 rounded-full p-1">
+                        <Check className="w-3 h-3 text-white" />
+                      </div>
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+
+        {/* Right Column: Form */}
+        <div className="lg:col-span-7 space-y-6">
+          <div className="bg-white p-8 rounded-2xl shadow-sm border border-slate-200 space-y-6">
+            <h2 className="font-bold text-slate-900 flex items-center gap-2 border-b border-slate-100 pb-4">
+              <FileText className="w-5 h-5 text-amber-500" />
+              Datos del Préstamo
+            </h2>
+
+            {(Object.entries(conflicts || {}) as [string, Reservation][]).map(([eqId, res]) => {
+              const eq = (equipments || []).find(e => e.id === eqId);
+              return (
+                <div key={res.id} className="bg-red-50 border border-red-200 p-4 rounded-xl text-red-700 text-sm flex items-start gap-3 animate-in fade-in slide-in-from-top-2">
+                  <AlertCircle className="w-5 h-5 flex-shrink-0" />
+                  <p>
+                    <strong>⚠️ Conflicto:</strong> {eq?.nombre} reservado por {res.docente_nombre} el {format(parseISO(res.fecha_inicio), 'dd/MM HH:mm')}.
+                  </p>
+                </div>
+              );
+            })}
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="space-y-4">
+                <div>
+                  <label className="flex items-center gap-2 text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">
+                    <User className="w-3.5 h-3.5 text-amber-500" />
+                    Nombre del Alumno
+                  </label>
+                  <input
+                    required
+                    type="text"
+                    value={formData.alumno_nombre || ''}
+                    onChange={e => setFormData({...formData, alumno_nombre: e.target.value})}
+                    className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-amber-500 transition-all text-sm"
+                    placeholder="Nombre completo"
+                  />
+                </div>
+                <div>
+                  <label className="flex items-center gap-2 text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">
+                    <User className="w-3.5 h-3.5 text-amber-500" />
+                    DNI
+                  </label>
+                  <input
+                    required
+                    type="text"
+                    value={formData.alumno_dni || ''}
+                    onChange={e => setFormData({...formData, alumno_dni: e.target.value})}
+                    className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-amber-500 transition-all text-sm"
+                    placeholder="Número de documento"
+                  />
                 </div>
               </div>
 
-              <div className="flex justify-between">
-                <button
-                  onClick={() => setStep(1)}
-                  className="flex items-center gap-2 px-6 py-3 text-slate-600 font-bold hover:bg-slate-100 rounded-xl transition-all"
-                >
-                  <ChevronLeft className="w-5 h-5" />
-                  Volver a selección
-                </button>
-                <button
-                  disabled={!isFormValid()}
-                  onClick={handleFinish}
-                  className="btn-primary flex items-center gap-2 px-8 py-3 disabled:opacity-50"
-                >
-                  {submitting ? <Loader2 className="w-5 h-5 animate-spin" /> : <Check className="w-5 h-5" />}
-                  Finalizar y Generar PDF
-                </button>
+              <div className="space-y-4">
+                <div>
+                  <label className="flex items-center gap-2 text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">
+                    <BookOpen className="w-3.5 h-3.5 text-amber-500" />
+                    Materia
+                  </label>
+                  <select
+                    required
+                    value={formData.materia || ''}
+                    onChange={e => setFormData({...formData, materia: e.target.value})}
+                    className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-amber-500 transition-all appearance-none text-sm"
+                  >
+                    <option value="">Seleccionar materia...</option>
+                    {Object.entries(MATERIAS_CATEGORIES).map(([cat, materias]) => (
+                      <optgroup key={cat} label={cat}>
+                        {materias.map(m => <option key={m} value={m}>{m}</option>)}
+                      </optgroup>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="flex items-center gap-2 text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">
+                    <User className="w-3.5 h-3.5 text-amber-500" />
+                    Docente Responsable
+                  </label>
+                  <select
+                    required
+                    value={formData.docente_responsable || ''}
+                    onChange={e => setFormData({...formData, docente_responsable: e.target.value})}
+                    className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-amber-500 transition-all text-sm"
+                  >
+                    <option value="">Seleccionar docente...</option>
+                    {(docentes || []).map(d => (
+                      <option key={d.id} value={d.nombre_completo}>{d.nombre_completo}</option>
+                    ))}
+                  </select>
+                </div>
               </div>
             </div>
 
-            <div className="space-y-4">
-              <div className="bg-slate-900 text-white p-6 rounded-2xl shadow-lg">
-                <div className="flex items-center gap-2 mb-4 border-b border-slate-800 pb-4">
-                  <ShoppingCart className="w-5 h-5 text-amber-500" />
-                  <h2 className="font-bold">Resumen de Equipos</h2>
-                </div>
-                <div className="space-y-3 max-h-[400px] overflow-y-auto pr-2">
-                  {(equipments || []).filter(e => (selectedIds || []).includes(e.id)).map(eq => (
-                    <div key={eq.id} className="flex items-center gap-3 group">
-                      <div className="w-10 h-10 rounded-lg bg-slate-800 overflow-hidden flex-shrink-0">
-                        <img src={eq.foto_url || 'https://picsum.photos/seed/gear/100/100'} className="w-full h-full object-cover opacity-80" referrerPolicy="no-referrer" />
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium text-slate-200 truncate">{eq.nombre}</p>
-                        <p className="text-[10px] text-slate-500 truncate">{eq.modelo}</p>
-                      </div>
-                      <button 
-                        onClick={() => toggleSelect(eq.id)}
-                        className="text-slate-600 hover:text-red-400 opacity-0 group-hover:opacity-100 transition-all"
-                      >
-                        <X className="w-4 h-4" />
-                      </button>
-                    </div>
-                  ))}
-                </div>
-                <div className="mt-6 pt-4 border-t border-slate-800 text-center">
-                  <p className="text-xs text-slate-500">Total de ítems: <span className="text-amber-500 font-bold">{selectedIds.length}</span></p>
-                </div>
-              </div>
+            <div>
+              <label className="flex items-center gap-2 text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">
+                <Calendar className="w-3.5 h-3.5 text-amber-500" />
+                Devolución Estimada
+              </label>
+              <input
+                required
+                type="datetime-local"
+                value={formData.fechaDevolucion || ''}
+                onChange={e => setFormData({...formData, fechaDevolucion: e.target.value})}
+                className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-amber-500 transition-all text-sm"
+              />
             </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+
+            <div>
+              <label className="flex items-center gap-2 text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">
+                <FileText className="w-3.5 h-3.5 text-amber-500" />
+                Observaciones
+              </label>
+              <textarea
+                rows={2}
+                value={formData.comentarios}
+                onChange={e => setFormData({...formData, comentarios: e.target.value})}
+                className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-amber-500 transition-all resize-none text-sm"
+                placeholder="Detalles adicionales..."
+              />
+            </div>
+
+            <div className="pt-4 border-t border-slate-100 flex justify-end">
+              <button
+                disabled={!isFormValid() || submitting}
+                onClick={handleFinish}
+                className="bg-slate-900 text-white px-10 py-4 rounded-2xl font-bold flex items-center gap-3 hover:bg-slate-800 transition-all shadow-lg shadow-slate-200 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {submitting ? <Loader2 className="w-5 h-5 animate-spin" /> : <Check className="w-5 h-5" />}
+                Registrar Préstamo y Generar PDF
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   );
 };

@@ -19,7 +19,7 @@ export interface Equipment {
   descripcion: string;
   foto_url: string;
   estado: EquipmentStatus;
-  restriccion: string | boolean;
+  permiso_uso: 'Libre uso' | 'Restringido' | 'No habilitado';
   piezas: Pieza[]; // JSONB array of objects
   created_at?: string;
   updated_at?: string;
