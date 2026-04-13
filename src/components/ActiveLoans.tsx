@@ -67,16 +67,16 @@ export const ActiveLoans: React.FC<{ filterMora?: boolean }> = ({ filterMora = f
             ...acc, 
             [eq.id]: {
               ...eq,
-              estado: (eq.estado.toLowerCase() === 'roto' || 
-                       eq.estado.toLowerCase() === 'en reparación' || 
-                       eq.estado.toLowerCase() === 'perdido' || 
-                       eq.estado.toLowerCase() === 'mantenimiento' || 
-                       eq.estado.toLowerCase() === 'incompleto' ||
-                       eq.estado.toLowerCase() === 'fuera de servicio') 
+              estado: (String(eq.estado || '').toLowerCase() === 'roto' || 
+                       String(eq.estado || '').toLowerCase() === 'en reparación' || 
+                       String(eq.estado || '').toLowerCase() === 'perdido' || 
+                       String(eq.estado || '').toLowerCase() === 'mantenimiento' || 
+                       String(eq.estado || '').toLowerCase() === 'incompleto' ||
+                       String(eq.estado || '').toLowerCase() === 'fuera de servicio') 
                        ? 'Fuera de Servicio' 
-                       : (eq.estado.toLowerCase() === 'eliminado' || eq.estado.toLowerCase() === 'archivado' ? 'Archivado' : 
-                          eq.estado.toLowerCase() === 'disponible' ? 'Disponible' :
-                          eq.estado.toLowerCase() === 'prestado' ? 'Prestado' : eq.estado)
+                       : (String(eq.estado || '').toLowerCase() === 'eliminado' || String(eq.estado || '').toLowerCase() === 'archivado' ? 'Archivado' : 
+                          String(eq.estado || '').toLowerCase() === 'disponible' ? 'Disponible' :
+                          String(eq.estado || '').toLowerCase() === 'prestado' ? 'Prestado' : eq.estado)
             } 
           }), {});
           setEquipments(eqMap);

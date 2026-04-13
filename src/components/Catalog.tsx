@@ -33,8 +33,9 @@ const statusConfig: Record<EquipmentStatus, { color: string, icon: any, label: s
   'Archivado': { color: 'text-slate-500 bg-slate-50 border-slate-200', icon: Trash2, label: 'Archivado' },
 };
 
-const mapStatus = (status: string): EquipmentStatus => {
-  const s = status.toLowerCase();
+const mapStatus = (status: string | null | undefined): EquipmentStatus => {
+  if (!status) return 'Disponible';
+  const s = String(status).toLowerCase();
   if (s === 'roto' || s === 'en reparación' || s === 'perdido' || s === 'mantenimiento' || s === 'incompleto' || s === 'fuera de servicio') {
     return 'Fuera de Servicio';
   }

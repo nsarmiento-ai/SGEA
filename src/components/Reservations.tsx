@@ -25,7 +25,7 @@ import { generateReservationPDF } from '../lib/pdf';
 
 const mapStatus = (status: string | null | undefined): EquipmentStatus => {
   if (!status) return 'Disponible';
-  const s = status.toLowerCase();
+  const s = String(status).toLowerCase();
   if (s === 'roto' || s === 'en reparación' || s === 'perdido' || s === 'mantenimiento' || s === 'incompleto' || s === 'fuera de servicio') {
     return 'Fuera de Servicio';
   }
@@ -402,6 +402,101 @@ export const Reservations: React.FC = () => {
               ))}
             </div>
           </div>
+
+          {/* Sección Mis Habituales */}
+          {activeTab === 'catalogo' && !showFavorites && (profile?.favoritos || []).length > 0 && (
+            <div className="mb-10 animate-in fade-in slide-in-from-top-4 duration-700">
+              <div className="flex items-center gap-2 mb-6">
+                <div className="w-8 h-8 rounded-lg bg-amber-500 flex items-center justify-center text-white shadow-lg shadow-amber-200">
+                  <Star className="w-4 h-4 fill-current" />
+                </div>
+                <h2 className="text-xl font-black text-slate-900 uppercase tracking-tight">Mis Habituales</h2>
+                <div className="h-px flex-1 bg-slate-100 ml-4"></div>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
+                {(equipments || [])
+                  .filter(eq => (profile?.favoritos || []).includes(eq.id))
+                  .map((eq) => {
+                    const isInCart = (cart || []).find(item => item.id === eq.id);
+                    const isReservedForDates = checkOverlap([eq.id], formData.fecha_inicio, formData.fecha_fin);
+                    const isOutOfService = eq.estado === 'Fuera de Servicio';
+                    const isArchived = eq.estado === 'Archivado';
+                    const isUnavailable = isReservedForDates || isOutOfService || isArchived;
+
+                    return (
+                      <motion.div
+                        layout
+                        key={`fav-${eq.id}`}
+                        initial={{ opacity: 0, scale: 0.95 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        className={cn(
+                          "bg-white rounded-3xl border overflow-hidden shadow-sm hover:shadow-xl transition-all group flex flex-col",
+                          isInCart ? "border-amber-500 ring-2 ring-amber-500/20" : "border-slate-200",
+                          isUnavailable && !isInCart && "opacity-75 grayscale-[0.5]"
+                        )}
+                      >
+                        <div className="relative h-48 bg-slate-100 overflow-hidden">
+                          <img
+                            src={eq.foto_url || 'https://picsum.photos/seed/camera/400/300'}
+                            alt={eq.nombre}
+                            referrerPolicy="no-referrer"
+                            className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+                          />
+                          <button 
+                            onClick={() => toggleFavorite(eq.id)}
+                            className="absolute top-4 right-4 p-2.5 bg-white/90 backdrop-blur-sm rounded-full shadow-lg border border-slate-100 transition-transform active:scale-90"
+                          >
+                            <Star className="w-5 h-5 fill-amber-500 text-amber-500" />
+                          </button>
+                          <div className="absolute bottom-4 left-4 flex flex-col gap-2">
+                            <span className="px-3 py-1 bg-slate-900/80 backdrop-blur-sm text-white text-[10px] font-black uppercase rounded-lg tracking-wider w-fit">
+                              {eq.categoria}
+                            </span>
+                          </div>
+                        </div>
+                        
+                        <div className="p-5 flex-1 flex flex-col">
+                          <h3 className="font-black text-slate-900 text-base leading-tight mb-1">{eq.nombre}</h3>
+                          <p className="text-xs text-slate-500 mb-4">{eq.modelo}</p>
+                          
+                          <div className="mt-auto">
+                            {isInCart ? (
+                              <button 
+                                onClick={() => removeFromCart(eq.id)}
+                                className="w-full py-2.5 bg-red-50 text-red-600 rounded-xl font-bold text-xs flex items-center justify-center gap-2 hover:bg-red-100 transition-colors"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                                Quitar
+                              </button>
+                            ) : (
+                              <button 
+                                onClick={() => addToCart(eq)}
+                                disabled={isUnavailable}
+                                className={cn(
+                                  "w-full py-2.5 rounded-xl font-bold text-xs flex items-center justify-center gap-2 transition-all shadow-md",
+                                  isUnavailable 
+                                    ? "bg-slate-100 text-slate-400 cursor-not-allowed shadow-none" 
+                                    : "bg-slate-900 text-white hover:bg-amber-500 shadow-slate-200"
+                                )}
+                              >
+                                {isUnavailable ? 'No disponible' : 'Añadir'}
+                              </button>
+                            )}
+                          </div>
+                        </div>
+                      </motion.div>
+                    );
+                  })}
+              </div>
+              <div className="mt-10 mb-6 flex items-center gap-2">
+                <div className="w-8 h-8 rounded-lg bg-slate-100 flex items-center justify-center text-slate-400">
+                  <Filter className="w-4 h-4" />
+                </div>
+                <h2 className="text-xl font-black text-slate-900 uppercase tracking-tight">Catálogo Completo</h2>
+                <div className="h-px flex-1 bg-slate-100 ml-4"></div>
+              </div>
+            </div>
+          )}
 
           {loading ? (
             <div className="flex flex-col items-center justify-center py-20">
