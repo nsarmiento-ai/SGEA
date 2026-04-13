@@ -254,8 +254,8 @@ const ReceiveModal: React.FC<{ loan: Loan, equipmentsMap: Record<string, Equipme
         .from('prestamos') 
         .update({ 
           estado: 'Finalizado',
-          observaciones_devolucion: observaciones,
-          tiene_incidencias: hasDamage
+          observaciones_recepcion: observaciones,
+          fecha_devolucion_real: new Date().toISOString()
         })
         .eq('id', loan.id);
 
@@ -266,7 +266,7 @@ const ReceiveModal: React.FC<{ loan: Loan, equipmentsMap: Record<string, Equipme
         const eq = equipmentStates[eqId];
         if (!eq) continue;
 
-        let newEqStatus: EquipmentStatus = hasDamage ? 'Fuera de Servicio' : 'Disponible';
+        let newEqStatus: EquipmentStatus = hasDamage ? 'Mantenimiento' : 'Disponible';
         let hasIssues = hasDamage;
         let issueDetails = [];
 
@@ -275,7 +275,7 @@ const ReceiveModal: React.FC<{ loan: Loan, equipmentsMap: Record<string, Equipme
           const hasDamaged = eq.piezas.some(p => p.estado === 'Dañado');
           
           if (hasMissing || hasDamaged) {
-            newEqStatus = 'Fuera de Servicio';
+            newEqStatus = 'Mantenimiento';
             hasIssues = true;
           }
 
@@ -304,7 +304,7 @@ const ReceiveModal: React.FC<{ loan: Loan, equipmentsMap: Record<string, Equipme
             fecha_salida: loan.fecha_salida,
             fecha_entrada: new Date().toISOString(),
             alumno_nombre: loan.alumno_nombre,
-            estado_salida: 'Bueno', // This should ideally be tracked from the loan start
+            estado_salida: 'Bueno', 
             estado_entrada: newEqStatus === 'Disponible' ? 'Bueno' : 'Con Incidencias',
             observaciones_entrada: observaciones,
             prestamo_id: loan.id,

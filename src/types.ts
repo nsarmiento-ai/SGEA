@@ -1,4 +1,4 @@
-export type EquipmentStatus = 'Disponible' | 'Prestado' | 'Fuera de Servicio' | 'Archivado';
+export type EquipmentStatus = 'Disponible' | 'Prestado' | 'Fuera de Servicio' | 'Mantenimiento' | 'Archivado';
 
 export type PiezaEstado = 'OK' | 'Dañado' | 'Faltante';
 
@@ -44,9 +44,11 @@ export interface Loan {
   responsable_nombre: string;
   fecha_salida: string;
   fecha_devolucion_estimada: string;
+  fecha_devolucion_real?: string;
   estado: LoanStatus;
   equipos_ids: string[]; // Array of equipment IDs
   comentarios?: string;
+  observaciones_recepcion?: string;
   created_at?: string;
 }
 

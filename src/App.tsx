@@ -26,8 +26,8 @@ function AppContent() {
     // Force PostgREST schema refresh after DB updates
     const refreshSchema = async () => {
       try {
-        await supabase.from('reservas').select('materia').limit(1);
-        await supabase.from('prestamos').select('materia').limit(1);
+        await supabase.from('reservas').select('materia, aula, alumno_nombre').limit(1);
+        await supabase.from('prestamos').select('materia, alumno_nombre, alumno_dni, estado, fecha_devolucion_real, observaciones_recepcion').limit(1);
         await supabase.from('historial_recursos').select('*').limit(1);
         console.log('Schema refresh triggered');
       } catch (e) {
