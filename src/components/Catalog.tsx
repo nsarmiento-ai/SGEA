@@ -582,7 +582,7 @@ const HistoryModal: React.FC<{ equipment: Equipment, onClose: () => void }> = ({
         .from('historial_recursos')
         .select('*')
         .eq('recurso_id', equipment.id)
-        .order('fecha_salida', { ascending: false });
+        .order('created_at', { ascending: false });
       
       if (data) setHistory(data);
       setLoading(false);

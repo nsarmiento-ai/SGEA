@@ -176,7 +176,9 @@ export const LoanWizard: React.FC = () => {
         .select()
         .single();
 
-      if (loanError) throw loanError;
+      if (loanError || !loan) {
+        throw new Error(loanError?.message || 'No se pudo crear el registro del préstamo.');
+      }
 
       // 2. Update Equipments
       console.log('Actualizando equipos a "Prestado". IDs:', selectedIds);
@@ -199,7 +201,6 @@ export const LoanWizard: React.FC = () => {
       // 2.6 Log to Resource History (Hoja de Vida)
       const historyEntries = selectedIds.map(id => ({
         recurso_id: id,
-        usuario_id: loan.usuario_id || null,
         docente_nombre: formData.docente_responsable,
         materia: formData.materia,
         pañolero_entrega: activeResponsable!,

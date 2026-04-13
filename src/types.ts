@@ -80,7 +80,7 @@ export interface Profile {
 export interface ResourceHistory {
   id: string;
   recurso_id: string;
-  usuario_id: string;
+  usuario_id?: string;
   docente_nombre: string;
   materia: string;
   pañolero_entrega: string;
