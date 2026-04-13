@@ -16,9 +16,26 @@ import { Reservations } from './components/Reservations';
 import { PendingReservations } from './components/PendingReservations';
 import { CalendarPage } from './components/CalendarPage';
 import { Loader2 } from 'lucide-react';
+import { useEffect } from 'react';
+import { supabase } from './lib/supabase';
 
 function AppContent() {
   const { activeResponsable, loading, role, profile } = useApp();
+
+  useEffect(() => {
+    // Force PostgREST schema refresh after DB updates
+    const refreshSchema = async () => {
+      try {
+        await supabase.from('reservas').select('materia').limit(1);
+        await supabase.from('prestamos').select('materia').limit(1);
+        await supabase.from('historial_recursos').select('*').limit(1);
+        console.log('Schema refresh triggered');
+      } catch (e) {
+        console.error('Schema refresh failed (expected if columns not yet added):', e);
+      }
+    };
+    refreshSchema();
+  }, []);
 
   if (loading) {
     return (

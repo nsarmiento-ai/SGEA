@@ -65,6 +65,8 @@ export const Reservations: React.FC = () => {
     fecha_inicio: '',
     fecha_fin: '',
     materia: '',
+    aula: '',
+    alumno_nombre: ''
   });
 
   const categories = ['Todas', 'Cámaras', 'Sonido', 'Iluminación', 'Grip', 'Accesorios', 'Espacio', 'Otros'];
@@ -233,6 +235,8 @@ export const Reservations: React.FC = () => {
         fecha_fin: new Date(formData.fecha_fin).toISOString(),
         docente_nombre: activeResponsable || '',
         materia: formData.materia,
+        aula: formData.aula,
+        alumno_nombre: formData.alumno_nombre,
         estado: 'Pendiente'
       };
 
@@ -252,7 +256,13 @@ export const Reservations: React.FC = () => {
 
       setIsModalOpen(false);
       setCart([]);
-      setFormData({ fecha_inicio: '', fecha_fin: '' });
+      setFormData({ 
+        fecha_inicio: '', 
+        fecha_fin: '', 
+        materia: '',
+        aula: '',
+        alumno_nombre: ''
+      });
       await fetchData(); // Ensure data is fetched before switching tab
       setActiveTab('mis-reservas');
       alert('Reserva realizada con éxito. Se ha descargado tu comprobante.');
@@ -896,6 +906,46 @@ export const Reservations: React.FC = () => {
                       </select>
                     </div>
                   </div>
+
+                  <div>
+                    <label className="block text-sm font-black text-slate-700 mb-2 uppercase tracking-wider">Aula / Espacio</label>
+                    <div className="relative">
+                      <MapPin className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 w-5 h-5" />
+                      <select
+                        required
+                        value={formData.aula}
+                        onChange={e => setFormData({...formData, aula: e.target.value})}
+                        className="w-full pl-12 pr-4 py-4 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:ring-2 focus:ring-amber-500 font-medium appearance-none"
+                      >
+                        <option value="">Seleccione aula...</option>
+                        <option value="Aula A">Aula A</option>
+                        <option value="Aula B">Aula B</option>
+                        <option value="Aula C">Aula C</option>
+                        <option value="Aula D">Aula D</option>
+                        <option value="Aula E">Aula E</option>
+                        <option value="Aula F">Aula F</option>
+                        <option value="Aula G">Aula G</option>
+                        <option value="SET">SET</option>
+                        <option value="Exteriores">Exteriores</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-black text-slate-700 mb-2 uppercase tracking-wider">Alumno Responsable</label>
+                    <div className="relative">
+                      <User className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 w-5 h-5" />
+                      <input
+                        required
+                        type="text"
+                        placeholder="Nombre del alumno"
+                        value={formData.alumno_nombre}
+                        onChange={e => setFormData({...formData, alumno_nombre: e.target.value})}
+                        className="w-full pl-12 pr-4 py-4 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:ring-2 focus:ring-amber-500 font-medium"
+                      />
+                    </div>
+                  </div>
+
                   <div>
                     <label className="block text-sm font-black text-slate-700 mb-2 uppercase tracking-wider">Fecha Desde</label>
                     <div className="relative">
