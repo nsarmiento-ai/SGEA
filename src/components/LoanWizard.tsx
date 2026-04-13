@@ -41,6 +41,7 @@ export const LoanWizard: React.FC = () => {
     alumno_dni: '',
     alumno_que_retira: '', // New optional field
     materia: '',
+    aula: '',
     docente_responsable: '',
     fechaDevolucion: format(addDays(new Date(), 1), "yyyy-MM-dd'T'HH:mm"),
     comentarios: ''
@@ -199,6 +200,7 @@ export const LoanWizard: React.FC = () => {
           alumno_dni: formData.alumno_dni,
           alumno_que_retira: formData.alumno_que_retira || null,
           materia: formData.materia,
+          aula_asignada: formData.aula || null,
           docente_responsable: formData.docente_responsable,
           responsable_nombre: activeResponsable!,
           fecha_salida: new Date().toISOString(),
@@ -408,16 +410,40 @@ export const LoanWizard: React.FC = () => {
               <div className="space-y-6">
                 <div className="bg-white p-8 rounded-[2rem] border border-slate-200 shadow-sm space-y-6">
                   <div className="space-y-4">
-                    <label className="block">
+                    <label className="block relative">
                       <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Docente Responsable</span>
-                      <select 
-                        value={formData.docente_responsable}
-                        onChange={(e) => setFormData({...formData, docente_responsable: e.target.value})}
-                        className="w-full mt-2 px-4 py-3 bg-slate-50 border border-slate-100 rounded-2xl outline-none focus:ring-2 focus:ring-amber-500 font-bold text-slate-700"
-                      >
-                        <option value="">Seleccione Docente</option>
-                        {docentes.map(d => <option key={d.id} value={d.nombre}>{d.nombre}</option>)}
-                      </select>
+                      <div className="relative mt-2">
+                        <input 
+                          type="text"
+                          placeholder="Escriba o seleccione un docente..."
+                          value={formData.docente_responsable}
+                          onChange={(e) => setFormData({...formData, docente_responsable: e.target.value})}
+                          className="w-full px-4 py-3 bg-slate-50 border border-slate-100 rounded-2xl outline-none focus:ring-2 focus:ring-amber-500 font-bold text-slate-700"
+                        />
+                        {formData.docente_responsable && !docentes.find(d => d.nombre === formData.docente_responsable) && (
+                          <div className="absolute right-4 top-1/2 -translate-y-1/2">
+                            <span className="px-2 py-1 bg-amber-100 text-amber-700 text-[8px] font-black rounded uppercase">Nuevo</span>
+                          </div>
+                        )}
+                      </div>
+                      
+                      {/* Suggestions list */}
+                      {formData.docente_responsable && !docentes.find(d => d.nombre === formData.docente_responsable) && (
+                        <div className="absolute z-10 w-full mt-1 bg-white border border-slate-100 rounded-xl shadow-lg max-h-40 overflow-y-auto">
+                          {docentes
+                            .filter(d => d.nombre.toLowerCase().includes(formData.docente_responsable.toLowerCase()))
+                            .map(d => (
+                              <button
+                                key={d.id}
+                                onClick={() => setFormData({...formData, docente_responsable: d.nombre})}
+                                className="w-full text-left px-4 py-2 text-sm font-bold text-slate-700 hover:bg-slate-50 transition-colors"
+                              >
+                                {d.nombre}
+                              </button>
+                            ))
+                          }
+                        </div>
+                      )}
                     </label>
 
                     <label className="block">
@@ -434,6 +460,20 @@ export const LoanWizard: React.FC = () => {
                               <option key={m} value={m}>{m}</option>
                             ))}
                           </optgroup>
+                        ))}
+                      </select>
+                    </label>
+
+                    <label className="block">
+                      <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Aula Asignada (Opcional)</span>
+                      <select 
+                        value={formData.aula || ''}
+                        onChange={(e) => setFormData({...formData, aula: e.target.value})}
+                        className="w-full mt-2 px-4 py-3 bg-slate-50 border border-slate-100 rounded-2xl outline-none focus:ring-2 focus:ring-amber-500 font-bold text-slate-700"
+                      >
+                        <option value="">No asignar aula</option>
+                        {['Aula A', 'Aula B', 'Aula C', 'Aula D', 'Aula E', 'Aula F', 'Aula G', 'SET'].map(a => (
+                          <option key={a} value={a}>{a}</option>
                         ))}
                       </select>
                     </label>

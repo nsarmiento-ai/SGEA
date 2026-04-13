@@ -46,3 +46,14 @@ export const MATERIAS = {
     'Taller Pretesis'
   ]
 };
+
+export const AULAS = [
+  'Aula A',
+  'Aula B',
+  'Aula C',
+  'Aula D',
+  'Aula E',
+  'Aula F',
+  'Aula G',
+  'SET'
+];

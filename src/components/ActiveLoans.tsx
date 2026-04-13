@@ -120,6 +120,58 @@ export const ActiveLoans: React.FC<{ filterMora?: boolean }> = ({ filterMora = f
           <h3 className="text-2xl font-black text-slate-900 mb-2">Sin préstamos {filterMora ? 'en mora' : 'activos'}</h3>
           <p className="text-slate-500">No se encontraron registros que coincidan con la búsqueda.</p>
         </div>
+      ) : filterMora ? (
+        <div className="space-y-4">
+          {loans.map((loan) => (
+            <motion.div 
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              key={loan.id} 
+              className="bg-white p-6 rounded-[2rem] border-2 border-red-100 shadow-sm flex flex-col md:flex-row items-center justify-between gap-6 hover:border-red-500 transition-all"
+            >
+              <div className="flex items-center gap-6 flex-1">
+                <div className="w-16 h-16 rounded-2xl bg-red-50 flex items-center justify-center flex-shrink-0">
+                  <AlertTriangle className="w-8 h-8 text-red-600" />
+                </div>
+                <div>
+                  <div className="flex items-center gap-2 mb-1">
+                    <h3 className="text-xl font-black text-slate-900">{loan.alumno_nombre}</h3>
+                    <span className="px-2 py-0.5 bg-red-100 text-red-700 text-[10px] font-black rounded uppercase">EN MORA</span>
+                  </div>
+                  <p className="text-sm font-bold text-slate-500">DNI: {loan.alumno_dni} • Materia: <span className="text-amber-600">{loan.materia}</span></p>
+                  <p className="text-xs text-slate-400 mt-1">Docente: {loan.docente_responsable}</p>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-4 px-6 border-x border-slate-100">
+                <div className="text-center">
+                  <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Debía devolver</p>
+                  <p className="text-sm font-black text-red-600">{formatDate(loan.fecha_devolucion_estimada)}</p>
+                </div>
+                <div className="text-center">
+                  <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Días de retraso</p>
+                  <p className="text-sm font-black text-slate-900">{Math.abs(differenceInDays(new Date(), new Date(loan.fecha_devolucion_estimada)))} días</p>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-3">
+                <div className="flex -space-x-2 mr-4">
+                  {(loan.equipos_ids || []).map(id => (
+                    <div key={id} className="w-10 h-10 rounded-xl border-2 border-white bg-slate-100 overflow-hidden shadow-sm" title={equipments[id]?.nombre}>
+                      <img src={equipments[id]?.foto_url || 'https://picsum.photos/seed/gear/50/50'} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+                    </div>
+                  ))}
+                </div>
+                <button 
+                  onClick={() => setSelectedLoan(loan)}
+                  className="bg-slate-900 text-white px-8 py-4 rounded-2xl font-black text-sm hover:bg-red-600 transition-all shadow-lg shadow-slate-200"
+                >
+                  RECIBIR EQUIPO
+                </button>
+              </div>
+            </motion.div>
+          ))}
+        </div>
       ) : (
         <div className="bg-white rounded-[2rem] border border-slate-200 shadow-sm overflow-hidden">
           <div className="overflow-x-auto">

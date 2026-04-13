@@ -64,6 +64,7 @@ export const Reservations: React.FC = () => {
     fecha_inicio: '',
     fecha_fin: '',
     materia: '',
+    aula: '',
   });
 
   const categories = ['Todas', 'Cámaras', 'Sonido', 'Iluminación', 'Grip', 'Accesorios', 'Espacio/Aula', 'Otros'];
@@ -448,7 +449,7 @@ export const Reservations: React.FC = () => {
           fecha_fin: new Date(formData.fecha_fin).toISOString(),
           docente_nombre: activeResponsable || '',
           materia: formData.materia,
-          aula_asignada: aula ? aula.nombre : null,
+          aula_asignada: formData.aula || (aula ? aula.nombre : null),
           estado: 'Pendiente'
         };
 
@@ -867,6 +868,20 @@ export const Reservations: React.FC = () => {
                           <option key={m} value={m}>{m}</option>
                         ))}
                       </optgroup>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-black text-slate-700 mb-2 uppercase tracking-wider">Aula Asignada (Opcional)</label>
+                  <select
+                    value={formData.aula || ''}
+                    onChange={e => setFormData({...formData, aula: e.target.value})}
+                    className="w-full px-4 py-4 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:ring-2 focus:ring-amber-500 font-medium appearance-none"
+                  >
+                    <option value="">No asignar aula</option>
+                    {['Aula A', 'Aula B', 'Aula C', 'Aula D', 'Aula E', 'Aula F', 'Aula G', 'SET'].map(a => (
+                      <option key={a} value={a}>{a}</option>
                     ))}
                   </select>
                 </div>
