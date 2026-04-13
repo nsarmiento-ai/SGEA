@@ -19,7 +19,12 @@ import {
   XCircle,
   Loader2,
   Calendar,
-  Star
+  Star,
+  LayoutGrid,
+  List,
+  CheckSquare,
+  Square,
+  BookOpen
 } from 'lucide-react';
 import { motion } from 'motion/react';
 import { cn } from '../lib/utils';
@@ -95,13 +100,32 @@ export const Catalog: React.FC = () => {
   const [showArchived, setShowArchived] = useState(false);
   const [showFavorites, setShowFavorites] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isHistoryOpen, setIsHistoryOpen] = useState(false);
+  const [selectedEquipment, setSelectedEquipment] = useState<Equipment | null>(null);
   const [editingItem, setEditingItem] = useState<Equipment | null>(null);
 
-  const categories = ['Todas', 'Cámaras', 'Sonido', 'Iluminación', 'Grip', 'Accesorios', 'Otros'];
+  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
+
+  const categories = ['Todas', 'Cámaras', 'Sonido', 'Iluminación', 'Grip', 'Accesorios', 'Espacio', 'Otros'];
 
   useEffect(() => {
     fetchEquipments();
   }, []);
+
+  const toggleSelect = (id: string) => {
+    setSelectedIds(prev => 
+      prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]
+    );
+  };
+
+  const selectAll = () => {
+    if (selectedIds.length === filteredEquipments.length) {
+      setSelectedIds([]);
+    } else {
+      setSelectedIds(filteredEquipments.map(e => e.id));
+    }
+  };
 
   const fetchEquipments = async () => {
     setLoading(true);
@@ -173,6 +197,23 @@ export const Catalog: React.FC = () => {
     }
   };
 
+  const seedAulas = async () => {
+    const { AULAS } = await import('../constants');
+    if (!confirm('¿Desea cargar las aulas predefinidas (A-G + SET) en el inventario?')) return;
+    
+    setLoading(true);
+    try {
+      const { error } = await supabase.from('equipamiento').upsert(AULAS, { onConflict: 'id' });
+      if (error) throw error;
+      alert('Aulas cargadas con éxito.');
+      fetchEquipments();
+    } catch (err: any) {
+      alert(`Error al cargar aulas: ${err.message}`);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <div className="p-8 max-w-7xl mx-auto">
       <header className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
@@ -205,6 +246,15 @@ export const Catalog: React.FC = () => {
             <Trash2 className="w-4 h-4" />
             {showArchived ? 'Ver Activos' : 'Ver Archivados'}
           </button>
+          {profile?.rol === 'Pañolero' && (
+            <button 
+              onClick={seedAulas}
+              className="flex items-center gap-2 px-4 py-2 rounded-xl font-bold text-sm transition-all border bg-white text-slate-600 border-slate-200 hover:border-amber-500"
+            >
+              <MapPin className="w-4 h-4 text-amber-500" />
+              Cargar Aulas
+            </button>
+          )}
           <button 
             onClick={() => { setEditingItem(null); setIsModalOpen(true); }}
             className="btn-primary flex items-center gap-2"
@@ -217,6 +267,35 @@ export const Catalog: React.FC = () => {
 
       <InventoryMetrics equipments={equipments} />
 
+      {/* Favoritos del Pañolero */}
+      {profile?.rol === 'Pañolero' && (profile?.favoritos || []).length > 0 && !showFavorites && (
+        <div className="mb-10">
+          <div className="flex items-center gap-2 mb-6">
+            <Star className="w-5 h-5 text-amber-500 fill-current" />
+            <h2 className="text-xl font-bold text-slate-900">Acceso Rápido (Favoritos)</h2>
+            <div className="h-px flex-1 bg-slate-200 ml-4"></div>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            {equipments
+              .filter(e => profile.favoritos.includes(e.id) && e.estado !== 'Archivado')
+              .map(eq => (
+                <div key={`fav-${eq.id}`} className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-lg bg-slate-100 overflow-hidden shrink-0">
+                    <img src={eq.foto_url || 'https://picsum.photos/seed/gear/100/100'} className="w-full h-full object-cover" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-bold text-slate-900 truncate">{eq.nombre}</p>
+                    <p className="text-[10px] text-slate-500 uppercase font-bold">{eq.categoria}</p>
+                  </div>
+                  <button onClick={() => toggleFavorite(eq.id)} className="text-amber-500">
+                    <Star className="w-4 h-4 fill-current" />
+                  </button>
+                </div>
+              ))}
+          </div>
+        </div>
+      )}
+
       <div className="flex flex-col md:flex-row gap-4 mb-8">
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 w-5 h-5" />
@@ -227,6 +306,22 @@ export const Catalog: React.FC = () => {
             onChange={(e) => setSearch(e.target.value)}
             className="w-full pl-10 pr-4 py-2 bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-amber-500 outline-none"
           />
+        </div>
+        <div className="flex gap-2">
+          <div className="bg-white border border-slate-200 rounded-xl p-1 flex">
+            <button 
+              onClick={() => setViewMode('grid')}
+              className={cn("p-1.5 rounded-lg transition-all", viewMode === 'grid' ? "bg-slate-100 text-slate-900" : "text-slate-400 hover:text-slate-600")}
+            >
+              <LayoutGrid className="w-5 h-5" />
+            </button>
+            <button 
+              onClick={() => setViewMode('list')}
+              className={cn("p-1.5 rounded-lg transition-all", viewMode === 'list' ? "bg-slate-100 text-slate-900" : "text-slate-400 hover:text-slate-600")}
+            >
+              <List className="w-5 h-5" />
+            </button>
+          </div>
         </div>
         <div className="flex gap-2 overflow-x-auto pb-2 md:pb-0">
           {categories.map(cat => (
@@ -246,12 +341,41 @@ export const Catalog: React.FC = () => {
         </div>
       </div>
 
+      {selectedIds.length > 0 && (
+        <div className="fixed bottom-8 left-1/2 -translate-x-1/2 z-40 animate-in fade-in slide-in-from-bottom-4">
+          <div className="bg-slate-900 text-white px-6 py-4 rounded-2xl shadow-2xl flex items-center gap-6 border border-slate-800">
+            <div className="flex items-center gap-2">
+              <CheckSquare className="w-5 h-5 text-amber-500" />
+              <span className="font-bold">{selectedIds.length} seleccionados</span>
+            </div>
+            <div className="h-6 w-px bg-slate-800"></div>
+            <div className="flex gap-2">
+              <button 
+                onClick={() => {
+                  // Logic to start a loan with selected items
+                  window.location.href = `/nuevo-prestamo?equipos=${selectedIds.join(',')}`;
+                }}
+                className="bg-amber-500 hover:bg-amber-600 text-white px-4 py-2 rounded-xl font-bold text-sm transition-all"
+              >
+                Despachar Selección
+              </button>
+              <button 
+                onClick={() => setSelectedIds([])}
+                className="text-slate-400 hover:text-white text-sm font-bold"
+              >
+                Cancelar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {loading ? (
         <div className="flex flex-col items-center justify-center py-20">
           <Loader2 className="w-10 h-10 animate-spin text-amber-500 mb-4" />
           <p className="text-slate-500 font-medium">Cargando inventario...</p>
         </div>
-      ) : (
+      ) : viewMode === 'grid' ? (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
           {(filteredEquipments || []).map((eq) => {
             const eqReservations = (reservations || []).filter(r => (r.equipos_ids || []).includes(eq.id));
@@ -271,8 +395,22 @@ export const Catalog: React.FC = () => {
                 key={eq.id}
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
-                className={cn("card group", isReservedNow && "ring-2 ring-amber-500")}
+                className={cn(
+                  "card group relative", 
+                  isReservedNow && "ring-2 ring-amber-500",
+                  selectedIds.includes(eq.id) && "ring-2 ring-amber-500 bg-amber-50/30"
+                )}
               >
+                <button 
+                  onClick={() => toggleSelect(eq.id)}
+                  className={cn(
+                    "absolute top-3 left-3 z-10 p-1.5 rounded-lg transition-all",
+                    selectedIds.includes(eq.id) ? "bg-amber-500 text-white shadow-lg" : "bg-white/80 backdrop-blur-sm text-slate-400 hover:text-slate-600 opacity-0 group-hover:opacity-100"
+                  )}
+                >
+                  {selectedIds.includes(eq.id) ? <CheckSquare className="w-5 h-5" /> : <Square className="w-5 h-5" />}
+                </button>
+
                 <div className="relative h-48 bg-slate-100 overflow-hidden">
                   <img
                     src={eq.foto_url || 'https://picsum.photos/seed/camera/400/300'}
@@ -282,7 +420,7 @@ export const Catalog: React.FC = () => {
                   />
                   <button 
                     onClick={() => toggleFavorite(eq.id)}
-                    className="absolute top-3 left-3 p-2 bg-white/90 backdrop-blur-sm rounded-full shadow-sm border border-slate-100 transition-transform active:scale-90"
+                    className="absolute top-3 right-12 p-2 bg-white/90 backdrop-blur-sm rounded-full shadow-sm border border-slate-100 transition-transform active:scale-90"
                   >
                     <Star className={cn(
                       "w-4 h-4 transition-colors",
@@ -303,11 +441,6 @@ export const Catalog: React.FC = () => {
                       )}
                       {isReservedNow ? 'Reservado' : (statusConfig[eq.estado] || { label: eq.estado }).label}
                     </div>
-                    {hasFutureReservations && !isReservedNow && (
-                      <div className="bg-white/90 backdrop-blur-sm text-slate-900 p-1.5 rounded-full shadow-sm border border-slate-200" title="Tiene reservas futuras">
-                        <Calendar className="w-4 h-4 text-amber-500" />
-                      </div>
-                    )}
                   </div>
                 </div>
               
@@ -315,34 +448,19 @@ export const Catalog: React.FC = () => {
                 <div className="flex justify-between items-start mb-1">
                   <span className="text-[10px] uppercase tracking-wider font-bold text-amber-600">{eq.categoria}</span>
                   <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                    {isReservedNow && (
-                      <div className="px-2 py-1 bg-amber-50 text-amber-700 text-[10px] font-black rounded border border-amber-200 uppercase">
-                        Reservado por Docente
-                      </div>
-                    )}
+                    <button 
+                      onClick={() => { setSelectedEquipment(eq); setIsHistoryOpen(true); }}
+                      className="p-1.5 hover:bg-slate-100 rounded-lg text-slate-600"
+                      title="Hoja de Vida"
+                    >
+                      <History className="w-4 h-4" />
+                    </button>
                     <button 
                       onClick={() => { setEditingItem(eq); setIsModalOpen(true); }}
                       className="p-1.5 hover:bg-slate-100 rounded-lg text-slate-600"
                     >
                       <Edit2 className="w-4 h-4" />
                     </button>
-                    {eq.estado === 'Archivado' ? (
-                      <button 
-                        onClick={() => handleRestore(eq.id, eq.nombre)}
-                        className="p-1.5 hover:bg-green-50 rounded-lg text-green-600"
-                        title="Restaurar"
-                      >
-                        <History className="w-4 h-4" />
-                      </button>
-                    ) : (
-                      <button 
-                        onClick={() => handleDelete(eq.id, eq.nombre)}
-                        className="p-1.5 hover:bg-red-50 rounded-lg text-red-500"
-                        title="Archivar"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
-                    )}
                   </div>
                 </div>
                 
@@ -354,29 +472,82 @@ export const Catalog: React.FC = () => {
                     <Tag className="w-3.5 h-3.5 text-slate-400" />
                     <span>S/N: {eq.numero_serie}</span>
                   </div>
-                  <div className="flex items-center gap-2 text-xs text-slate-600">
-                    <MapPin className="w-3.5 h-3.5 text-slate-400" />
-                    <span>{eq.ubicacion}</span>
-                  </div>
                 </div>
               </div>
-              
-                <div className="px-4 py-3 bg-slate-50 border-t border-slate-100 flex justify-between items-center">
-                  <div className="flex flex-col">
-                    <span className="text-[10px] font-bold text-slate-400">
-                      {eq.piezas && eq.piezas.length > 0 ? `KIT: ${eq.piezas.length} PIEZAS` : 'SIN PIEZAS'}
-                    </span>
-                    {isReservedNow && (
-                      <span className="text-[10px] font-black text-amber-600 uppercase">Reservado Hoy</span>
-                    )}
-                  </div>
-                  <button className="text-xs font-semibold text-amber-600 hover:text-amber-700 flex items-center gap-1">
-                    <History className="w-3.5 h-3.5" />
-                    Historial
+              </motion.div>
+            )})}
+        </div>
+      ) : (
+        <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+          <table className="w-full text-left border-collapse">
+            <thead>
+              <tr className="bg-slate-50 border-b border-slate-200">
+                <th className="p-4 w-10">
+                  <button onClick={selectAll} className="text-slate-400 hover:text-slate-600">
+                    {selectedIds.length === filteredEquipments.length ? <CheckSquare className="w-5 h-5 text-amber-500" /> : <Square className="w-5 h-5" />}
                   </button>
-                </div>
-            </motion.div>
-          )})}
+                </th>
+                <th className="p-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Recurso</th>
+                <th className="p-4 text-xs font-bold text-slate-500 uppercase tracking-wider">ID / Serie</th>
+                <th className="p-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Categoría</th>
+                <th className="p-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Estado</th>
+                <th className="p-4 text-xs font-bold text-slate-500 uppercase tracking-wider text-right">Acciones</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-100">
+              {filteredEquipments.map(eq => (
+                <tr key={eq.id} className={cn("hover:bg-slate-50 transition-colors group", selectedIds.includes(eq.id) && "bg-amber-50/30")}>
+                  <td className="p-4">
+                    <button onClick={() => toggleSelect(eq.id)} className={cn("transition-all", selectedIds.includes(eq.id) ? "text-amber-500" : "text-slate-300 group-hover:text-slate-400")}>
+                      {selectedIds.includes(eq.id) ? <CheckSquare className="w-5 h-5" /> : <Square className="w-5 h-5" />}
+                    </button>
+                  </td>
+                  <td className="p-4">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-lg bg-slate-100 overflow-hidden shrink-0">
+                        <img src={eq.foto_url || 'https://picsum.photos/seed/gear/100/100'} className="w-full h-full object-cover" />
+                      </div>
+                      <div>
+                        <p className="font-bold text-slate-900 text-sm">{eq.nombre}</p>
+                        <p className="text-xs text-slate-500">{eq.modelo}</p>
+                      </div>
+                    </div>
+                  </td>
+                  <td className="p-4 text-xs font-medium text-slate-600">{eq.numero_serie}</td>
+                  <td className="p-4">
+                    <span className="px-2 py-1 bg-slate-100 text-slate-600 text-[10px] font-bold rounded uppercase tracking-wider">
+                      {eq.categoria}
+                    </span>
+                  </td>
+                  <td className="p-4">
+                    <div className={cn(
+                      "inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold border",
+                      (statusConfig[eq.estado] || { color: 'text-slate-600 bg-slate-50 border-slate-200' }).color
+                    )}>
+                      {eq.estado}
+                    </div>
+                  </td>
+                  <td className="p-4 text-right">
+                    <div className="flex justify-end gap-2">
+                      <button 
+                        onClick={() => { setSelectedEquipment(eq); setIsHistoryOpen(true); }}
+                        className="p-1.5 text-slate-400 hover:text-amber-500 hover:bg-amber-50 rounded-lg"
+                        title="Hoja de Vida"
+                      >
+                        <History className="w-4 h-4" />
+                      </button>
+                      <button onClick={() => toggleFavorite(eq.id)} className={cn("p-1.5 rounded-lg transition-all", (profile?.favoritos || []).includes(eq.id) ? "text-amber-500" : "text-slate-300 hover:text-slate-400")}>
+                        <Star className={cn("w-4 h-4", (profile?.favoritos || []).includes(eq.id) && "fill-current")} />
+                      </button>
+                      <button onClick={() => { setEditingItem(eq); setIsModalOpen(true); }} className="p-1.5 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-lg">
+                        <Edit2 className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
       )}
 
@@ -388,6 +559,123 @@ export const Catalog: React.FC = () => {
           onSave={fetchEquipments} 
         />
       )}
+
+      {/* History Modal (Hoja de Vida) */}
+      {isHistoryOpen && selectedEquipment && (
+        <HistoryModal 
+          equipment={selectedEquipment} 
+          onClose={() => setIsHistoryOpen(false)} 
+        />
+      )}
+    </div>
+  );
+};
+
+// Sub-component for History Modal
+const HistoryModal: React.FC<{ equipment: Equipment, onClose: () => void }> = ({ equipment, onClose }) => {
+  const [history, setHistory] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchHistory = async () => {
+      const { data, error } = await supabase
+        .from('historial_recursos')
+        .select('*')
+        .eq('recurso_id', equipment.id)
+        .order('fecha_salida', { ascending: false });
+      
+      if (data) setHistory(data);
+      setLoading(false);
+    };
+    fetchHistory();
+  }, [equipment.id]);
+
+  return (
+    <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+      <div className="bg-white rounded-2xl shadow-xl w-full max-w-4xl max-h-[90vh] flex flex-col">
+        <div className="p-6 border-b border-slate-100 flex justify-between items-center bg-slate-50 rounded-t-2xl">
+          <div className="flex items-center gap-4">
+            <div className="w-12 h-12 rounded-xl bg-amber-500 flex items-center justify-center text-white shadow-lg shadow-amber-200">
+              <History className="w-6 h-6" />
+            </div>
+            <div>
+              <h2 className="text-xl font-black text-slate-900 uppercase tracking-tight">Hoja de Vida</h2>
+              <p className="text-sm text-slate-500 font-bold">{equipment.nombre} - {equipment.modelo}</p>
+            </div>
+          </div>
+          <button onClick={onClose} className="p-2 hover:bg-slate-200 rounded-xl transition-colors">
+            <XCircle className="w-6 h-6 text-slate-400" />
+          </button>
+        </div>
+        
+        <div className="flex-1 overflow-y-auto p-6">
+          {loading ? (
+            <div className="flex justify-center py-20"><Loader2 className="animate-spin text-amber-500" /></div>
+          ) : history.length === 0 ? (
+            <div className="text-center py-20 bg-slate-50 rounded-3xl border border-dashed border-slate-200">
+              <History className="w-12 h-12 text-slate-300 mx-auto mb-4" />
+              <p className="text-slate-500 font-bold">No hay historial registrado para este recurso.</p>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {history.map((entry, idx) => (
+                <div key={entry.id} className="relative pl-8 pb-8 last:pb-0">
+                  {idx !== history.length - 1 && (
+                    <div className="absolute left-[15px] top-8 bottom-0 w-px bg-slate-200"></div>
+                  )}
+                  <div className="absolute left-0 top-1.5 w-8 h-8 rounded-full bg-white border-2 border-amber-500 flex items-center justify-center z-10">
+                    <div className="w-2 h-2 rounded-full bg-amber-500"></div>
+                  </div>
+                  <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm hover:shadow-md transition-shadow">
+                    <div className="flex flex-wrap justify-between items-start gap-4 mb-4">
+                      <div>
+                        <p className="text-sm font-black text-slate-900 uppercase tracking-wider mb-1">
+                          {entry.docente_nombre}
+                        </p>
+                        <p className="text-xs text-slate-500 font-bold flex items-center gap-1">
+                          <BookOpen className="w-3 h-3" /> {entry.materia}
+                        </p>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-xs font-black text-slate-400 uppercase tracking-widest mb-1">Fecha Salida</p>
+                        <p className="text-sm font-bold text-slate-700">{new Date(entry.fecha_salida).toLocaleString()}</p>
+                      </div>
+                    </div>
+                    
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 bg-slate-50 p-4 rounded-xl border border-slate-100">
+                      <div>
+                        <p className="text-[10px] font-black text-slate-400 uppercase mb-1">Entrega</p>
+                        <p className="text-xs font-bold text-slate-700">{entry.pañolero_entrega}</p>
+                        <p className="text-[10px] text-slate-500 mt-1">Estado: <span className="text-green-600 font-black">{entry.estado_salida}</span></p>
+                      </div>
+                      <div>
+                        <p className="text-[10px] font-black text-slate-400 uppercase mb-1">Recepción</p>
+                        <p className="text-xs font-bold text-slate-700">{entry.pañolero_recibe || 'Pendiente'}</p>
+                        {entry.fecha_entrada && (
+                          <p className="text-[10px] text-slate-500 mt-1">Estado: <span className="text-amber-600 font-black">{entry.estado_entrada}</span></p>
+                        )}
+                      </div>
+                    </div>
+                    
+                    {entry.observaciones_entrada && (
+                      <div className="mt-4 p-3 bg-amber-50 border border-amber-100 rounded-xl">
+                        <p className="text-[10px] font-black text-amber-600 uppercase mb-1">Observaciones al recibir</p>
+                        <p className="text-xs text-slate-700 italic">"{entry.observaciones_entrada}"</p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+        
+        <div className="p-6 border-t border-slate-100 bg-slate-50 rounded-b-2xl flex justify-end">
+          <button onClick={onClose} className="bg-slate-900 text-white px-8 py-3 rounded-2xl font-bold shadow-lg shadow-slate-200">
+            Cerrar Hoja de Vida
+          </button>
+        </div>
+      </div>
     </div>
   );
 };
@@ -457,10 +745,10 @@ const EquipmentModal: React.FC<{ item: Equipment | null, onClose: () => void, on
             <label className="block text-sm font-medium text-slate-700 mb-1">Categoría</label>
             <select
               value={formData.categoria}
-              onChange={e => setFormData({...formData, categoria: e.target.value})}
+              onChange={e => setFormData({...formData, categoria: e.target.value as any})}
               className="w-full px-4 py-2 border border-slate-200 rounded-lg outline-none focus:ring-2 focus:ring-amber-500"
             >
-              {['Cámaras', 'Sonido', 'Iluminación', 'Grip', 'Accesorios', 'Otros'].map(c => <option key={c} value={c}>{c}</option>)}
+              {['Cámaras', 'Sonido', 'Iluminación', 'Grip', 'Accesorios', 'Espacio', 'Otros'].map(c => <option key={c} value={c}>{c}</option>)}
             </select>
           </div>
           <div>

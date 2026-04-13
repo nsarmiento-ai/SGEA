@@ -14,11 +14,13 @@ import {
   Loader2,
   Search,
   X,
-  AlertCircle
+  AlertCircle,
+  BookOpen
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { cn } from '../lib/utils';
 import { addDays, format, isWithinInterval, parseISO, isAfter } from 'date-fns';
+import { MATERIAS_CATEGORIES } from '../constants';
 
 import { useNavigate } from 'react-router-dom';
 
@@ -193,6 +195,24 @@ export const LoanWizard: React.FC = () => {
           .eq('id', reservationId);
         if (resError) console.error('Error updating reservation status:', resError);
       }
+
+      // 2.6 Log to Resource History (Hoja de Vida)
+      const historyEntries = selectedIds.map(id => ({
+        recurso_id: id,
+        usuario_id: loan.usuario_id || null,
+        docente_nombre: formData.docente_responsable,
+        materia: formData.materia,
+        pañolero_entrega: activeResponsable!,
+        fecha_salida: new Date().toISOString(),
+        estado_salida: 'Bueno', // Default or from equipment state
+        prestamo_id: loan.id
+      }));
+
+      const { error: historyError } = await supabase
+        .from('historial_recursos')
+        .insert(historyEntries);
+      
+      if (historyError) console.error('Error logging resource history:', historyError);
 
       // 3. Log Action
       await logAction(activeResponsable!, 'NUEVO_PRESTAMO', { 
@@ -394,17 +414,22 @@ export const LoanWizard: React.FC = () => {
                   <div className="grid grid-cols-2 gap-4">
                     <div>
                       <label className="flex items-center gap-2 text-sm font-bold text-slate-700 mb-2">
-                        <FileText className="w-4 h-4 text-amber-500" />
+                        <BookOpen className="w-4 h-4 text-amber-500" />
                         Materia
                       </label>
-                      <input
+                      <select
                         required
-                        type="text"
                         value={formData.materia || ''}
                         onChange={e => setFormData({...formData, materia: e.target.value})}
-                        className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-amber-500 transition-all"
-                        placeholder="Ej: Dirección de Cine"
-                      />
+                        className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-amber-500 transition-all appearance-none"
+                      >
+                        <option value="">Seleccionar materia...</option>
+                        {Object.entries(MATERIAS_CATEGORIES).map(([cat, materias]) => (
+                          <optgroup key={cat} label={cat}>
+                            {materias.map(m => <option key={m} value={m}>{m}</option>)}
+                          </optgroup>
+                        ))}
+                      </select>
                     </div>
                     <div>
                       <label className="flex items-center gap-2 text-sm font-bold text-slate-700 mb-2">

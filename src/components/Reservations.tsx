@@ -16,12 +16,18 @@ import {
   ShoppingCart,
   Plus,
   Trash2,
-  Info
+  Info,
+  LayoutGrid,
+  List,
+  CheckSquare,
+  Square,
+  BookOpen
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { cn } from '../lib/utils';
 import { parseISO, areIntervalsOverlapping } from 'date-fns';
 import { generateReservationPDF } from '../lib/pdf';
+import { MATERIAS_CATEGORIES } from '../constants';
 
 const mapStatus = (status: string | null | undefined): EquipmentStatus => {
   if (!status) return 'Disponible';
@@ -48,6 +54,8 @@ export const Reservations: React.FC = () => {
   const [authLoading, setAuthLoading] = useState(true);
   
   const [cart, setCart] = useState<Equipment[]>([]);
+  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -55,9 +63,10 @@ export const Reservations: React.FC = () => {
   const [formData, setFormData] = useState({
     fecha_inicio: '',
     fecha_fin: '',
+    materia: '',
   });
 
-  const categories = ['Todas', 'Cámaras', 'Sonido', 'Iluminación', 'Grip', 'Accesorios', 'Otros'];
+  const categories = ['Todas', 'Cámaras', 'Sonido', 'Iluminación', 'Grip', 'Accesorios', 'Espacio', 'Otros'];
 
   useEffect(() => {
     fetchData();
@@ -128,6 +137,32 @@ export const Reservations: React.FC = () => {
     setCart([...cart, eq]);
   };
 
+  const addSelectedToCart = () => {
+    const itemsToAdd = equipments.filter(eq => selectedIds.includes(eq.id));
+    const newCart = [...cart];
+    itemsToAdd.forEach(eq => {
+      if (!newCart.find(item => item.id === eq.id)) {
+        newCart.push(eq);
+      }
+    });
+    setCart(newCart);
+    setSelectedIds([]);
+  };
+
+  const toggleSelect = (id: string) => {
+    setSelectedIds(prev => 
+      prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]
+    );
+  };
+
+  const selectAll = () => {
+    if (selectedIds.length === filteredEquipments.length) {
+      setSelectedIds([]);
+    } else {
+      setSelectedIds(filteredEquipments.map(e => e.id));
+    }
+  };
+
   const removeFromCart = (id: string) => {
     setCart(cart.filter(item => item.id !== id));
   };
@@ -196,6 +231,7 @@ export const Reservations: React.FC = () => {
         fecha_inicio: new Date(formData.fecha_inicio).toISOString(),
         fecha_fin: new Date(formData.fecha_fin).toISOString(),
         docente_nombre: activeResponsable || '',
+        materia: formData.materia,
         estado: 'Pendiente'
       };
 
@@ -266,7 +302,7 @@ export const Reservations: React.FC = () => {
           <h1 className="text-3xl font-display font-bold text-slate-900">Reservas</h1>
           <p className="text-slate-500">Gestione sus reservas de equipamiento.</p>
         </div>
-        <div className="flex gap-3">
+        <div className="flex flex-wrap gap-3">
           <div className="bg-slate-100 p-1 rounded-2xl flex">
             <button
               onClick={() => setActiveTab('catalogo')}
@@ -288,6 +324,22 @@ export const Reservations: React.FC = () => {
             </button>
           </div>
           {activeTab === 'catalogo' && (
+            <div className="bg-white border border-slate-200 rounded-2xl p-1 flex shadow-sm">
+              <button 
+                onClick={() => setViewMode('grid')}
+                className={cn("p-2 rounded-xl transition-all", viewMode === 'grid' ? "bg-slate-100 text-slate-900" : "text-slate-400 hover:text-slate-600")}
+              >
+                <LayoutGrid className="w-5 h-5" />
+              </button>
+              <button 
+                onClick={() => setViewMode('list')}
+                className={cn("p-2 rounded-xl transition-all", viewMode === 'list' ? "bg-slate-100 text-slate-900" : "text-slate-400 hover:text-slate-600")}
+              >
+                <List className="w-5 h-5" />
+              </button>
+            </div>
+          )}
+          {activeTab === 'catalogo' && (
             <button 
               onClick={() => setShowFavorites(!showFavorites)}
               className={cn(
@@ -300,15 +352,6 @@ export const Reservations: React.FC = () => {
               <Star className={cn("w-5 h-5", showFavorites ? "fill-current" : "text-amber-500")} />
               {showFavorites ? 'Viendo habituales' : 'Ver habituales'}
             </button>
-          )}
-          {activeTab === 'catalogo' && (
-            <Link 
-              to="/calendario"
-              className="flex items-center gap-2 px-6 py-3 rounded-2xl font-bold text-sm transition-all border shadow-sm bg-white text-slate-600 border-slate-200 hover:border-amber-500"
-            >
-              <Calendar className="w-5 h-5 text-amber-500" />
-              Consultar Disponibilidad
-            </Link>
           )}
           {activeTab === 'catalogo' && cart.length > 0 && (
             <button 
@@ -403,8 +446,34 @@ export const Reservations: React.FC = () => {
             </div>
           </div>
 
+          {selectedIds.length > 0 && (
+            <div className="fixed bottom-8 left-1/2 -translate-x-1/2 z-40 animate-in fade-in slide-in-from-bottom-4">
+              <div className="bg-slate-900 text-white px-6 py-4 rounded-2xl shadow-2xl flex items-center gap-6 border border-slate-800">
+                <div className="flex items-center gap-2">
+                  <CheckSquare className="w-5 h-5 text-amber-500" />
+                  <span className="font-bold">{selectedIds.length} seleccionados</span>
+                </div>
+                <div className="h-6 w-px bg-slate-800"></div>
+                <div className="flex gap-2">
+                  <button 
+                    onClick={addSelectedToCart}
+                    className="bg-amber-500 hover:bg-amber-600 text-white px-4 py-2 rounded-xl font-bold text-sm transition-all"
+                  >
+                    Reservar Seleccionados
+                  </button>
+                  <button 
+                    onClick={() => setSelectedIds([])}
+                    className="text-slate-400 hover:text-white text-sm font-bold"
+                  >
+                    Cancelar
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* Sección Mis Habituales */}
-          {activeTab === 'catalogo' && !showFavorites && (profile?.favoritos || []).length > 0 && (
+          {!showFavorites && (profile?.favoritos || []).length > 0 && (
             <div className="mb-10 animate-in fade-in slide-in-from-top-4 duration-700">
               <div className="flex items-center gap-2 mb-6">
                 <div className="w-8 h-8 rounded-lg bg-amber-500 flex items-center justify-center text-white shadow-lg shadow-amber-200">
@@ -509,7 +578,7 @@ export const Reservations: React.FC = () => {
               <h3 className="text-lg font-bold text-slate-900">No se encontraron equipos</h3>
               <p className="text-slate-500">Intente ajustar los filtros o la búsqueda.</p>
             </div>
-          ) : (
+          ) : viewMode === 'grid' ? (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
               {(filteredEquipments || []).map((eq) => {
                 const isInCart = (cart || []).find(item => item.id === eq.id);
@@ -525,11 +594,22 @@ export const Reservations: React.FC = () => {
                     initial={{ opacity: 0, scale: 0.95 }}
                     animate={{ opacity: 1, scale: 1 }}
                     className={cn(
-                      "bg-white rounded-3xl border overflow-hidden shadow-sm hover:shadow-xl transition-all group flex flex-col",
+                      "bg-white rounded-3xl border overflow-hidden shadow-sm hover:shadow-xl transition-all group flex flex-col relative",
                       isInCart ? "border-amber-500 ring-2 ring-amber-500/20" : "border-slate-200",
-                      isUnavailable && !isInCart && "opacity-75 grayscale-[0.5]"
+                      isUnavailable && !isInCart && "opacity-75 grayscale-[0.5]",
+                      selectedIds.includes(eq.id) && "ring-2 ring-amber-500 bg-amber-50/30"
                     )}
                   >
+                    <button 
+                      onClick={() => toggleSelect(eq.id)}
+                      className={cn(
+                        "absolute top-4 left-4 z-10 p-2 rounded-xl transition-all",
+                        selectedIds.includes(eq.id) ? "bg-amber-500 text-white shadow-lg" : "bg-white/80 backdrop-blur-sm text-slate-400 hover:text-slate-600 opacity-0 group-hover:opacity-100"
+                      )}
+                    >
+                      {selectedIds.includes(eq.id) ? <CheckSquare className="w-5 h-5" /> : <Square className="w-5 h-5" />}
+                    </button>
+
                     <div className="relative h-56 bg-slate-100 overflow-hidden">
                       <img
                         src={eq.foto_url || 'https://picsum.photos/seed/camera/400/300'}
@@ -608,6 +688,82 @@ export const Reservations: React.FC = () => {
                   </motion.div>
                 );
               })}
+            </div>
+          ) : (
+            <div className="bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden">
+              <table className="w-full text-left border-collapse">
+                <thead>
+                  <tr className="bg-slate-50 border-b border-slate-200">
+                    <th className="p-4 w-10">
+                      <button onClick={selectAll} className="text-slate-400 hover:text-slate-600">
+                        {selectedIds.length === filteredEquipments.length ? <CheckSquare className="w-5 h-5 text-amber-500" /> : <Square className="w-5 h-5" />}
+                      </button>
+                    </th>
+                    <th className="p-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Recurso</th>
+                    <th className="p-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Categoría</th>
+                    <th className="p-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Estado</th>
+                    <th className="p-4 text-xs font-bold text-slate-500 uppercase tracking-wider text-right">Acción</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100">
+                  {filteredEquipments.map(eq => {
+                    const isInCart = (cart || []).find(item => item.id === eq.id);
+                    const isReservedForDates = checkOverlap([eq.id], formData.fecha_inicio, formData.fecha_fin);
+                    const isOutOfService = eq.estado === 'Fuera de Servicio';
+                    const isArchived = eq.estado === 'Archivado';
+                    const isUnavailable = isReservedForDates || isOutOfService || isArchived;
+
+                    return (
+                      <tr key={eq.id} className={cn("hover:bg-slate-50 transition-colors group", selectedIds.includes(eq.id) && "bg-amber-50/30")}>
+                        <td className="p-4">
+                          <button onClick={() => toggleSelect(eq.id)} className={cn("transition-all", selectedIds.includes(eq.id) ? "text-amber-500" : "text-slate-300 group-hover:text-slate-400")}>
+                            {selectedIds.includes(eq.id) ? <CheckSquare className="w-5 h-5" /> : <Square className="w-5 h-5" />}
+                          </button>
+                        </td>
+                        <td className="p-4">
+                          <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 rounded-lg bg-slate-100 overflow-hidden shrink-0">
+                              <img src={eq.foto_url || 'https://picsum.photos/seed/gear/100/100'} className="w-full h-full object-cover" />
+                            </div>
+                            <div>
+                              <p className="font-bold text-slate-900 text-sm">{eq.nombre}</p>
+                              <p className="text-xs text-slate-500">{eq.modelo}</p>
+                            </div>
+                          </div>
+                        </td>
+                        <td className="p-4">
+                          <span className="px-2 py-1 bg-slate-100 text-slate-600 text-[10px] font-bold rounded uppercase tracking-wider">
+                            {eq.categoria}
+                          </span>
+                        </td>
+                        <td className="p-4">
+                          <div className={cn(
+                            "inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold border",
+                            isUnavailable ? "bg-red-50 text-red-600 border-red-100" : "bg-green-50 text-green-600 border-green-100"
+                          )}>
+                            {isUnavailable ? 'No Disponible' : 'Disponible'}
+                          </div>
+                        </td>
+                        <td className="p-4 text-right">
+                          {isInCart ? (
+                            <button onClick={() => removeFromCart(eq.id)} className="p-2 text-red-500 hover:bg-red-50 rounded-xl">
+                              <Trash2 className="w-5 h-5" />
+                            </button>
+                          ) : (
+                            <button 
+                              onClick={() => addToCart(eq)} 
+                              disabled={isUnavailable}
+                              className={cn("p-2 rounded-xl transition-all", isUnavailable ? "text-slate-300" : "text-amber-500 hover:bg-amber-50")}
+                            >
+                              <Plus className="w-5 h-5" />
+                            </button>
+                          )}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
             </div>
           )}
         </>
@@ -698,6 +854,25 @@ export const Reservations: React.FC = () => {
                 )}
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="md:col-span-2">
+                    <label className="block text-sm font-black text-slate-700 mb-2 uppercase tracking-wider">Materia</label>
+                    <div className="relative">
+                      <BookOpen className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 w-5 h-5" />
+                      <select
+                        required
+                        value={formData.materia}
+                        onChange={e => setFormData({...formData, materia: e.target.value})}
+                        className="w-full pl-12 pr-4 py-4 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:ring-2 focus:ring-amber-500 font-medium appearance-none"
+                      >
+                        <option value="">Seleccione una materia...</option>
+                        {Object.entries(MATERIAS_CATEGORIES).map(([cat, materias]) => (
+                          <optgroup key={cat} label={cat}>
+                            {materias.map(m => <option key={m} value={m}>{m}</option>)}
+                          </optgroup>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
                   <div>
                     <label className="block text-sm font-black text-slate-700 mb-2 uppercase tracking-wider">Fecha Desde</label>
                     <div className="relative">

@@ -12,7 +12,7 @@ export interface Pieza {
 export interface Equipment {
   id: string;
   nombre: string;
-  categoria: string;
+  categoria: 'Cámaras' | 'Sonido' | 'Iluminación' | 'Grip' | 'Accesorios' | 'Espacio' | 'Otros';
   modelo: string;
   numero_serie: string;
   ubicacion: string;
@@ -75,4 +75,20 @@ export interface Profile {
   rol: 'Pañolero' | 'Docente' | null;
   favoritos: string[];
   created_at?: string;
+}
+
+export interface ResourceHistory {
+  id: string;
+  recurso_id: string;
+  usuario_id: string;
+  docente_nombre: string;
+  materia: string;
+  pañolero_entrega: string;
+  pañolero_recibe?: string;
+  fecha_salida: string;
+  fecha_entrada?: string;
+  estado_salida: string;
+  estado_entrada?: string;
+  observaciones_entrada?: string;
+  prestamo_id: string;
 }
