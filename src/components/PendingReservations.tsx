@@ -33,11 +33,7 @@ export const PendingReservations: React.FC = () => {
     setLoading(true);
     try {
       const [resData, eqData] = await Promise.all([
-        supabase
-          .from('reservas')
-          .select('*')
-          .eq('estado', 'Pendiente')
-          .order('created_at', { ascending: true }),
+        supabase.from('reservas').select('*').eq('estado', 'Pendiente').order('fecha_inicio', { ascending: true }),
         supabase.from('equipamiento').select('*')
       ]);
 
@@ -73,7 +69,6 @@ export const PendingReservations: React.FC = () => {
     const params = new URLSearchParams();
     params.set('resId', res.id);
     params.set('docente', res.docente_nombre);
-    params.set('materia', res.materia);
     params.set('equipos', res.equipos_ids.join(','));
     params.set('fin', res.fecha_fin);
     navigate(`/nuevo-prestamo?${params.toString()}`);
@@ -83,143 +78,90 @@ export const PendingReservations: React.FC = () => {
     return (
       <div className="flex flex-col items-center justify-center py-20">
         <Loader2 className="w-10 h-10 animate-spin text-amber-500 mb-4" />
-        <p className="text-slate-500 font-medium">Cargando consola de reservas...</p>
+        <p className="text-slate-500 font-medium">Cargando reservas pendientes...</p>
       </div>
     );
   }
 
   return (
-    <div className="p-8 max-w-7xl mx-auto">
-      <header className="mb-10 flex flex-col md:flex-row md:items-end justify-between gap-6">
-        <div>
-          <div className="flex items-center gap-3 mb-2">
-            <div className="w-12 h-12 rounded-2xl bg-slate-900 flex items-center justify-center shadow-lg shadow-slate-200">
-              <Clock className="w-6 h-6 text-amber-500" />
-            </div>
-            <h1 className="text-4xl font-black text-slate-900 tracking-tight">Consola de Reservas</h1>
-          </div>
-          <p className="text-slate-500 font-medium">Gestione las solicitudes remotas por orden de prioridad.</p>
-        </div>
-        <div className="bg-amber-50 border border-amber-100 px-4 py-2 rounded-xl flex items-center gap-3">
-          <AlertCircle className="w-5 h-5 text-amber-600" />
-          <p className="text-xs font-bold text-amber-800">Prioridad determinada por horario de registro</p>
-        </div>
+    <div className="p-8 max-w-6xl mx-auto">
+      <header className="mb-8">
+        <h1 className="text-3xl font-display font-bold text-slate-900">Reservas Pendientes</h1>
+        <p className="text-slate-500">Gestione las solicitudes de los docentes para su despacho.</p>
       </header>
 
       {reservations.length === 0 ? (
-        <div className="bg-white rounded-[2rem] p-20 text-center border border-dashed border-slate-300">
-          <div className="w-20 h-20 bg-slate-50 rounded-full flex items-center justify-center mx-auto mb-6">
-            <CheckCircle2 className="w-10 h-10 text-slate-300" />
-          </div>
-          <h3 className="text-2xl font-black text-slate-900 mb-2">Sin reservas pendientes</h3>
-          <p className="text-slate-500 max-w-md mx-auto">No hay solicitudes remotas que requieran atención en este momento.</p>
+        <div className="bg-white rounded-3xl p-12 text-center border border-dashed border-slate-300">
+          <CheckCircle2 className="w-12 h-12 text-green-500 mx-auto mb-4" />
+          <h3 className="text-lg font-bold text-slate-900">No hay reservas pendientes</h3>
+          <p className="text-slate-500">Todo el despacho está al día.</p>
         </div>
       ) : (
         <div className="grid grid-cols-1 gap-6">
           <AnimatePresence>
-            {reservations.map((res, index) => (
+            {reservations.map((res) => (
               <motion.div
                 key={res.id}
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, scale: 0.95 }}
-                className="bg-white rounded-[2rem] border border-slate-200 shadow-sm hover:shadow-xl transition-all overflow-hidden flex flex-col lg:flex-row group"
+                className="bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden flex flex-col md:flex-row"
               >
-                {/* Priority Indicator */}
-                <div className={cn(
-                  "lg:w-2 flex-shrink-0",
-                  index === 0 ? "bg-amber-500" : "bg-slate-200"
-                )} />
-
-                <div className="p-8 lg:w-1/3 bg-slate-50/50 border-b lg:border-b-0 lg:border-r border-slate-100 flex flex-col">
-                  <div className="flex items-center gap-4 mb-6">
-                    <div className="w-14 h-14 rounded-2xl bg-white shadow-md border border-slate-100 flex items-center justify-center text-slate-900">
-                      <User className="w-7 h-7" />
+                <div className="p-6 md:w-1/3 bg-slate-50 border-b md:border-b-0 md:border-r border-slate-100">
+                  <div className="flex items-center gap-3 mb-4">
+                    <div className="w-10 h-10 rounded-full bg-amber-100 flex items-center justify-center text-amber-600">
+                      <User className="w-5 h-5" />
                     </div>
                     <div>
-                      <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Docente Solicitante</p>
-                      <p className="text-xl font-black text-slate-900 leading-tight">{res.docente_nombre}</p>
-                      <div className="mt-1 flex items-center gap-2">
-                        <span className="px-2 py-0.5 bg-amber-100 text-amber-700 text-[10px] font-black rounded uppercase">
-                          {res.materia}
-                        </span>
-                      </div>
+                      <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">Docente</p>
+                      <p className="font-bold text-slate-900">{res.docente_nombre}</p>
                     </div>
                   </div>
-
-                  <div className="space-y-4 mt-auto">
-                    <div className="bg-white p-4 rounded-2xl border border-slate-100 shadow-sm">
-                      <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Horario de Registro</p>
-                      <div className="flex items-center gap-3 text-slate-900">
-                        <Clock className="w-4 h-4 text-amber-500" />
-                        <span className="font-bold text-sm">
-                          {res.created_at ? format(parseISO(res.created_at), 'dd/MM HH:mm:ss') : 'N/A'}
-                        </span>
-                      </div>
-                      {index === 0 && (
-                        <p className="text-[10px] text-amber-600 font-bold mt-2 flex items-center gap-1">
-                          <AlertCircle className="w-3 h-3" />
-                          Primera en cola de prioridad
-                        </p>
-                      )}
+                  <div className="space-y-3">
+                    <div className="flex items-center gap-3 text-sm text-slate-600">
+                      <Calendar className="w-4 h-4 text-slate-400" />
+                      <span>Desde: {format(parseISO(res.fecha_inicio), 'dd/MM/yyyy HH:mm')}</span>
                     </div>
-
-                    <div className="flex flex-col gap-2">
-                      <div className="flex items-center gap-3 text-xs text-slate-600">
-                        <Calendar className="w-4 h-4 text-slate-400" />
-                        <span>Retiro: <strong className="text-slate-900">{format(parseISO(res.fecha_inicio), 'dd/MM HH:mm')}</strong></span>
-                      </div>
-                      <div className="flex items-center gap-3 text-xs text-slate-600">
-                        <ArrowRight className="w-4 h-4 text-slate-400" />
-                        <span>Devolución: <strong className="text-slate-900">{format(parseISO(res.fecha_fin), 'dd/MM HH:mm')}</strong></span>
-                      </div>
+                    <div className="flex items-center gap-3 text-sm text-slate-600">
+                      <Clock className="w-4 h-4 text-slate-400" />
+                      <span>Hasta: {format(parseISO(res.fecha_fin), 'dd/MM/yyyy HH:mm')}</span>
                     </div>
                   </div>
                 </div>
 
-                <div className="p-8 flex-1 flex flex-col">
-                  <div className="flex items-center justify-between mb-6">
-                    <div className="flex items-center gap-2">
-                      <Package className="w-5 h-5 text-amber-500" />
-                      <h3 className="text-lg font-black text-slate-900 uppercase tracking-tight">Equipamiento a Preparar</h3>
-                    </div>
-                    <span className="px-3 py-1 bg-slate-100 text-slate-600 text-[10px] font-black rounded-full">
-                      {(res.equipos_ids || []).length} Ítems
-                    </span>
+                <div className="p-6 flex-1 flex flex-col">
+                  <div className="flex items-center gap-2 mb-4">
+                    <Package className="w-4 h-4 text-amber-500" />
+                    <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">Equipamiento Solicitado</p>
                   </div>
-
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-8">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mb-6">
                     {(res.equipos_ids || []).map(id => {
                       const eq = (equipments || []).find(e => e.id === id);
                       return (
-                        <div key={id} className="flex items-center gap-3 bg-slate-50 p-3 rounded-2xl border border-slate-100 group-hover:border-amber-200 transition-colors">
-                          <div className="w-12 h-12 rounded-xl bg-white overflow-hidden flex-shrink-0 border border-slate-100 shadow-sm">
-                            <img src={eq?.foto_url || 'https://picsum.photos/seed/gear/100/100'} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+                        <div key={id} className="flex items-center gap-2 bg-slate-50 p-2 rounded-xl border border-slate-100">
+                          <div className="w-8 h-8 rounded-lg bg-slate-200 overflow-hidden flex-shrink-0">
+                            <img src={eq?.foto_url || 'https://picsum.photos/seed/gear/50/50'} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
                           </div>
-                          <div className="min-w-0">
-                            <p className="text-sm font-black text-slate-900 truncate">{eq?.nombre || 'Equipo desconocido'}</p>
-                            <p className="text-[10px] font-bold text-slate-400 truncate">{eq?.modelo}</p>
-                          </div>
+                          <span className="text-xs font-bold text-slate-700 truncate">{eq?.nombre || 'Equipo desconocido'}</span>
                         </div>
                       );
                     })}
                   </div>
 
-                  <div className="mt-auto flex flex-col sm:flex-row gap-4">
+                  <div className="mt-auto flex gap-3">
                     <button 
                       onClick={() => handleCancel(res.id)}
-                      className="flex-1 px-6 py-4 border-2 border-slate-100 text-slate-500 rounded-2xl font-black text-sm hover:bg-red-50 hover:text-red-600 hover:border-red-100 transition-all flex items-center justify-center gap-2"
+                      className="flex-1 px-4 py-3 border border-slate-200 text-slate-600 rounded-2xl font-bold text-sm hover:bg-red-50 hover:text-red-600 hover:border-red-200 transition-all flex items-center justify-center gap-2"
                     >
-                      <XCircle className="w-5 h-5" />
-                      RECHAZAR / CANCELAR
+                      <XCircle className="w-4 h-4" />
+                      Cancelar
                     </button>
                     <button 
                       onClick={() => handleDeliver(res)}
-                      className="flex-[2] bg-slate-900 text-white px-6 py-4 rounded-2xl font-black text-sm hover:bg-amber-500 transition-all flex items-center justify-center gap-3 shadow-xl shadow-slate-200 group/btn"
+                      className="flex-[2] bg-slate-900 text-white px-4 py-3 rounded-2xl font-bold text-sm hover:bg-amber-500 transition-all flex items-center justify-center gap-2 shadow-lg shadow-slate-200"
                     >
-                      <CheckCircle2 className="w-5 h-5 text-amber-500 group-hover/btn:text-white transition-colors" />
-                      ENTREGAR EQUIPOS
-                      <ArrowRight className="w-5 h-5 opacity-0 -translate-x-2 group-hover/btn:opacity-100 group-hover/btn:translate-x-0 transition-all" />
+                      <ArrowRight className="w-4 h-4" />
+                      Entregar Equipos
                     </button>
                   </div>
                 </div>

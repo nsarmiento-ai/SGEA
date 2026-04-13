@@ -21,20 +21,8 @@ export interface Equipment {
   estado: EquipmentStatus;
   restriccion: string | boolean;
   piezas: Pieza[]; // JSONB array of objects
-  last_observation?: string;
   created_at?: string;
   updated_at?: string;
-}
-
-export interface ResourceHistory {
-  id: string;
-  recurso_id: string;
-  fecha_movimiento: string;
-  usuario_responsable: string;
-  materia: string;
-  accion: 'Reserva' | 'Préstamo' | 'Devolución' | 'Service';
-  estado_detalle: string;
-  pañolero_turno: string;
 }
 
 export interface Responsable {
@@ -51,9 +39,7 @@ export interface Loan {
   id: string;
   alumno_nombre: string;
   alumno_dni: string;
-  alumno_que_retira?: string;
   materia: string;
-  aula_asignada?: string;
   docente_responsable: string;
   responsable_nombre: string;
   fecha_salida: string;
@@ -77,8 +63,6 @@ export interface Reservation {
   equipos_ids: string[]; // Array of equipment IDs
   usuario_id: string;
   docente_nombre: string;
-  materia: string;
-  aula_asignada?: string;
   fecha_inicio: string;
   fecha_fin: string;
   estado: 'Pendiente' | 'Entregada' | 'Cancelada' | 'Activa';

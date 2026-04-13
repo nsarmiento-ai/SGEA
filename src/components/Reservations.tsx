@@ -16,18 +16,12 @@ import {
   ShoppingCart,
   Plus,
   Trash2,
-  Info,
-  LayoutGrid,
-  List,
-  CheckSquare,
-  Square,
-  Package
+  Info
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { cn } from '../lib/utils';
 import { parseISO, areIntervalsOverlapping } from 'date-fns';
 import { generateReservationPDF } from '../lib/pdf';
-import { MATERIAS } from '../constants';
 
 const mapStatus = (status: string | null | undefined): EquipmentStatus => {
   if (!status) return 'Disponible';
@@ -49,8 +43,6 @@ export const Reservations: React.FC = () => {
   const [search, setSearch] = useState('');
   const [category, setCategory] = useState('Todas');
   const [showFavorites, setShowFavorites] = useState(false);
-  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
-  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [activeTab, setActiveTab] = useState<'catalogo' | 'mis-reservas'>('catalogo');
   const [currentUser, setCurrentUser] = useState<any>(null);
   const [authLoading, setAuthLoading] = useState(true);
@@ -63,11 +55,9 @@ export const Reservations: React.FC = () => {
   const [formData, setFormData] = useState({
     fecha_inicio: '',
     fecha_fin: '',
-    materia: '',
-    aula: '',
   });
 
-  const categories = ['Todas', 'Cámaras', 'Sonido', 'Iluminación', 'Grip', 'Accesorios', 'Espacio/Aula', 'Otros'];
+  const categories = ['Todas', 'Cámaras', 'Sonido', 'Iluminación', 'Grip', 'Accesorios', 'Otros'];
 
   useEffect(() => {
     fetchData();
@@ -79,20 +69,6 @@ export const Reservations: React.FC = () => {
       setCurrentUser(null);
       setAuthLoading(false);
     });
-  }, []);
-
-  useEffect(() => {
-    const handleBulkAdd = (e: any) => {
-      const items = e.detail as Equipment[];
-      setCart(prev => {
-        const newItems = items.filter(item => !prev.some(p => p.id === item.id));
-        return [...prev, ...newItems];
-      });
-      alert(`${items.length} equipos añadidos al carrito.`);
-    };
-
-    window.addEventListener('add-to-cart-bulk', handleBulkAdd);
-    return () => window.removeEventListener('add-to-cart-bulk', handleBulkAdd);
   }, []);
 
   const fetchData = async () => {
@@ -147,232 +123,6 @@ export const Reservations: React.FC = () => {
 
   console.log(`Equipos filtrados: ${filteredEquipments.length} de ${equipments.length}`);
 
-  const favoriteEquipments = filteredEquipments.filter(eq => (profile?.favoritos || []).includes(eq.id));
-  const otherEquipments = filteredEquipments.filter(eq => !(profile?.favoritos || []).includes(eq.id));
-
-  const toggleSelection = (id: string) => {
-    const newSelected = new Set(selectedIds);
-    if (newSelected.has(id)) {
-      newSelected.delete(id);
-    } else {
-      newSelected.add(id);
-    }
-    setSelectedIds(newSelected);
-  };
-
-  const handleBulkAddToCart = () => {
-    const selectedItems = equipments.filter(eq => selectedIds.has(eq.id));
-    setCart(prev => {
-      const newItems = selectedItems.filter(item => !prev.some(p => p.id === item.id));
-      return [...prev, ...newItems];
-    });
-    setSelectedIds(new Set());
-    alert(`${selectedItems.length} equipos añadidos al carrito.`);
-  };
-
-  const renderEquipmentItem = (eq: Equipment) => {
-    const isInCart = (cart || []).find(item => item.id === eq.id);
-    const isReservedForDates = checkOverlap([eq.id], formData.fecha_inicio, formData.fecha_fin);
-    const isOutOfService = eq.estado === 'Fuera de Servicio';
-    const isArchived = eq.estado === 'Archivado';
-    const isUnavailable = isReservedForDates || isOutOfService || isArchived;
-    const isSelected = selectedIds.has(eq.id);
-
-    if (viewMode === 'list') {
-      return (
-        <motion.div
-          layout
-          key={eq.id}
-          initial={{ opacity: 0, x: -20 }}
-          animate={{ opacity: 1, x: 0 }}
-          className={cn(
-            "bg-white rounded-2xl border border-slate-200 p-3 flex items-center gap-4 hover:border-amber-500 transition-all group",
-            isSelected && "bg-amber-50 border-amber-200 ring-1 ring-amber-100",
-            isUnavailable && "opacity-75 grayscale-[0.5]"
-          )}
-        >
-          <button 
-            onClick={() => toggleSelection(eq.id)}
-            disabled={isUnavailable}
-            className={cn(
-              "flex-shrink-0 transition-colors",
-              isUnavailable ? "text-slate-200 cursor-not-allowed" : "text-slate-300 hover:text-amber-500"
-            )}
-          >
-            {isSelected ? <CheckSquare className="w-6 h-6 text-amber-500" /> : <Square className="w-6 h-6" />}
-          </button>
-
-          <div className="w-16 h-16 rounded-xl bg-slate-100 overflow-hidden flex-shrink-0 border border-slate-100">
-            <img 
-              src={eq.foto_url || 'https://picsum.photos/seed/camera/100/100'} 
-              alt={eq.nombre} 
-              className="w-full h-full object-cover"
-              referrerPolicy="no-referrer"
-            />
-          </div>
-
-          <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-2 mb-0.5">
-              <span className="text-[10px] font-black text-amber-600 uppercase tracking-tighter">{eq.categoria}</span>
-              <span className="text-[10px] font-bold text-slate-400">ID: {eq.numero_serie}</span>
-            </div>
-            <h3 className="font-bold text-slate-900 truncate">{eq.nombre}</h3>
-            <p className="text-xs text-slate-500 truncate">{eq.modelo}</p>
-          </div>
-
-          <div className="hidden md:flex flex-col items-end gap-1 px-4 border-l border-slate-100">
-            <div className={cn(
-              "flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-black uppercase border",
-              isUnavailable 
-                ? "bg-slate-100 text-slate-400 border-slate-200"
-                : "bg-green-50 text-green-600 border-green-200"
-            )}>
-              {isArchived ? 'Archivado' : isOutOfService ? 'Fuera de Servicio' : isReservedForDates ? 'Ocupado' : 'Disponible'}
-            </div>
-            <span className="text-[10px] font-bold text-slate-400">{eq.ubicacion}</span>
-          </div>
-
-          <div className="flex items-center gap-2">
-            <button 
-              onClick={() => toggleFavorite(eq.id)}
-              className="p-2 hover:bg-slate-100 rounded-xl transition-colors"
-            >
-              <Star className={cn("w-4 h-4", (profile?.favoritos || []).includes(eq.id) ? "fill-amber-500 text-amber-500" : "text-slate-300")} />
-            </button>
-            
-            {isInCart ? (
-              <button 
-                onClick={() => removeFromCart(eq.id)}
-                className="p-2 bg-red-50 text-red-500 rounded-xl hover:bg-red-100 transition-colors"
-                title="Quitar de la reserva"
-              >
-                <Trash2 className="w-4 h-4" />
-              </button>
-            ) : (
-              <button 
-                onClick={() => addToCart(eq)}
-                disabled={isUnavailable}
-                className={cn(
-                  "p-2 rounded-xl transition-all",
-                  isUnavailable 
-                    ? "bg-slate-50 text-slate-300 cursor-not-allowed" 
-                    : "bg-slate-900 text-white hover:bg-amber-500"
-                )}
-                title="Añadir a la reserva"
-              >
-                <Plus className="w-4 h-4" />
-              </button>
-            )}
-          </div>
-        </motion.div>
-      );
-    }
-
-    return (
-      <motion.div
-        layout
-        key={eq.id}
-        initial={{ opacity: 0, scale: 0.95 }}
-        animate={{ opacity: 1, scale: 1 }}
-        className={cn(
-          "bg-white rounded-3xl border overflow-hidden shadow-sm hover:shadow-xl transition-all group flex flex-col",
-          isInCart ? "border-amber-500 ring-2 ring-amber-500/20" : "border-slate-200",
-          isSelected && "ring-2 ring-amber-400 bg-amber-50/30",
-          isUnavailable && !isInCart && "opacity-75 grayscale-[0.5]"
-        )}
-      >
-        <div className="relative h-56 bg-slate-100 overflow-hidden">
-          <img
-            src={eq.foto_url || 'https://picsum.photos/seed/camera/400/300'}
-            alt={eq.nombre}
-            referrerPolicy="no-referrer"
-            className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
-          />
-          
-          {/* Checkbox Overlay */}
-          <button 
-            onClick={() => toggleSelection(eq.id)}
-            disabled={isUnavailable}
-            className={cn(
-              "absolute top-4 left-4 p-2 rounded-xl backdrop-blur-md transition-all z-10",
-              isUnavailable ? "hidden" : isSelected ? "bg-amber-500 text-white shadow-lg" : "bg-white/80 text-slate-400 opacity-0 group-hover:opacity-100"
-            )}
-          >
-            {isSelected ? <CheckSquare className="w-5 h-5" /> : <Square className="w-5 h-5" />}
-          </button>
-
-          <button 
-            onClick={() => toggleFavorite(eq.id)}
-            className="absolute top-4 right-4 p-2.5 bg-white/90 backdrop-blur-sm rounded-full shadow-lg border border-slate-100 transition-transform active:scale-90 z-10"
-          >
-            <Star className={cn(
-              "w-5 h-5 transition-colors",
-              (profile?.favoritos || []).includes(eq.id) ? "fill-amber-500 text-amber-500" : "text-slate-400"
-            )} />
-          </button>
-          <div className="absolute bottom-4 left-4 flex flex-col gap-2">
-            <span className="px-3 py-1 bg-slate-900/80 backdrop-blur-sm text-white text-[10px] font-black uppercase rounded-lg tracking-wider w-fit">
-              {eq.categoria}
-            </span>
-            {isUnavailable && (
-              <span className={cn(
-                "px-3 py-1 text-white text-[10px] font-black uppercase rounded-lg tracking-wider w-fit shadow-lg",
-                isArchived ? "bg-slate-600" : isOutOfService ? "bg-red-600" : "bg-amber-600"
-              )}>
-                {isArchived ? 'Archivado' : isOutOfService ? 'Fuera de Servicio' : 'Ocupado en estas fechas'}
-              </span>
-            )}
-          </div>
-        </div>
-        
-        <div className="p-6 flex-1 flex flex-col">
-          <h3 className="font-black text-slate-900 text-lg leading-tight mb-1">{eq.nombre}</h3>
-          <p className="text-sm text-slate-500 mb-4">{eq.modelo}</p>
-          
-          <div className="mt-auto space-y-4">
-            <div className="flex items-center gap-2 text-xs text-slate-600 bg-slate-50 p-3 rounded-xl border border-slate-100">
-              <Info className="w-4 h-4 text-amber-500" />
-              <span className="truncate">{eq.descripcion || 'Sin descripción.'}</span>
-            </div>
-            
-            {isInCart ? (
-              <button 
-                onClick={() => removeFromCart(eq.id)}
-                className="w-full py-3 bg-red-50 text-red-600 rounded-2xl font-bold flex items-center justify-center gap-2 hover:bg-red-100 transition-colors"
-              >
-                <Trash2 className="w-5 h-5" />
-                Quitar de la reserva
-              </button>
-            ) : (
-              <button 
-                onClick={() => addToCart(eq)}
-                disabled={isUnavailable}
-                className={cn(
-                  "w-full py-3 rounded-2xl font-bold flex items-center justify-center gap-2 transition-all shadow-lg",
-                  isUnavailable 
-                    ? "bg-slate-100 text-slate-400 cursor-not-allowed shadow-none" 
-                    : "bg-slate-900 text-white hover:bg-amber-500 shadow-slate-200"
-                )}
-              >
-                {isUnavailable ? (
-                  <>
-                    <XCircle className="w-5 h-5" />
-                    No disponible
-                  </>
-                ) : (
-                  <>
-                    <Plus className="w-5 h-5" />
-                    Añadir a la reserva
-                  </>
-                )}
-              </button>
-            )}
-          </div>
-        </div>
-      </motion.div>
-    );
-  };
-
   const addToCart = (eq: Equipment) => {
     if (cart.find(item => item.id === eq.id)) return;
     setCart([...cart, eq]);
@@ -412,8 +162,8 @@ export const Reservations: React.FC = () => {
       return;
     }
 
-    if (!formData.fecha_inicio || !formData.fecha_fin || !formData.materia) {
-      setError('Debe completar todos los campos, incluyendo la materia.');
+    if (!formData.fecha_inicio || !formData.fecha_fin) {
+      setError('Debe seleccionar fechas de inicio y fin.');
       return;
     }
 
@@ -422,36 +172,32 @@ export const Reservations: React.FC = () => {
       return;
     }
 
-      const equiposIds = (cart || []).map(eq => eq.id);
-      const aula = (cart || []).find(e => e.categoria === 'Espacio/Aula');
+    const equiposIds = (cart || []).map(eq => eq.id);
+    if (checkOverlap(equiposIds, formData.fecha_inicio, formData.fecha_fin)) {
+      setError('Uno o más equipos ya tienen una reserva en ese rango de fechas.');
+      return;
+    }
 
-      if (checkOverlap(equiposIds, formData.fecha_inicio, formData.fecha_fin)) {
-        setError('Uno o más equipos ya tienen una reserva en ese rango de fechas.');
+    setSubmitting(true);
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      if (!user) {
+        alert('Tu sesión ha expirado. Por favor, inicia sesión de nuevo.');
+        window.location.reload();
         return;
       }
 
-      setSubmitting(true);
-      try {
-        const { data: { user } } = await supabase.auth.getUser();
-        
-        if (!user) {
-          alert('Tu sesión ha expirado. Por favor, inicia sesión de nuevo.');
-          window.location.reload();
-          return;
-        }
+      console.log('Intentando reserva con:', { user, carrito: cart });
 
-        console.log('Intentando reserva con:', { user, carrito: cart });
-
-        const newReservation = {
-          equipos_ids: equiposIds,
-          usuario_id: user.id,
-          fecha_inicio: new Date(formData.fecha_inicio).toISOString(),
-          fecha_fin: new Date(formData.fecha_fin).toISOString(),
-          docente_nombre: activeResponsable || '',
-          materia: formData.materia,
-          aula_asignada: formData.aula || (aula ? aula.nombre : null),
-          estado: 'Pendiente'
-        };
+      const newReservation = {
+        equipos_ids: equiposIds,
+        usuario_id: user.id,
+        fecha_inicio: new Date(formData.fecha_inicio).toISOString(),
+        fecha_fin: new Date(formData.fecha_fin).toISOString(),
+        docente_nombre: activeResponsable || '',
+        estado: 'Pendiente'
+      };
 
       const { data: insertedData, error: insertError } = await supabase.from('reservas').insert([newReservation]).select().single();
       if (insertError) throw insertError;
@@ -469,7 +215,7 @@ export const Reservations: React.FC = () => {
 
       setIsModalOpen(false);
       setCart([]);
-      setFormData({ fecha_inicio: '', fecha_fin: '', materia: '' });
+      setFormData({ fecha_inicio: '', fecha_fin: '' });
       await fetchData(); // Ensure data is fetched before switching tab
       setActiveTab('mis-reservas');
       alert('Reserva realizada con éxito. Se ha descargado tu comprobante.');
@@ -521,24 +267,6 @@ export const Reservations: React.FC = () => {
           <p className="text-slate-500">Gestione sus reservas de equipamiento.</p>
         </div>
         <div className="flex gap-3">
-          {activeTab === 'catalogo' && (
-            <div className="flex bg-white border border-slate-200 rounded-2xl p-1 mr-2 shadow-sm">
-              <button 
-                onClick={() => setViewMode('grid')}
-                className={cn("p-2.5 rounded-xl transition-all", viewMode === 'grid' ? "bg-slate-100 text-slate-900" : "text-slate-400 hover:text-slate-600")}
-                title="Vista Cuadrícula"
-              >
-                <LayoutGrid className="w-5 h-5" />
-              </button>
-              <button 
-                onClick={() => setViewMode('list')}
-                className={cn("p-2.5 rounded-xl transition-all", viewMode === 'list' ? "bg-slate-100 text-slate-900" : "text-slate-400 hover:text-slate-600")}
-                title="Vista Lista Compacta"
-              >
-                <List className="w-5 h-5" />
-              </button>
-            </div>
-          )}
           <div className="bg-slate-100 p-1 rounded-2xl flex">
             <button
               onClick={() => setActiveTab('catalogo')}
@@ -658,15 +386,6 @@ export const Reservations: React.FC = () => {
               />
             </div>
             <div className="flex gap-2 overflow-x-auto pb-2 md:pb-0">
-              {selectedIds.size > 0 && (
-                <button 
-                  onClick={handleBulkAddToCart}
-                  className="bg-amber-500 text-white px-6 py-3 rounded-2xl font-bold text-sm shadow-lg shadow-amber-200 flex items-center gap-2 animate-in fade-in slide-in-from-right-4"
-                >
-                  <CheckSquare className="w-5 h-5" />
-                  Añadir Seleccionados ({selectedIds.size})
-                </button>
-              )}
               {categories.map(cat => (
                 <button
                   key={cat}
@@ -696,42 +415,104 @@ export const Reservations: React.FC = () => {
               <p className="text-slate-500">Intente ajustar los filtros o la búsqueda.</p>
             </div>
           ) : (
-            <div className="space-y-12">
-              {/* Favorites Section */}
-              {favoriteEquipments.length > 0 && !showFavorites && (
-                <section>
-                  <div className="flex items-center gap-2 mb-6">
-                    <Star className="w-5 h-5 text-amber-500 fill-current" />
-                    <h2 className="text-xl font-black text-slate-900 uppercase tracking-tight">Mis Favoritos / Habituales</h2>
-                    <div className="h-px bg-slate-100 flex-1 ml-4" />
-                  </div>
-                  <div className={cn(
-                    viewMode === 'grid' 
-                      ? "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8"
-                      : "flex flex-col gap-3"
-                  )}>
-                    {favoriteEquipments.map(eq => renderEquipmentItem(eq))}
-                  </div>
-                </section>
-              )}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
+              {(filteredEquipments || []).map((eq) => {
+                const isInCart = (cart || []).find(item => item.id === eq.id);
+                const isReservedForDates = checkOverlap([eq.id], formData.fecha_inicio, formData.fecha_fin);
+                const isOutOfService = eq.estado === 'Fuera de Servicio';
+                const isArchived = eq.estado === 'Archivado';
+                const isUnavailable = isReservedForDates || isOutOfService || isArchived;
 
-              {/* Main Inventory Section */}
-              <section>
-                {(favoriteEquipments.length > 0 && !showFavorites) && (
-                  <div className="flex items-center gap-2 mb-6">
-                    <Package className="w-5 h-5 text-slate-400" />
-                    <h2 className="text-xl font-black text-slate-900 uppercase tracking-tight">Resto del Inventario</h2>
-                    <div className="h-px bg-slate-100 flex-1 ml-4" />
-                  </div>
-                )}
-                <div className={cn(
-                  viewMode === 'grid' 
-                    ? "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8"
-                    : "flex flex-col gap-3"
-                )}>
-                  {otherEquipments.map(eq => renderEquipmentItem(eq))}
-                </div>
-              </section>
+                return (
+                  <motion.div
+                    layout
+                    key={eq.id}
+                    initial={{ opacity: 0, scale: 0.95 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    className={cn(
+                      "bg-white rounded-3xl border overflow-hidden shadow-sm hover:shadow-xl transition-all group flex flex-col",
+                      isInCart ? "border-amber-500 ring-2 ring-amber-500/20" : "border-slate-200",
+                      isUnavailable && !isInCart && "opacity-75 grayscale-[0.5]"
+                    )}
+                  >
+                    <div className="relative h-56 bg-slate-100 overflow-hidden">
+                      <img
+                        src={eq.foto_url || 'https://picsum.photos/seed/camera/400/300'}
+                        alt={eq.nombre}
+                        referrerPolicy="no-referrer"
+                        className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+                      />
+                      <button 
+                        onClick={() => toggleFavorite(eq.id)}
+                        className="absolute top-4 right-4 p-2.5 bg-white/90 backdrop-blur-sm rounded-full shadow-lg border border-slate-100 transition-transform active:scale-90"
+                      >
+                        <Star className={cn(
+                          "w-5 h-5 transition-colors",
+                          (profile?.favoritos || []).includes(eq.id) ? "fill-amber-500 text-amber-500" : "text-slate-400"
+                        )} />
+                      </button>
+                      <div className="absolute bottom-4 left-4 flex flex-col gap-2">
+                        <span className="px-3 py-1 bg-slate-900/80 backdrop-blur-sm text-white text-[10px] font-black uppercase rounded-lg tracking-wider w-fit">
+                          {eq.categoria}
+                        </span>
+                        {isUnavailable && (
+                          <span className={cn(
+                            "px-3 py-1 text-white text-[10px] font-black uppercase rounded-lg tracking-wider w-fit shadow-lg",
+                            isArchived ? "bg-slate-600" : isOutOfService ? "bg-red-600" : "bg-amber-600"
+                          )}>
+                            {isArchived ? 'Archivado' : isOutOfService ? 'Fuera de Servicio' : 'Ocupado en estas fechas'}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                    
+                    <div className="p-6 flex-1 flex flex-col">
+                      <h3 className="font-black text-slate-900 text-lg leading-tight mb-1">{eq.nombre}</h3>
+                      <p className="text-sm text-slate-500 mb-4">{eq.modelo}</p>
+                      
+                      <div className="mt-auto space-y-4">
+                        <div className="flex items-center gap-2 text-xs text-slate-600 bg-slate-50 p-3 rounded-xl border border-slate-100">
+                          <Info className="w-4 h-4 text-amber-500" />
+                          <span className="truncate">{eq.descripcion || 'Sin descripción.'}</span>
+                        </div>
+                        
+                        {isInCart ? (
+                          <button 
+                            onClick={() => removeFromCart(eq.id)}
+                            className="w-full py-3 bg-red-50 text-red-600 rounded-2xl font-bold flex items-center justify-center gap-2 hover:bg-red-100 transition-colors"
+                          >
+                            <Trash2 className="w-5 h-5" />
+                            Quitar de la reserva
+                          </button>
+                        ) : (
+                          <button 
+                            onClick={() => addToCart(eq)}
+                            disabled={isUnavailable}
+                            className={cn(
+                              "w-full py-3 rounded-2xl font-bold flex items-center justify-center gap-2 transition-all shadow-lg",
+                              isUnavailable 
+                                ? "bg-slate-100 text-slate-400 cursor-not-allowed shadow-none" 
+                                : "bg-slate-900 text-white hover:bg-amber-500 shadow-slate-200"
+                            )}
+                          >
+                            {isUnavailable ? (
+                              <>
+                                <XCircle className="w-5 h-5" />
+                                No disponible
+                              </>
+                            ) : (
+                              <>
+                                <Plus className="w-5 h-5" />
+                                Añadir a la reserva
+                              </>
+                            )}
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  </motion.div>
+                );
+              })}
             </div>
           )}
         </>
@@ -746,25 +527,22 @@ export const Reservations: React.FC = () => {
           ) : (
             <div className="grid grid-cols-1 gap-4">
               {(reservations || []).filter(r => r.docente_nombre === activeResponsable).map(res => (
-                  <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm flex flex-col md:flex-row gap-6">
-                    <div className="flex-1">
-                      <div className="flex items-center gap-3 mb-2">
-                        <span className={cn(
-                          "px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider",
-                          res.estado === 'Pendiente' ? "bg-amber-100 text-amber-700" :
-                          res.estado === 'Entregada' ? "bg-green-100 text-green-700" :
-                          res.estado === 'Cancelada' ? "bg-red-100 text-red-700" :
-                          "bg-blue-100 text-blue-700"
-                        )}>
-                          {res.estado}
-                        </span>
-                        <span className="text-sm font-bold text-slate-900">
-                          {res.materia}
-                        </span>
-                        <span className="text-sm text-slate-500">
-                          {new Date(res.fecha_inicio).toLocaleDateString()} - {new Date(res.fecha_fin).toLocaleDateString()}
-                        </span>
-                      </div>
+                <div key={res.id} className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm flex flex-col md:flex-row gap-6">
+                  <div className="flex-1">
+                    <div className="flex items-center gap-3 mb-4">
+                      <span className={cn(
+                        "px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider",
+                        res.estado === 'Pendiente' ? "bg-amber-100 text-amber-700" :
+                        res.estado === 'Entregada' ? "bg-green-100 text-green-700" :
+                        res.estado === 'Cancelada' ? "bg-red-100 text-red-700" :
+                        "bg-blue-100 text-blue-700"
+                      )}>
+                        {res.estado}
+                      </span>
+                      <span className="text-sm text-slate-500">
+                        {new Date(res.fecha_inicio).toLocaleDateString()} - {new Date(res.fecha_fin).toLocaleDateString()}
+                      </span>
+                    </div>
                     <div className="flex flex-wrap gap-2">
                       {(res.equipos_ids || []).map(id => {
                         const eq = (equipments || []).find(e => e.id === id);
@@ -853,39 +631,6 @@ export const Reservations: React.FC = () => {
                   </div>
                 </div>
 
-                <div>
-                  <label className="block text-sm font-black text-slate-700 mb-2 uppercase tracking-wider">Materia / Cátedra</label>
-                  <select
-                    required
-                    value={formData.materia}
-                    onChange={e => setFormData({...formData, materia: e.target.value})}
-                    className="w-full px-4 py-4 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:ring-2 focus:ring-amber-500 font-medium appearance-none"
-                  >
-                    <option value="">Seleccione una materia...</option>
-                    {Object.entries(MATERIAS).map(([group, list]) => (
-                      <optgroup key={group} label={group}>
-                        {list.map(m => (
-                          <option key={m} value={m}>{m}</option>
-                        ))}
-                      </optgroup>
-                    ))}
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-black text-slate-700 mb-2 uppercase tracking-wider">Aula Asignada (Opcional)</label>
-                  <select
-                    value={formData.aula || ''}
-                    onChange={e => setFormData({...formData, aula: e.target.value})}
-                    className="w-full px-4 py-4 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:ring-2 focus:ring-amber-500 font-medium appearance-none"
-                  >
-                    <option value="">No asignar aula</option>
-                    {['Aula A', 'Aula B', 'Aula C', 'Aula D', 'Aula E', 'Aula F', 'Aula G', 'SET'].map(a => (
-                      <option key={a} value={a}>{a}</option>
-                    ))}
-                  </select>
-                </div>
-
                 <div className="max-h-40 overflow-y-auto space-y-2 pr-2">
                   <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-2">Equipos en el pedido</p>
                   {(cart || []).map(eq => (
@@ -913,7 +658,7 @@ export const Reservations: React.FC = () => {
                   </button>
                   <button 
                     type="submit" 
-                    disabled={submitting || !currentUser || !formData.materia}
+                    disabled={submitting || !currentUser}
                     className="flex-1 bg-slate-900 text-white font-black uppercase tracking-wider py-4 rounded-2xl flex items-center justify-center gap-2 hover:bg-amber-500 transition-all shadow-lg shadow-slate-200 disabled:opacity-50"
                   >
                     {submitting ? <Loader2 className="w-6 h-6 animate-spin" /> : <CheckCircle2 className="w-6 h-6" />}

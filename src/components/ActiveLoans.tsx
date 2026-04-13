@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { supabase, logAction, logResourceHistory } from '../lib/supabase';
+import { supabase, logAction } from '../lib/supabase';
 import { Loan, Equipment, LoanStatus, PiezaEstado, EquipmentStatus } from '../types';
 import { useApp } from '../context/AppContext';
 import { generateReturnPDF } from '../lib/pdf';
@@ -10,12 +10,10 @@ import {
   Package, 
   CheckCircle, 
   AlertCircle,
-  AlertTriangle,
   Loader2,
   ArrowRight,
   XCircle,
-  Download,
-  Search
+  Download
 } from 'lucide-react';
 import { motion } from 'motion/react';
 import { cn, formatDate } from '../lib/utils';
@@ -27,11 +25,10 @@ export const ActiveLoans: React.FC<{ filterMora?: boolean }> = ({ filterMora = f
   const [equipments, setEquipments] = useState<Record<string, Equipment>>({});
   const [loading, setLoading] = useState(true);
   const [selectedLoan, setSelectedLoan] = useState<Loan | null>(null);
-  const [search, setSearch] = useState('');
 
   useEffect(() => {
     fetchData();
-  }, [filterMora, search]);
+  }, [filterMora, profile]);
 
   const fetchData = async () => {
     setLoading(true);
@@ -41,7 +38,13 @@ export const ActiveLoans: React.FC<{ filterMora?: boolean }> = ({ filterMora = f
       .eq('estado', 'Activo')
       .order('fecha_devolucion_estimada', { ascending: true });
     
-    if (role === 'Docente' && activeResponsable) {
+    if (role === 'Docente' && profile?.id) {
+      // Assuming there's a way to link loans to users. 
+      // The user mentioned "Mis Préstamos" for Docentes.
+      // If the loan table doesn't have usuario_id, we might need to filter by docente_responsable name or add the field.
+      // Let's assume we filter by docente_responsable matching profile email or name for now, 
+      // but ideally we should have usuario_id in prestamos too.
+      // For now, let's use docente_responsable as a proxy if usuario_id is missing.
       query = query.eq('docente_responsable', activeResponsable);
     }
     
@@ -54,24 +57,27 @@ export const ActiveLoans: React.FC<{ filterMora?: boolean }> = ({ filterMora = f
       }));
 
       const finalLoans = filterMora ? processedLoans.filter(l => l.isMora) : processedLoans;
-      
-      // Client-side search filter
-      const searchedLoans = finalLoans.filter(l => 
-        l.alumno_nombre.toLowerCase().includes(search.toLowerCase()) ||
-        l.alumno_dni.includes(search) ||
-        l.docente_responsable.toLowerCase().includes(search.toLowerCase()) ||
-        l.materia.toLowerCase().includes(search.toLowerCase())
-      );
+      setLoans(finalLoans);
 
-      setLoans(searchedLoans);
-
-      const eqIds = Array.from(new Set((searchedLoans || []).flatMap(l => l.equipos_ids || [])));
+      const eqIds = Array.from(new Set((finalLoans || []).flatMap(l => l.equipos_ids || [])));
       if (eqIds.length > 0) {
         const { data: eqData } = await supabase.from('equipamiento').select('*').in('id', eqIds);
         if (eqData) {
           const eqMap = eqData.reduce((acc, eq) => ({ 
             ...acc, 
-            [eq.id]: eq
+            [eq.id]: {
+              ...eq,
+              estado: (eq.estado.toLowerCase() === 'roto' || 
+                       eq.estado.toLowerCase() === 'en reparación' || 
+                       eq.estado.toLowerCase() === 'perdido' || 
+                       eq.estado.toLowerCase() === 'mantenimiento' || 
+                       eq.estado.toLowerCase() === 'incompleto' ||
+                       eq.estado.toLowerCase() === 'fuera de servicio') 
+                       ? 'Fuera de Servicio' 
+                       : (eq.estado.toLowerCase() === 'eliminado' || eq.estado.toLowerCase() === 'archivado' ? 'Archivado' : 
+                          eq.estado.toLowerCase() === 'disponible' ? 'Disponible' :
+                          eq.estado.toLowerCase() === 'prestado' ? 'Prestado' : eq.estado)
+            } 
           }), {});
           setEquipments(eqMap);
         }
@@ -82,161 +88,112 @@ export const ActiveLoans: React.FC<{ filterMora?: boolean }> = ({ filterMora = f
 
   return (
     <div className="p-8 max-w-7xl mx-auto">
-      <header className="mb-10">
-        <div className="flex items-center gap-3 mb-2">
-          <div className={cn(
-            "w-12 h-12 rounded-2xl flex items-center justify-center shadow-lg shadow-slate-200",
-            filterMora ? "bg-red-600" : "bg-slate-900"
-          )}>
-            {filterMora ? <AlertTriangle className="w-6 h-6 text-white" /> : <Package className="w-6 h-6 text-amber-500" />}
-          </div>
-          <h1 className="text-4xl font-black text-slate-900 tracking-tight">
-            {filterMora ? 'Panel de Mora' : 'Préstamos Activos'}
-          </h1>
-        </div>
-        <p className="text-slate-500 font-medium">
-          {filterMora ? 'Lista de equipos con devolución vencida.' : 'Seguimiento de equipos actualmente fuera del pañol.'}
+      <header className="mb-8">
+        <h1 className="text-3xl font-display font-bold text-slate-900">
+          {filterMora ? 'Panel de Mora' : (role === 'Docente' ? 'Mis Préstamos' : 'Devolución de Equipos')}
+        </h1>
+        <p className="text-slate-500">
+          {filterMora ? 'Equipos con fecha de devolución vencida.' : (role === 'Docente' ? 'Seguimiento de sus equipos retirados.' : 'Gestión de recepción de equipos.')}
         </p>
       </header>
-
-      <div className="mb-8 relative">
-        <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 w-5 h-5" />
-        <input 
-          type="text"
-          placeholder="Buscar por alumno, docente, materia o DNI..."
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          className="w-full pl-12 pr-4 py-4 bg-white border border-slate-200 rounded-2xl outline-none focus:ring-2 focus:ring-amber-500 shadow-sm font-medium"
-        />
-      </div>
 
       {loading ? (
         <div className="flex justify-center py-20"><Loader2 className="animate-spin text-amber-500 w-10 h-10" /></div>
       ) : loans.length === 0 ? (
-        <div className="bg-white rounded-[2rem] p-20 text-center border border-dashed border-slate-300">
-          <div className="bg-slate-50 w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-6">
-            <CheckCircle className="text-slate-300 w-10 h-10" />
+        <div className="bg-white rounded-2xl p-12 text-center border border-dashed border-slate-300">
+          <div className="bg-slate-100 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
+            <Package className="text-slate-400 w-8 h-8" />
           </div>
-          <h3 className="text-2xl font-black text-slate-900 mb-2">Sin préstamos {filterMora ? 'en mora' : 'activos'}</h3>
-          <p className="text-slate-500">No se encontraron registros que coincidan con la búsqueda.</p>
-        </div>
-      ) : filterMora ? (
-        <div className="space-y-4">
-          {loans.map((loan) => (
-            <motion.div 
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              key={loan.id} 
-              className="bg-white p-6 rounded-[2rem] border-2 border-red-100 shadow-sm flex flex-col md:flex-row items-center justify-between gap-6 hover:border-red-500 transition-all"
-            >
-              <div className="flex items-center gap-6 flex-1">
-                <div className="w-16 h-16 rounded-2xl bg-red-50 flex items-center justify-center flex-shrink-0">
-                  <AlertTriangle className="w-8 h-8 text-red-600" />
-                </div>
-                <div>
-                  <div className="flex items-center gap-2 mb-1">
-                    <h3 className="text-xl font-black text-slate-900">{loan.alumno_nombre}</h3>
-                    <span className="px-2 py-0.5 bg-red-100 text-red-700 text-[10px] font-black rounded uppercase">EN MORA</span>
-                  </div>
-                  <p className="text-sm font-bold text-slate-500">DNI: {loan.alumno_dni} • Materia: <span className="text-amber-600">{loan.materia}</span></p>
-                  <p className="text-xs text-slate-400 mt-1">Docente: {loan.docente_responsable}</p>
-                </div>
-              </div>
-
-              <div className="flex items-center gap-4 px-6 border-x border-slate-100">
-                <div className="text-center">
-                  <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Debía devolver</p>
-                  <p className="text-sm font-black text-red-600">{formatDate(loan.fecha_devolucion_estimada)}</p>
-                </div>
-                <div className="text-center">
-                  <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Días de retraso</p>
-                  <p className="text-sm font-black text-slate-900">{Math.abs(differenceInDays(new Date(), new Date(loan.fecha_devolucion_estimada)))} días</p>
-                </div>
-              </div>
-
-              <div className="flex items-center gap-3">
-                <div className="flex -space-x-2 mr-4">
-                  {(loan.equipos_ids || []).map(id => (
-                    <div key={id} className="w-10 h-10 rounded-xl border-2 border-white bg-slate-100 overflow-hidden shadow-sm" title={equipments[id]?.nombre}>
-                      <img src={equipments[id]?.foto_url || 'https://picsum.photos/seed/gear/50/50'} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
-                    </div>
-                  ))}
-                </div>
-                <button 
-                  onClick={() => setSelectedLoan(loan)}
-                  className="bg-slate-900 text-white px-8 py-4 rounded-2xl font-black text-sm hover:bg-red-600 transition-all shadow-lg shadow-slate-200"
-                >
-                  RECIBIR EQUIPO
-                </button>
-              </div>
-            </motion.div>
-          ))}
+          <h3 className="text-lg font-bold text-slate-900">No hay préstamos {filterMora ? 'en mora' : 'activos'}</h3>
+          <p className="text-slate-500">Todo el equipo está en orden.</p>
         </div>
       ) : (
-        <div className="bg-white rounded-[2rem] border border-slate-200 shadow-sm overflow-hidden">
-          <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse">
-              <thead>
-                <tr className="bg-slate-900 text-white">
-                  <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest">Alumno / DNI</th>
-                  <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest">Docente / Materia</th>
-                  <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest">Equipos</th>
-                  <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest">Vencimiento</th>
-                  <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-right">Acciones</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100">
-                {loans.map((loan) => {
-                  const isMora = isPast(new Date(loan.fecha_devolucion_estimada));
-                  return (
-                    <tr key={loan.id} className={cn("hover:bg-slate-50 transition-colors", isMora && "bg-red-50/30")}>
-                      <td className="px-6 py-4">
-                        <p className="font-bold text-slate-900">{loan.alumno_nombre}</p>
-                        <p className="text-[10px] font-bold text-slate-400">DNI: {loan.alumno_dni}</p>
-                      </td>
-                      <td className="px-6 py-4">
-                        <p className="font-bold text-slate-900">{loan.docente_responsable}</p>
-                        <p className="text-[10px] font-bold text-amber-600 uppercase">{loan.materia}</p>
-                      </td>
-                      <td className="px-6 py-4">
-                        <div className="flex -space-x-2">
-                          {(loan.equipos_ids || []).slice(0, 3).map(id => (
-                            <div key={id} className="w-8 h-8 rounded-lg border-2 border-white bg-slate-100 overflow-hidden" title={equipments[id]?.nombre}>
-                              <img src={equipments[id]?.foto_url || 'https://picsum.photos/seed/gear/50/50'} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
-                            </div>
-                          ))}
-                          {(loan.equipos_ids || []).length > 3 && (
-                            <div className="w-8 h-8 rounded-lg border-2 border-white bg-slate-900 text-white flex items-center justify-center text-[10px] font-black">
-                              +{(loan.equipos_ids || []).length - 3}
-                            </div>
-                          )}
-                        </div>
-                      </td>
-                      <td className="px-6 py-4">
-                        <div className={cn(
-                          "inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-black uppercase border",
-                          isMora ? "bg-red-100 text-red-700 border-red-200" : "bg-blue-100 text-blue-700 border-blue-200"
-                        )}>
-                          <Clock className="w-3 h-3" />
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {loans.map((loan) => {
+            const daysDiff = differenceInDays(new Date(), new Date(loan.fecha_devolucion_estimada));
+            const isMora = isPast(new Date(loan.fecha_devolucion_estimada));
+
+            return (
+              <motion.div
+                layout
+                key={loan.id}
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                className={cn("card flex flex-col", isMora ? "border-red-200 ring-1 ring-red-100" : "")}
+              >
+                <div className={cn("p-4 flex justify-between items-center border-b", isMora ? "bg-red-50 border-red-100" : "bg-slate-50 border-slate-100")}>
+                  <div className="flex items-center gap-3">
+                    <div className={cn("w-10 h-10 rounded-full flex items-center justify-center", isMora ? "bg-red-500 text-white" : "bg-amber-500 text-white")}>
+                      <User className="w-5 h-5" />
+                    </div>
+                    <div>
+                      <h3 className="font-bold text-slate-900">{loan.alumno_nombre}</h3>
+                      <p className="text-xs text-slate-500">DNI: {loan.alumno_dni}</p>
+                      <p className="text-[10px] uppercase font-bold text-slate-500">Folio: {loan.id.slice(0, 8)}</p>
+                    </div>
+                  </div>
+                  {isMora && (
+                    <div className="bg-red-600 text-white px-3 py-1 rounded-full text-[10px] font-black uppercase flex items-center gap-1 animate-pulse">
+                      <AlertCircle className="w-3 h-3" />
+                      {daysDiff} Días de Mora
+                    </div>
+                  )}
+                </div>
+
+                <div className="p-6 flex-1 grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="space-y-4">
+                    <div className="flex items-start gap-3">
+                      <Clock className="w-4 h-4 text-slate-400 mt-0.5" />
+                      <div>
+                        <p className="text-[10px] uppercase font-bold text-slate-400">Salida</p>
+                        <p className="text-sm font-medium">{formatDate(loan.fecha_salida)}</p>
+                      </div>
+                    </div>
+                    <div className="flex items-start gap-3">
+                      <Calendar className="w-4 h-4 text-slate-400 mt-0.5" />
+                      <div>
+                        <p className="text-[10px] uppercase font-bold text-slate-400">Devolución Estimada</p>
+                        <p className={cn("text-sm font-bold", isMora ? "text-red-600" : "text-amber-600")}>
                           {formatDate(loan.fecha_devolucion_estimada)}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex items-start gap-3">
+                      <ArrowRight className="w-4 h-4 text-slate-400 mt-0.5" />
+                      <div>
+                        <p className="text-[10px] uppercase font-bold text-slate-400">Responsable</p>
+                        <p className="text-sm font-medium">{loan.responsable_nombre}</p>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <p className="text-[10px] uppercase font-bold text-slate-400 mb-2">Equipos ({(loan.equipos_ids || []).length})</p>
+                    <div className="space-y-2 max-h-32 overflow-y-auto pr-2">
+                      {(loan.equipos_ids || []).map(id => (
+                        <div key={id} className="flex items-center gap-2 text-xs bg-slate-50 p-2 rounded-lg border border-slate-100">
+                          <Package className="w-3 h-3 text-slate-400" />
+                          <span className="font-medium truncate">{(equipments && equipments[id])?.nombre || 'Cargando...'}</span>
                         </div>
-                      </td>
-                      <td className="px-6 py-4 text-right">
-                        <div className="flex justify-end gap-2">
-                          <button 
-                            onClick={() => setSelectedLoan(loan)}
-                            className="px-4 py-2 bg-slate-900 text-white rounded-xl text-[10px] font-black uppercase tracking-wider hover:bg-amber-500 transition-all shadow-md"
-                          >
-                            Recibir
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+
+                {role === 'Pañolero' && (
+                  <div className="p-4 bg-slate-50 border-t border-slate-100 flex justify-end">
+                    <button
+                      onClick={() => setSelectedLoan(loan)}
+                      className="flex items-center gap-2 px-6 py-2 bg-slate-900 text-white rounded-xl font-bold text-sm hover:bg-slate-800 transition-all"
+                    >
+                      <CheckCircle className="w-4 h-4" />
+                      Recibir Equipos
+                    </button>
+                  </div>
+                )}
+              </motion.div>
+            );
+          })}
         </div>
       )}
 
@@ -258,7 +215,6 @@ export const ActiveLoans: React.FC<{ filterMora?: boolean }> = ({ filterMora = f
 const ReceiveModal: React.FC<{ loan: Loan, equipmentsMap: Record<string, Equipment>, onClose: () => void, onSuccess: () => void }> = ({ loan, equipmentsMap, onClose, onSuccess }) => {
   const { activeResponsable } = useApp();
   const [loading, setLoading] = useState(false);
-  const [observation, setObservation] = useState('');
   
   // State to track the status of each piece of each equipment
   const [equipmentStates, setEquipmentStates] = useState<Record<string, Equipment>>(() => {
@@ -318,16 +274,6 @@ const ReceiveModal: React.FC<{ loan: Loan, equipmentsMap: Record<string, Equipme
           piezas: eq.piezas 
         }).eq('id', String(eqId));
 
-        // Log Resource History
-        await logResourceHistory({
-          recurso_id: eqId,
-          usuario_responsable: loan.alumno_nombre,
-          materia: loan.materia,
-          accion: 'Devolución',
-          estado_detalle: observation,
-          pañolero_turno: activeResponsable!
-        });
-
         if (hasIssues) {
           await logAction(activeResponsable!, 'INCIDENCIA_EQUIPO', { 
             equipoId: eqId, 
@@ -370,18 +316,6 @@ const ReceiveModal: React.FC<{ loan: Loan, equipmentsMap: Record<string, Equipme
         </div>
         
         <div className="p-6 overflow-y-auto flex-1 space-y-6">
-          <div className="bg-amber-50 border border-amber-100 p-4 rounded-xl">
-            <label className="block text-xs font-black text-amber-700 mb-2 uppercase tracking-wider">Observación de Estado (Obligatorio)</label>
-            <textarea
-              required
-              rows={3}
-              value={observation}
-              onChange={e => setObservation(e.target.value)}
-              placeholder="Ej: Perfecto estado / Llega con el trípode flojo..."
-              className="w-full px-4 py-3 bg-white border border-amber-200 rounded-xl outline-none focus:ring-2 focus:ring-amber-500 font-medium resize-none text-sm"
-            />
-          </div>
-
           {(loan.equipos_ids || []).map(eqId => {
             const eq = equipmentStates && equipmentStates[eqId];
             if (!eq) return null;
@@ -436,8 +370,8 @@ const ReceiveModal: React.FC<{ loan: Loan, equipmentsMap: Record<string, Equipme
           <button onClick={onClose} className="px-6 py-2 text-slate-600 font-medium">Cancelar</button>
           <button 
             onClick={handleConfirm} 
-            disabled={loading || !observation.trim()} 
-            className="btn-primary min-w-[150px] flex justify-center disabled:opacity-50"
+            disabled={loading} 
+            className="btn-primary min-w-[150px] flex justify-center"
           >
             {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : 'Confirmar Recepción'}
           </button>

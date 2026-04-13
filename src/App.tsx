@@ -4,8 +4,6 @@
  */
 
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
-import { useEffect } from 'react';
-import { supabase } from './lib/supabase';
 import { AppProvider, useApp } from './context/AppContext';
 import { Sidebar } from './components/Sidebar';
 import { ResponsableModal } from './components/ResponsableModal';
@@ -17,39 +15,10 @@ import { AuditLogs } from './components/AuditLogs';
 import { Reservations } from './components/Reservations';
 import { PendingReservations } from './components/PendingReservations';
 import { CalendarPage } from './components/CalendarPage';
-import { ResourceHistoryPage } from './components/ResourceHistory';
 import { Loader2 } from 'lucide-react';
 
 function AppContent() {
   const { activeResponsable, loading, role, profile } = useApp();
-
-  useEffect(() => {
-    const seedAulas = async () => {
-      const { data: existingAulas } = await supabase
-        .from('equipamiento')
-        .select('nombre')
-        .eq('categoria', 'Espacio/Aula');
-      
-      const aulaNames = existingAulas?.map(a => a.nombre) || [];
-      const aulasToSeed = [
-        'Aula A', 'Aula B', 'Aula C', 'Aula D', 'Aula E', 'Aula F', 'Aula G', 'SET'
-      ].filter(name => !aulaNames.includes(name));
-
-      if (aulasToSeed.length > 0) {
-        const newAulas = aulasToSeed.map(name => ({
-          nombre: name,
-          categoria: 'Espacio/Aula',
-          modelo: 'Espacio Físico',
-          estado: 'Disponible',
-          ubicacion: 'Escuela de Cine',
-          numero_serie: `AULA-${name.replace(' ', '')}`,
-          foto_url: 'https://picsum.photos/seed/classroom/400/300'
-        }));
-        await supabase.from('equipamiento').insert(newAulas);
-      }
-    };
-    seedAulas();
-  }, []);
 
   if (loading) {
     return (
@@ -77,7 +46,7 @@ function AppContent() {
           {/* Redirección inicial basada en el rol */}
           <Route 
             path="/" 
-            element={isPañolero ? <Navigate to="/nuevo-prestamo" replace /> : <Navigate to="/reservas" replace />} 
+            element={isPañolero ? <Navigate to="/catalogo" replace /> : <Navigate to="/reservas" replace />} 
           />
 
           {/* Rutas de Pañolero (Admin) */}
@@ -95,20 +64,13 @@ function AppContent() {
           />
           <Route 
             path="/historial" 
-            element={isPañolero ? <ResourceHistoryPage /> : <Navigate to="/reservas" replace />} 
-          />
-          <Route 
-            path="/auditoria" 
             element={isPañolero ? <AuditLogs /> : <Navigate to="/reservas" replace />} 
           />
 
           {/* Rutas compartidas o específicas de Docente */}
-          <Route 
-            path="/reservas" 
-            element={!isPañolero ? <Reservations /> : <Navigate to="/activos" replace />} 
-          />
+          <Route path="/reservas" element={<Reservations />} />
           <Route path="/calendario" element={<CalendarPage />} />
-          <Route path="/mora" element={isPañolero ? <ActiveLoans filterMora /> : <Navigate to="/activos" replace />} />
+          <Route path="/mora" element={<ActiveLoans filterMora />} />
           <Route path="/activos" element={<ActiveLoans />} />
 
           {/* Aliases y Fallbacks */}
