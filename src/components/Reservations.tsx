@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { supabase, logAction } from '../lib/supabase';
-import { Reservation, Equipment, EquipmentStatus } from '../types';
+import { Reservation, Equipment, EquipmentStatus, Responsable } from '../types';
 import { useApp } from '../context/AppContext';
 import { Link } from 'react-router-dom';
 import { 

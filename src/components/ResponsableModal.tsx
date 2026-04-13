@@ -32,7 +32,7 @@ export const ResponsableModal: React.FC = () => {
   if (activeResponsable || authLoading) return null;
 
   return (
-    <div className="min-h-screen bg-black flex items-center justify-center p-4 bg-[url('https://res.cloudinary.com/divij23kk/image/upload/v1775519974/Gemini_Generated_Image_3t4jzz3t4jzz3t4j_womjw8.png')] bg-center bg-no-repeat">
+    <div className="min-h-screen bg-black flex items-center justify-center p-4 bg-[url('https://res.cloudinary.com/divij23kk/image/upload/v1776123937/Gemini_Generated_Image_bs4vhjbs4vhjbs4v_lk4bry.png')] bg-center bg-no-repeat">
       <motion.div 
         initial={{ scale: 0.9, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
