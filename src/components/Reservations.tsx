@@ -22,7 +22,9 @@ import {
   CheckSquare,
   Square,
   BookOpen,
-  Lock
+  Lock,
+  MapPin,
+  User
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { cn } from '../lib/utils';

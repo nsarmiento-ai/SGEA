@@ -34,8 +34,25 @@ function AppContent() {
         console.error('Schema refresh failed (expected if columns not yet added):', e);
       }
     };
+
+    const seedAulasIfNeeded = async () => {
+      if (profile?.rol === 'Pañolero') {
+        try {
+          const { data } = await supabase.from('equipamiento').select('id').eq('categoria', 'Espacio').limit(1);
+          if (!data || data.length === 0) {
+            const { AULAS } = await import('./constants');
+            await supabase.from('equipamiento').upsert(AULAS, { onConflict: 'id' });
+            console.log('Aulas seeded internally');
+          }
+        } catch (e) {
+          console.error('Failed to seed aulas:', e);
+        }
+      }
+    };
+
     refreshSchema();
-  }, []);
+    seedAulasIfNeeded();
+  }, [profile?.rol]);
 
   if (loading) {
     return (
