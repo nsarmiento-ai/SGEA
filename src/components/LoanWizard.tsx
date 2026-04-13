@@ -36,6 +36,7 @@ export const LoanWizard: React.FC = () => {
   const [submitting, setSubmitting] = useState(false);
   const [search, setSearch] = useState('');
   const [docentes, setDocentes] = useState<Responsable[]>([]);
+  const [showDocenteSuggestions, setShowDocenteSuggestions] = useState(false);
   
   const [formData, setFormData] = useState({
     alumno_nombre: '',
@@ -419,7 +420,7 @@ export const LoanWizard: React.FC = () => {
                     <option value="">Seleccionar materia...</option>
                     {Object.entries(MATERIAS_CATEGORIES).map(([cat, materias]) => (
                       <optgroup key={cat} label={cat}>
-                        {materias.map(m => <option key={m} value={m}>{m}</option>)}
+                        {[...materias].sort((a, b) => a.localeCompare(b)).map(m => <option key={m} value={m}>{m}</option>)}
                       </optgroup>
                     ))}
                   </select>
@@ -429,17 +430,47 @@ export const LoanWizard: React.FC = () => {
                     <User className="w-3.5 h-3.5 text-amber-500" />
                     Docente Responsable
                   </label>
-                  <select
-                    required
-                    value={formData.docente_responsable || ''}
-                    onChange={e => setFormData({...formData, docente_responsable: e.target.value})}
-                    className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-amber-500 transition-all text-sm"
-                  >
-                    <option value="">Seleccionar docente...</option>
-                    {(docentes || []).map(d => (
-                      <option key={d.id} value={d.nombre_completo}>{d.nombre_completo}</option>
-                    ))}
-                  </select>
+                  <div className="relative">
+                    <input
+                      required
+                      type="text"
+                      value={formData.docente_responsable || ''}
+                      onChange={e => setFormData({...formData, docente_responsable: e.target.value})}
+                      onFocus={() => setShowDocenteSuggestions(true)}
+                      className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-amber-500 transition-all text-sm"
+                      placeholder="Buscar o ingresar docente..."
+                    />
+                    {showDocenteSuggestions && (
+                      <div className="absolute z-50 w-full mt-1 bg-white border border-slate-200 rounded-xl shadow-xl max-h-60 overflow-y-auto">
+                        <div className="p-2 border-b border-slate-50 text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+                          Sugerencias
+                        </div>
+                        {(docentes || [])
+                          .filter(d => d.nombre_completo.toLowerCase().includes((formData.docente_responsable || '').toLowerCase()))
+                          .sort((a, b) => a.nombre_completo.localeCompare(b.nombre_completo))
+                          .map(d => (
+                            <button
+                              key={d.id}
+                              type="button"
+                              onClick={() => {
+                                setFormData({...formData, docente_responsable: d.nombre_completo});
+                                setShowDocenteSuggestions(false);
+                              }}
+                              className="w-full text-left px-4 py-2 text-sm hover:bg-amber-50 hover:text-amber-700 transition-colors border-b border-slate-50 last:border-0"
+                            >
+                              {d.nombre_completo}
+                            </button>
+                          ))}
+                        <button
+                          type="button"
+                          onClick={() => setShowDocenteSuggestions(false)}
+                          className="w-full text-center px-4 py-2 text-[10px] font-bold text-slate-400 hover:text-slate-600 uppercase tracking-widest bg-slate-50"
+                        >
+                          Cerrar
+                        </button>
+                      </div>
+                    )}
+                  </div>
                 </div>
               </div>
             </div>

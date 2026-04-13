@@ -62,13 +62,16 @@ export const Reservations: React.FC = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [docentes, setDocentes] = useState<Responsable[]>([]);
+  const [showDocenteSuggestions, setShowDocenteSuggestions] = useState(false);
 
   const [formData, setFormData] = useState({
     fecha_inicio: '',
     fecha_fin: '',
     materia: '',
     aula: '',
-    alumno_nombre: ''
+    alumno_nombre: '',
+    docente_nombre: ''
   });
 
   const categories = ['Todas', 'Cámaras', 'Sonido', 'Iluminación', 'Grip', 'Accesorios', 'Espacio', 'Otros'];
@@ -85,15 +88,24 @@ export const Reservations: React.FC = () => {
     });
   }, []);
 
+  useEffect(() => {
+    if (isModalOpen && !formData.docente_nombre && activeResponsable) {
+      setFormData(prev => ({ ...prev, docente_nombre: activeResponsable }));
+    }
+  }, [isModalOpen, activeResponsable]);
+
   const fetchData = async () => {
     setLoading(true);
     setError(null);
     try {
       console.log('Iniciando fetch de equipos (tabla equipamiento) y reservas (tabla reservas)...');
-      const [eqData, resData] = await Promise.all([
+      const [eqData, resData, docRes] = await Promise.all([
         supabase.from('equipamiento').select('*').order('nombre', { ascending: true }),
-        supabase.from('reservas').select('*').order('fecha_inicio', { ascending: true })
+        supabase.from('reservas').select('*').order('fecha_inicio', { ascending: true }),
+        supabase.from('responsables').select('*').eq('activo', true)
       ]);
+
+      if (docRes.data) setDocentes(docRes.data);
 
       console.log('Respuesta cruda de Supabase (equipamiento):', eqData);
       console.log('Respuesta cruda de Supabase (reservas):', resData);
@@ -235,7 +247,7 @@ export const Reservations: React.FC = () => {
         usuario_id: user.id,
         fecha_inicio: new Date(formData.fecha_inicio).toISOString(),
         fecha_fin: new Date(formData.fecha_fin).toISOString(),
-        docente_nombre: activeResponsable || '',
+        docente_nombre: formData.docente_nombre || activeResponsable || '',
         materia: formData.materia,
         aula: formData.aula,
         alumno_nombre: formData.alumno_nombre,
@@ -902,7 +914,7 @@ export const Reservations: React.FC = () => {
                         <option value="">Seleccione una materia...</option>
                         {Object.entries(MATERIAS_CATEGORIES).map(([cat, materias]) => (
                           <optgroup key={cat} label={cat}>
-                            {materias.map(m => <option key={m} value={m}>{m}</option>)}
+                            {[...materias].sort((a, b) => a.localeCompare(b)).map(m => <option key={m} value={m}>{m}</option>)}
                           </optgroup>
                         ))}
                       </select>
@@ -930,6 +942,52 @@ export const Reservations: React.FC = () => {
                         <option value="SET">SET</option>
                         <option value="Exteriores">Exteriores</option>
                       </select>
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-black text-slate-700 mb-2 uppercase tracking-wider">Docente Responsable</label>
+                    <div className="relative">
+                      <User className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 w-5 h-5" />
+                      <input
+                        required
+                        type="text"
+                        placeholder="Buscar o ingresar docente..."
+                        value={formData.docente_nombre}
+                        onFocus={() => setShowDocenteSuggestions(true)}
+                        onChange={e => setFormData({...formData, docente_nombre: e.target.value})}
+                        className="w-full pl-12 pr-4 py-4 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:ring-2 focus:ring-amber-500 font-medium"
+                      />
+                      {showDocenteSuggestions && (
+                        <div className="absolute z-50 w-full mt-1 bg-white border border-slate-200 rounded-2xl shadow-xl max-h-60 overflow-y-auto">
+                          <div className="p-2 border-b border-slate-50 text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+                            Sugerencias
+                          </div>
+                          {(docentes || [])
+                            .filter(d => d.nombre_completo.toLowerCase().includes((formData.docente_nombre || '').toLowerCase()))
+                            .sort((a, b) => a.nombre_completo.localeCompare(b.nombre_completo))
+                            .map(d => (
+                              <button
+                                key={d.id}
+                                type="button"
+                                onClick={() => {
+                                  setFormData({...formData, docente_nombre: d.nombre_completo});
+                                  setShowDocenteSuggestions(false);
+                                }}
+                                className="w-full text-left px-4 py-2 text-sm hover:bg-amber-50 hover:text-amber-700 transition-colors border-b border-slate-50 last:border-0"
+                              >
+                                {d.nombre_completo}
+                              </button>
+                            ))}
+                          <button
+                            type="button"
+                            onClick={() => setShowDocenteSuggestions(false)}
+                            className="w-full text-center px-4 py-2 text-[10px] font-bold text-slate-400 hover:text-slate-600 uppercase tracking-widest bg-slate-50"
+                          >
+                            Cerrar
+                          </button>
+                        </div>
+                      )}
                     </div>
                   </div>
 

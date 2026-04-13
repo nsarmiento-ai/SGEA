@@ -50,8 +50,35 @@ function AppContent() {
       }
     };
 
+    const seedDocentesIfNeeded = async () => {
+      if (profile?.rol === 'Pañolero') {
+        try {
+          const { count } = await supabase.from('responsables').select('*', { count: 'exact', head: true });
+          if (count === 0) {
+            const docentes = [
+              'Alejandra Guzzo', 'Alejandro Saya', 'Aldo Ternavasio', 'Amadeo Pellegrino',
+              'Ana Claudia García', 'Arturo Carrasco', 'Benjamín Ávila', 'Bernabé Quiroga',
+              'Camila López Morales', 'Carolina Coppens', 'Daniel Araujo', 'Diego Viruel',
+              'Elena Burgo de Chazal', 'Enrique Escaño', 'Ezequiel Jiménez', 'Fabián Soberón',
+              'Felipe Cerisola', 'Fernando Gallucci', 'Florencia Padilla', 'Germán Azcoaga',
+              'Guillermo Del Pino', 'Gustavo Caro', 'José Guzzi', 'Juan Mascaró',
+              'Manuel Canseco', 'María José Medina', 'María Lenis', 'Melina Dulci',
+              'Pedro Arturo Gómez', 'Pedro Ponce', 'Romina Nahas', 'Romina Romano',
+              'Sergio Olivera', 'Víctor Martínez'
+            ].map(nombre => ({ nombre_completo: nombre, activo: true }));
+
+            await supabase.from('responsables').insert(docentes);
+            console.log('Docentes seeded internally');
+          }
+        } catch (e) {
+          console.error('Failed to seed docentes:', e);
+        }
+      }
+    };
+
     refreshSchema();
     seedAulasIfNeeded();
+    seedDocentesIfNeeded();
   }, [profile?.rol]);
 
   if (loading) {

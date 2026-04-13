@@ -14,7 +14,10 @@ import {
 import { motion } from 'motion/react';
 import { formatDate, cn } from '../lib/utils';
 
+import { useApp } from '../context/AppContext';
+
 export const AuditLogs: React.FC = () => {
+  const { profile } = useApp();
   const [logs, setLogs] = useState<AuditLog[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
@@ -22,6 +25,26 @@ export const AuditLogs: React.FC = () => {
   useEffect(() => {
     fetchLogs();
   }, []);
+
+  const handleReset = async () => {
+    if (!confirm('⚠️ ATENCIÓN: Esto eliminará TODOS los préstamos, reservas e historiales. Esta acción no se puede deshacer. ¿Desea continuar?')) return;
+    
+    setLoading(true);
+    try {
+      await Promise.all([
+        supabase.from('prestamos').delete().neq('id', '00000000-0000-0000-0000-000000000000'),
+        supabase.from('reservas').delete().neq('id', '00000000-0000-0000-0000-000000000000'),
+        supabase.from('historial_recursos').delete().neq('id', '00000000-0000-0000-0000-000000000000'),
+        supabase.from('audit_logs').delete().neq('id', '00000000-0000-0000-0000-000000000000')
+      ]);
+      alert('Sistema reseteado con éxito.');
+      fetchLogs();
+    } catch (err: any) {
+      alert('Error al resetear: ' + err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const fetchLogs = async () => {
     setLoading(true);
@@ -42,9 +65,19 @@ export const AuditLogs: React.FC = () => {
 
   return (
     <div className="p-8 max-w-7xl mx-auto">
-      <header className="mb-8">
-        <h1 className="text-3xl font-display font-bold text-slate-900">Historial de Auditoría</h1>
-        <p className="text-slate-500">Registro inmutable de todas las acciones realizadas en el sistema.</p>
+      <header className="mb-8 flex justify-between items-start">
+        <div>
+          <h1 className="text-3xl font-display font-bold text-slate-900">Historial de Auditoría</h1>
+          <p className="text-slate-500">Registro inmutable de todas las acciones realizadas en el sistema.</p>
+        </div>
+        {profile?.rol === 'Pañolero' && (
+          <button 
+            onClick={handleReset}
+            className="px-4 py-2 bg-red-50 text-red-600 border border-red-100 rounded-xl text-xs font-bold uppercase tracking-wider hover:bg-red-100 transition-colors"
+          >
+            Resetear Movimientos
+          </button>
+        )}
       </header>
 
       <div className="mb-6 relative">
