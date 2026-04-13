@@ -51,6 +51,7 @@ export interface Loan {
   id: string;
   alumno_nombre: string;
   alumno_dni: string;
+  alumno_que_retira?: string;
   materia: string;
   docente_responsable: string;
   responsable_nombre: string;

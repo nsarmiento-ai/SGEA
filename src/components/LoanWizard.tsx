@@ -39,6 +39,7 @@ export const LoanWizard: React.FC = () => {
   const [formData, setFormData] = useState({
     alumno_nombre: '',
     alumno_dni: '',
+    alumno_que_retira: '', // New optional field
     materia: '',
     docente_responsable: '',
     fechaDevolucion: format(addDays(new Date(), 1), "yyyy-MM-dd'T'HH:mm"),
@@ -139,6 +140,7 @@ export const LoanWizard: React.FC = () => {
     const returnDate = parseISO(formData.fechaDevolucion);
     const salidaDate = new Date();
     
+    // Check for conflicts
     for (const id of (selectedIds || [])) {
       const conflictRes = (reservations || []).find(r => 
         (r.equipos_ids || []).includes(id) && 
@@ -158,76 +160,98 @@ export const LoanWizard: React.FC = () => {
     setSubmitting(true);
 
     try {
-      // 1. Create Loan
-      const loanData: Partial<Loan> = {
-        alumno_nombre: formData.alumno_nombre,
-        alumno_dni: formData.alumno_dni,
-        materia: formData.materia,
-        docente_responsable: formData.docente_responsable,
-        responsable_nombre: activeResponsable!,
-        fecha_salida: new Date().toISOString(),
-        fecha_devolucion_estimada: new Date(formData.fechaDevolucion).toISOString(),
-        estado: 'Activo',
-        equipos_ids: selectedIds,
-        comentarios: formData.comentarios
-      };
-
-      const { data: loan, error: loanError } = await supabase
-        .from('prestamos')
-        .insert([loanData])
-        .select()
-        .single();
-
-      if (loanError) throw loanError;
-
-      // 2. Update Equipments
-      console.log('Actualizando equipos a "Prestado". IDs:', selectedIds);
-      const { error: eqError } = await supabase
-        .from('equipamiento')
-        .update({ estado: 'Prestado' })
-        .in('id', selectedIds);
-
-      if (eqError) throw eqError;
-      
-      // 2.2 Log Resource History for each equipment
-      for (const id of selectedIds) {
-        await logResourceHistory({
-          recurso_id: id,
-          usuario_responsable: formData.docente_responsable,
-          materia: formData.materia,
-          accion: 'Préstamo',
-          estado_detalle: 'Entregado para uso',
-          pañolero_turno: activeResponsable!
-        });
-      }
-
-      // 2.5 Update Reservation if exists
       if (reservationId) {
-        const { error: resError } = await supabase
-          .from('reservas')
-          .update({ estado: 'Entregada' })
-          .eq('id', reservationId);
-        if (resError) console.error('Error updating reservation status:', resError);
+        // Update existing reservation/loan
+        const { data: existingRes } = await supabase.from('reservas').select('*').eq('id', reservationId).single();
+        
+        if (existingRes) {
+          const newEquiposIds = Array.from(new Set([...(existingRes.equipos_ids || []), ...selectedIds]));
+          await supabase.from('reservas').update({ equipos_ids: newEquiposIds }).eq('id', reservationId);
+          
+          // If it was already delivered, we might need to update the loan too
+          const { data: existingLoan } = await supabase.from('prestamos').select('*').eq('estado', 'Activo').contains('equipos_ids', existingRes.equipos_ids).single();
+          if (existingLoan) {
+             await supabase.from('prestamos').update({ equipos_ids: newEquiposIds }).eq('id', existingLoan.id);
+          }
+
+          // Update equipment status to 'Prestado'
+          await supabase
+            .from('equipamiento')
+            .update({ estado: 'Prestado' })
+            .in('id', selectedIds);
+
+          // Log Resource History
+          for (const id of selectedIds) {
+            await logResourceHistory({
+              recurso_id: id,
+              usuario_responsable: existingRes.docente_nombre,
+              materia: existingRes.materia,
+              accion: 'Préstamo',
+              estado_detalle: 'Añadido a pedido existente',
+              pañolero_turno: activeResponsable!
+            });
+          }
+        }
+      } else {
+        // 1. Create Loan
+        const loanData: any = {
+          alumno_nombre: formData.alumno_nombre,
+          alumno_dni: formData.alumno_dni,
+          alumno_que_retira: formData.alumno_que_retira || null,
+          materia: formData.materia,
+          docente_responsable: formData.docente_responsable,
+          responsable_nombre: activeResponsable!,
+          fecha_salida: new Date().toISOString(),
+          fecha_devolucion_estimada: new Date(formData.fechaDevolucion).toISOString(),
+          estado: 'Activo',
+          equipos_ids: selectedIds,
+          comentarios: formData.comentarios
+        };
+
+        const { data: loan, error: loanError } = await supabase
+          .from('prestamos')
+          .insert([loanData])
+          .select()
+          .single();
+
+        if (loanError) throw loanError;
+
+        // 2. Update Equipments
+        await supabase
+          .from('equipamiento')
+          .update({ estado: 'Prestado' })
+          .in('id', selectedIds);
+        
+        // 2.2 Log Resource History
+        for (const id of selectedIds) {
+          await logResourceHistory({
+            recurso_id: id,
+            usuario_responsable: formData.docente_responsable,
+            materia: formData.materia,
+            accion: 'Préstamo',
+            estado_detalle: 'Entregado para uso',
+            pañolero_turno: activeResponsable!
+          });
+        }
+
+        // 3. Log Action
+        await logAction(activeResponsable!, 'NUEVO_PRESTAMO', { 
+          loanId: loan.id, 
+          alumno_nombre: formData.alumno_nombre,
+          alumno_dni: formData.alumno_dni,
+          equipos: selectedIds 
+        });
+
+        // 4. Generate PDF
+        const selectedEquipments = (equipments || []).filter(e => (selectedIds || []).includes(e.id));
+        generateLoanPDF(loan as Loan, selectedEquipments);
       }
 
-      // 3. Log Action
-      await logAction(activeResponsable!, 'NUEVO_PRESTAMO', { 
-        loanId: loan.id, 
-        alumno_nombre: formData.alumno_nombre,
-        alumno_dni: formData.alumno_dni,
-        equipos: selectedIds 
-      });
-
-      // 4. Generate PDF
-      const selectedEquipments = (equipments || []).filter(e => (selectedIds || []).includes(e.id));
-      generateLoanPDF(loan as Loan, selectedEquipments);
-
-      // 5. Reset
-      alert('Préstamo registrado con éxito. El comprobante se ha descargado.');
+      alert('Operación realizada con éxito.');
       navigate('/');
     } catch (error) {
-      console.error('Error al registrar el préstamo:', error);
-      alert('Error al registrar el préstamo. Revisa la consola.');
+      console.error('Error:', error);
+      alert('Error al procesar la operación.');
     } finally {
       setSubmitting(false);
     }
@@ -431,7 +455,7 @@ export const LoanWizard: React.FC = () => {
                 <div className="bg-white p-8 rounded-[2rem] border border-slate-200 shadow-sm space-y-6">
                   <div className="space-y-4">
                     <label className="block">
-                      <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Nombre del Alumno</span>
+                      <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Nombre del Alumno Responsable</span>
                       <input 
                         type="text"
                         placeholder="Ej: Juan Pérez"
@@ -442,12 +466,23 @@ export const LoanWizard: React.FC = () => {
                     </label>
 
                     <label className="block">
-                      <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">DNI del Alumno</span>
+                      <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">DNI del Alumno Responsable</span>
                       <input 
                         type="text"
                         placeholder="Sin puntos ni espacios"
                         value={formData.alumno_dni}
                         onChange={(e) => setFormData({...formData, alumno_dni: e.target.value})}
+                        className="w-full mt-2 px-4 py-3 bg-slate-50 border border-slate-100 rounded-2xl outline-none focus:ring-2 focus:ring-amber-500 font-bold text-slate-700"
+                      />
+                    </label>
+
+                    <label className="block">
+                      <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Alumno que retira (Opcional)</span>
+                      <input 
+                        type="text"
+                        placeholder="Si es distinto al responsable"
+                        value={formData.alumno_que_retira}
+                        onChange={(e) => setFormData({...formData, alumno_que_retira: e.target.value})}
                         className="w-full mt-2 px-4 py-3 bg-slate-50 border border-slate-100 rounded-2xl outline-none focus:ring-2 focus:ring-amber-500 font-bold text-slate-700"
                       />
                     </label>

@@ -483,18 +483,20 @@ export const Catalog: React.FC = () => {
               <List className="w-4 h-4" />
             </button>
           </div>
-          <button 
-            onClick={() => setShowFavorites(!showFavorites)}
-            className={cn(
-              "flex items-center gap-2 px-4 py-2 rounded-xl font-bold text-sm transition-all border",
-              showFavorites 
-                ? "bg-amber-500 text-white border-amber-600" 
-                : "bg-white text-slate-600 border-slate-200 hover:border-amber-500"
-            )}
-          >
-            <Star className={cn("w-4 h-4", showFavorites ? "fill-current" : "text-amber-500")} />
-            {showFavorites ? 'Viendo Habituales' : 'Ver Habituales'}
-          </button>
+          {profile?.rol !== 'Pañolero' && (
+            <button 
+              onClick={() => setShowFavorites(!showFavorites)}
+              className={cn(
+                "flex items-center gap-2 px-4 py-2 rounded-xl font-bold text-sm transition-all border",
+                showFavorites 
+                  ? "bg-amber-500 text-white border-amber-600" 
+                  : "bg-white text-slate-600 border-slate-200 hover:border-amber-500"
+              )}
+            >
+              <Star className={cn("w-4 h-4", showFavorites ? "fill-current" : "text-amber-500")} />
+              {showFavorites ? 'Viendo Habituales' : 'Ver Habituales'}
+            </button>
+          )}
           <button 
             onClick={() => setShowArchived(!showArchived)}
             className={cn(
@@ -565,7 +567,7 @@ export const Catalog: React.FC = () => {
       ) : (
         <div className="space-y-12">
           {/* Favorites Section */}
-          {favoriteEquipments.length > 0 && !showFavorites && (
+          {favoriteEquipments.length > 0 && !showFavorites && profile?.rol !== 'Pañolero' && (
             <section>
               <div className="flex items-center gap-2 mb-6">
                 <Star className="w-5 h-5 text-amber-500 fill-current" />
@@ -584,7 +586,7 @@ export const Catalog: React.FC = () => {
 
           {/* Main Inventory Section */}
           <section>
-            {(favoriteEquipments.length > 0 && !showFavorites) && (
+            {(favoriteEquipments.length > 0 && !showFavorites && profile?.rol !== 'Pañolero') && (
               <div className="flex items-center gap-2 mb-6">
                 <Package className="w-5 h-5 text-slate-400" />
                 <h2 className="text-xl font-black text-slate-900 uppercase tracking-tight">Resto del Inventario</h2>

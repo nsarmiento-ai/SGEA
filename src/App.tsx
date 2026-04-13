@@ -47,7 +47,7 @@ function AppContent() {
           {/* Redirección inicial basada en el rol */}
           <Route 
             path="/" 
-            element={isPañolero ? <Navigate to="/activos" replace /> : <Navigate to="/reservas" replace />} 
+            element={isPañolero ? <Navigate to="/nuevo-prestamo" replace /> : <Navigate to="/reservas" replace />} 
           />
 
           {/* Rutas de Pañolero (Admin) */}

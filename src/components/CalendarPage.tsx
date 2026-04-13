@@ -32,6 +32,7 @@ import { useApp } from '../context/AppContext';
 import { Reservation, Equipment } from '../types';
 import { motion, AnimatePresence } from 'motion/react';
 import { cn } from '../lib/utils';
+import { MATERIAS } from '../constants';
 
 export const CalendarPage: React.FC = () => {
   const { profile } = useApp();
@@ -158,9 +159,18 @@ export const CalendarPage: React.FC = () => {
             
             <div className="space-y-1 overflow-hidden">
               {dayReservations.slice(0, 3).map((res) => {
-                const statusColor = res.estado === 'Pendiente' 
-                  ? 'bg-amber-100 text-amber-700 border-amber-200' 
-                  : 'bg-blue-100 text-blue-700 border-blue-200';
+                let statusColor = 'bg-slate-100 text-slate-700 border-slate-200';
+                
+                // Color coding by subject group
+                if (MATERIAS['Teóricas e Históricas'].includes(res.materia)) {
+                  statusColor = 'bg-blue-100 text-blue-700 border-blue-200';
+                } else if (MATERIAS['Lenguaje y Realización'].includes(res.materia)) {
+                  statusColor = 'bg-green-100 text-green-700 border-green-200';
+                } else if (MATERIAS['Seminarios de Roles (SRPAV I y II)'].includes(res.materia)) {
+                  statusColor = 'bg-orange-100 text-orange-700 border-orange-200';
+                } else if (MATERIAS['Talleres e Informática'].includes(res.materia)) {
+                  statusColor = 'bg-purple-100 text-purple-700 border-purple-200';
+                }
                 
                 return (
                   <div 
@@ -173,7 +183,7 @@ export const CalendarPage: React.FC = () => {
                     {isPañolero ? `${res.docente_nombre}: ` : ''}
                     {(res.equipos_ids || []).map(id => {
                       const eq = (equipments || []).find(e => e.id === id);
-                      return eq ? `${eq.nombre} - ${res.materia}` : null;
+                      return eq ? `${eq.nombre}` : null;
                     }).filter(Boolean).join(', ')}
                   </div>
                 );

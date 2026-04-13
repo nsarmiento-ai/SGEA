@@ -8,7 +8,8 @@ import {
   History, 
   LogOut,
   Camera,
-  Calendar
+  Calendar,
+  Package
 } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import { cn } from '../lib/utils';
@@ -25,12 +26,14 @@ export const Sidebar: React.FC = () => {
     { icon: Clock, label: 'Mis Préstamos', path: '/activos', role: 'Docente' },
 
     // Pañolero Items
-    { icon: LayoutDashboard, label: 'Consola de Despacho', path: '/activos', role: 'Pañolero' },
+    { icon: LayoutDashboard, label: 'Préstamo Rápido', path: '/nuevo-prestamo', role: 'Pañolero' },
     { icon: Clock, label: 'Reservas Pendientes', path: '/reservas-pendientes', role: 'Pañolero' },
-    { icon: PlusCircle, label: 'Préstamo Rápido', path: '/nuevo-prestamo', role: 'Pañolero' },
+    { icon: Package, label: 'Préstamos Activos', path: '/activos', role: 'Pañolero' },
+    { icon: AlertTriangle, label: 'Panel de Mora', path: '/mora', role: 'Pañolero' },
+    { icon: Calendar, label: 'Calendario', path: '/calendario', role: 'Pañolero' },
     { icon: Camera, label: 'Inventario', path: '/catalogo', role: 'Pañolero' },
     { icon: History, label: 'Hoja de Vida', path: '/historial', role: 'Pañolero' },
-    { icon: AlertTriangle, label: 'Auditoría', path: '/auditoria', role: 'Pañolero' },
+    { icon: History, label: 'Auditoría', path: '/auditoria', role: 'Pañolero' },
   ].filter(item => item.role === role);
 
   return (
