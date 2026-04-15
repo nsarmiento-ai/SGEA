@@ -84,11 +84,14 @@ export const LoanWizard: React.FC = () => {
   const fetchAvailable = async () => {
     setLoading(true);
     const [eqRes, resRes] = await Promise.all([
-      supabase.from('equipamiento').select('*').eq('estado', 'Disponible'),
+      supabase.from('equipamiento').select('*').ilike('estado', 'disponible'),
       supabase.from('reservas').select('*')
     ]);
     
-    if (!eqRes.error && eqRes.data) setEquipments(eqRes.data);
+    if (!eqRes.error && eqRes.data) {
+      console.log(`LoanWizard: Se encontraron ${eqRes.data.length} equipos disponibles.`);
+      setEquipments(eqRes.data);
+    }
     if (!resRes.error && resRes.data) setReservations(resRes.data);
     setLoading(false);
   };

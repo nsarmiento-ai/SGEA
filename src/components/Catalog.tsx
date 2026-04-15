@@ -683,7 +683,8 @@ const HistoryModal: React.FC<{ equipment: Equipment, onClose: () => void }> = ({
 const EquipmentModal: React.FC<{ item: Equipment | null, onClose: () => void, onSave: () => void }> = ({ item, onClose, onSave }) => {
   const { activeResponsable } = useApp();
   const [loading, setLoading] = useState(false);
-  const [formData, setFormData] = useState<Partial<Equipment>>(item || {
+  const [formData, setFormData] = useState<Partial<Equipment>>(
+    item ? { ...item, piezas: item.piezas || [] } : {
     nombre: '',
     categoria: 'Cámaras',
     modelo: '',
@@ -700,7 +701,7 @@ const EquipmentModal: React.FC<{ item: Equipment | null, onClose: () => void, on
     e.preventDefault();
     setLoading(true);
 
-    const dataToSave = { ...formData };
+    const dataToSave = { ...formData, piezas: formData.piezas || [] };
     const action = item ? 'EDICION_EQUIPO' : 'ALTA_EQUIPO';
     
     console.log(`Guardando equipo (${action}). Datos enviados a Supabase:`, dataToSave);
@@ -811,8 +812,7 @@ const EquipmentModal: React.FC<{ item: Equipment | null, onClose: () => void, on
               <button
                 type="button"
                 onClick={() => {
-                  const newPieza: Pieza = { id: crypto.randomUUID(), nombre: '', estado: 'OK', obligatorio: true };
-                  setFormData({ ...formData, piezas: [...(formData.piezas || []), newPieza] });
+                  setFormData({ ...formData, piezas: [...(formData.piezas || []), ''] });
                 }}
                 className="text-xs font-bold text-amber-600 hover:text-amber-700 flex items-center gap-1"
               >
@@ -822,32 +822,19 @@ const EquipmentModal: React.FC<{ item: Equipment | null, onClose: () => void, on
             
             <div className="space-y-3">
               {(formData.piezas || []).map((pieza, index) => (
-                <div key={pieza.id} className="flex items-center gap-3 bg-slate-50 p-3 rounded-lg border border-slate-200">
+                <div key={index} className="flex items-center gap-3 bg-slate-50 p-3 rounded-lg border border-slate-200">
                   <input
                     type="text"
-                    value={pieza.nombre || ''}
+                    value={pieza || ''}
                     onChange={(e) => {
                       const newPiezas = [...(formData.piezas || [])];
-                      newPiezas[index].nombre = e.target.value;
+                      newPiezas[index] = e.target.value;
                       setFormData({ ...formData, piezas: newPiezas });
                     }}
                     placeholder="Ej: Batería NP-F970"
                     className="flex-1 px-3 py-1.5 text-sm border border-slate-200 rounded-md outline-none focus:ring-2 focus:ring-amber-500"
                     required
                   />
-                  <label className="flex items-center gap-2 text-sm text-slate-700">
-                    <input
-                      type="checkbox"
-                      checked={pieza.obligatorio}
-                      onChange={(e) => {
-                        const newPiezas = [...(formData.piezas || [])];
-                        newPiezas[index].obligatorio = e.target.checked;
-                        setFormData({ ...formData, piezas: newPiezas });
-                      }}
-                      className="rounded text-amber-500 focus:ring-amber-500"
-                    />
-                    Obligatorio
-                  </label>
                   <button
                     type="button"
                     onClick={() => {

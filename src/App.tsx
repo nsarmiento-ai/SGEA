@@ -43,10 +43,9 @@ function AppContent() {
           const existingNames = (existing || []).map(e => e.nombre);
           
           const { AULAS } = await import('./constants');
-          // Remove IDs from constants to let DB generate UUIDs, and filter existing
+          // Filter existing
           const toInsert = AULAS
-            .filter(a => !existingNames.includes(a.nombre))
-            .map(({ id, ...rest }) => rest);
+            .filter(a => !existingNames.includes(a.nombre));
 
           if (toInsert.length > 0) {
             await supabase.from('equipamiento').insert(toInsert);

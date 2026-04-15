@@ -48,7 +48,7 @@ export const generateLoanPDF = (loan: Loan, equipments: Equipment[]) => {
       eq.piezas.forEach(pieza => {
         tableData.push([
           '',
-          `   • ${pieza.nombre} (${pieza.estado})`,
+          `   • ${pieza}`,
           '',
           '',
           ''
@@ -149,12 +149,6 @@ export const generateReturnPDF = (loan: Loan, equipments: Equipment[], responsab
   // Equipment Table
   const tableData = equipments.map((eq, index) => {
     let status = 'RECIBIDO OK';
-    if (eq.piezas && eq.piezas.length > 0) {
-      const issues = eq.piezas.filter(p => p.estado !== 'OK').map(p => `${p.nombre}: ${p.estado}`);
-      if (issues.length > 0) {
-        status = `CON INCIDENCIAS:\n${issues.join('\n')}`;
-      }
-    }
     return [
       index + 1,
       eq.nombre,

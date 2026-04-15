@@ -20,7 +20,7 @@ export interface Equipment {
   foto_url: string;
   estado: EquipmentStatus;
   permiso_uso: 'Libre uso' | 'Restringido' | 'No habilitado';
-  piezas: Pieza[]; // JSONB array of objects
+  piezas: string[]; // text[] array in Supabase
   created_at?: string;
   updated_at?: string;
 }

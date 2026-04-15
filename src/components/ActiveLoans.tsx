@@ -270,24 +270,15 @@ const ReceiveModal: React.FC<{ loan: Loan, equipmentsMap: Record<string, Equipme
         let hasIssues = hasDamage;
         let issueDetails = [];
 
-        if (eq.piezas && eq.piezas.length > 0) {
-          const hasMissing = eq.piezas.some(p => p.estado === 'Faltante');
-          const hasDamaged = eq.piezas.some(p => p.estado === 'Dañado');
-          
-          if (hasMissing || hasDamaged) {
-            newEqStatus = 'Mantenimiento';
-            hasIssues = true;
-          }
-
-          if (hasIssues) {
-            issueDetails = eq.piezas.filter(p => p.estado !== 'OK').map(p => `${p.nombre} (${p.estado})`);
-          }
+        // piezas is now string[], so we don't have per-piece status in DB
+        if (hasIssues) {
+          issueDetails = ['Daños reportados en la recepción'];
         }
 
         console.log(`Actualizando equipo ${eqId} tras devolución. Nuevo estado:`, newEqStatus);
         const { error: eqUpdateError } = await supabase.from('equipamiento').update({ 
           estado: newEqStatus,
-          piezas: eq.piezas 
+          piezas: eq.piezas || []
         }).eq('id', String(eqId));
 
         if (eqUpdateError) throw eqUpdateError;
