@@ -29,6 +29,7 @@ function AppContent() {
         await supabase.from('reservas').select('materia, aula, alumno_nombre').limit(1);
         await supabase.from('prestamos').select('materia, alumno_nombre, alumno_dni, estado, fecha_devolucion_real, observaciones_recepcion').limit(1);
         await supabase.from('historial_recursos').select('*').limit(1);
+        await supabase.from('equipamiento').select('piezas').limit(1);
         console.log('Schema refresh triggered');
       } catch (e) {
         console.error('Schema refresh failed (expected if columns not yet added):', e);
@@ -38,10 +39,17 @@ function AppContent() {
     const seedAulasIfNeeded = async () => {
       if (profile?.rol === 'Pañolero') {
         try {
-          const { data } = await supabase.from('equipamiento').select('id').eq('categoria', 'Espacio').limit(1);
-          if (!data || data.length === 0) {
-            const { AULAS } = await import('./constants');
-            await supabase.from('equipamiento').upsert(AULAS, { onConflict: 'id' });
+          const { data: existing } = await supabase.from('equipamiento').select('nombre').eq('categoria', 'Espacio');
+          const existingNames = (existing || []).map(e => e.nombre);
+          
+          const { AULAS } = await import('./constants');
+          // Remove IDs from constants to let DB generate UUIDs, and filter existing
+          const toInsert = AULAS
+            .filter(a => !existingNames.includes(a.nombre))
+            .map(({ id, ...rest }) => rest);
+
+          if (toInsert.length > 0) {
+            await supabase.from('equipamiento').insert(toInsert);
             console.log('Aulas seeded internally');
           }
         } catch (e) {

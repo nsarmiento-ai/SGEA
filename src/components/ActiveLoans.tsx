@@ -266,7 +266,7 @@ const ReceiveModal: React.FC<{ loan: Loan, equipmentsMap: Record<string, Equipme
         const eq = equipmentStates[eqId];
         if (!eq) continue;
 
-        let newEqStatus: EquipmentStatus = hasDamage ? 'Mantenimiento' : 'Disponible';
+        let newEqStatus: string = hasDamage ? 'mantenimiento' : 'disponible';
         let hasIssues = hasDamage;
         let issueDetails = [];
 
@@ -275,7 +275,7 @@ const ReceiveModal: React.FC<{ loan: Loan, equipmentsMap: Record<string, Equipme
           const hasDamaged = eq.piezas.some(p => p.estado === 'Dañado');
           
           if (hasMissing || hasDamaged) {
-            newEqStatus = 'Mantenimiento';
+            newEqStatus = 'mantenimiento';
             hasIssues = true;
           }
 
