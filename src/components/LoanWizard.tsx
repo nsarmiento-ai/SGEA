@@ -183,10 +183,10 @@ export const LoanWizard: React.FC = () => {
       }
 
       // 2. Update Equipments
-      console.log('Actualizando equipos a "prestado". IDs:', selectedIds);
+      console.log('Actualizando equipos a "Prestado". IDs:', selectedIds);
       const { error: eqError } = await supabase
         .from('equipamiento')
-        .update({ estado: 'prestado' })
+        .update({ estado: 'Prestado' })
         .in('id', selectedIds);
 
       if (eqError) throw eqError;

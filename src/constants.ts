@@ -65,12 +65,12 @@ export const MATERIAS_CATEGORIES = {
 };
 
 export const AULAS = [
-  { nombre: 'Aula A', categoria: 'Espacio', estado: 'disponible', permiso_uso: 'Libre uso', piezas: [] },
-  { nombre: 'Aula B', categoria: 'Espacio', estado: 'disponible', permiso_uso: 'Libre uso', piezas: [] },
-  { nombre: 'Aula C', categoria: 'Espacio', estado: 'disponible', permiso_uso: 'Libre uso', piezas: [] },
-  { nombre: 'Aula D', categoria: 'Espacio', estado: 'disponible', permiso_uso: 'Libre uso', piezas: [] },
-  { nombre: 'Aula E', categoria: 'Espacio', estado: 'disponible', permiso_uso: 'Libre uso', piezas: [] },
-  { nombre: 'Aula F', categoria: 'Espacio', estado: 'disponible', permiso_uso: 'Libre uso', piezas: [] },
-  { nombre: 'Aula G', categoria: 'Espacio', estado: 'disponible', permiso_uso: 'Libre uso', piezas: [] },
-  { nombre: 'SET', categoria: 'Espacio', estado: 'disponible', permiso_uso: 'Libre uso', piezas: [] },
+  { nombre: 'Aula A', categoria: 'Espacio', estado: 'Disponible', permiso_uso: 'Libre uso', piezas: [] },
+  { nombre: 'Aula B', categoria: 'Espacio', estado: 'Disponible', permiso_uso: 'Libre uso', piezas: [] },
+  { nombre: 'Aula C', categoria: 'Espacio', estado: 'Disponible', permiso_uso: 'Libre uso', piezas: [] },
+  { nombre: 'Aula D', categoria: 'Espacio', estado: 'Disponible', permiso_uso: 'Libre uso', piezas: [] },
+  { nombre: 'Aula E', categoria: 'Espacio', estado: 'Disponible', permiso_uso: 'Libre uso', piezas: [] },
+  { nombre: 'Aula F', categoria: 'Espacio', estado: 'Disponible', permiso_uso: 'Libre uso', piezas: [] },
+  { nombre: 'Aula G', categoria: 'Espacio', estado: 'Disponible', permiso_uso: 'Libre uso', piezas: [] },
+  { nombre: 'SET', categoria: 'Espacio', estado: 'Disponible', permiso_uso: 'Libre uso', piezas: [] },
 ];

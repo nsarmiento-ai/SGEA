@@ -171,10 +171,10 @@ export const Catalog: React.FC = () => {
   const handleDelete = async (id: string, name: string) => {
     if (!confirm(`¿Está seguro de archivar "${name}"? No aparecerá en el inventario activo.`)) return;
     
-    console.log('Archivando equipo. Valor enviado a Supabase:', 'archivado');
+    console.log('Archivando equipo. Valor enviado a Supabase:', 'Archivado');
     const { error } = await supabase
       .from('equipamiento')
-      .update({ estado: 'archivado' })
+      .update({ estado: 'Archivado' })
       .eq('id', id);
     
     if (error) {
@@ -186,10 +186,10 @@ export const Catalog: React.FC = () => {
   };
 
   const handleRestore = async (id: string, name: string) => {
-    console.log('Restaurando equipo. Valor enviado a Supabase:', 'fuera de servicio');
+    console.log('Restaurando equipo. Valor enviado a Supabase:', 'Fuera de Servicio');
     const { error } = await supabase
       .from('equipamiento')
-      .update({ estado: 'fuera de servicio' })
+      .update({ estado: 'Fuera de Servicio' })
       .eq('id', id);
     
     if (error) {
@@ -757,10 +757,10 @@ const EquipmentModal: React.FC<{ item: Equipment | null, onClose: () => void, on
               onChange={e => setFormData({...formData, estado: e.target.value as EquipmentStatus})}
               className="w-full px-4 py-2 border border-slate-200 rounded-lg outline-none focus:ring-2 focus:ring-amber-500"
             >
-              <option value="disponible">Disponible</option>
-              <option value="prestado">Prestado</option>
-              <option value="fuera de servicio">Fuera de Servicio</option>
-              <option value="archivado">Archivado</option>
+              <option value="Disponible">Disponible</option>
+              <option value="Prestado">Prestado</option>
+              <option value="Fuera de Servicio">Fuera de Servicio</option>
+              <option value="Archivado">Archivado</option>
             </select>
           </div>
           <div>
