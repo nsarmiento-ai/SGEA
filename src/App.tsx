@@ -60,22 +60,28 @@ function AppContent() {
     const seedDocentesIfNeeded = async () => {
       if (profile?.rol === 'Pañolero') {
         try {
-          const { count } = await supabase.from('responsables').select('*', { count: 'exact', head: true });
-          if (count === 0) {
-            const docentes = [
-              'Alejandra Guzzo', 'Alejandro Saya', 'Aldo Ternavasio', 'Amadeo Pellegrino',
-              'Ana Claudia García', 'Arturo Carrasco', 'Benjamín Ávila', 'Bernabé Quiroga',
-              'Camila López Morales', 'Carolina Coppens', 'Daniel Araujo', 'Diego Viruel',
-              'Elena Burgo de Chazal', 'Enrique Escaño', 'Ezequiel Jiménez', 'Fabián Soberón',
-              'Felipe Cerisola', 'Fernando Gallucci', 'Florencia Padilla', 'Germán Azcoaga',
-              'Guillermo Del Pino', 'Gustavo Caro', 'José Guzzi', 'Juan Mascaró',
-              'Manuel Canseco', 'María José Medina', 'María Lenis', 'Melina Dulci',
-              'Pedro Arturo Gómez', 'Pedro Ponce', 'Romina Nahas', 'Romina Romano',
-              'Sergio Olivera', 'Víctor Martínez'
-            ].map(nombre => ({ nombre_completo: nombre, activo: true }));
+          const { data: existing } = await supabase.from('responsables').select('nombre_completo');
+          const existingNames = (existing || []).map(r => r.nombre_completo);
+          
+          const docentesList = [
+            'Alejandra Guzzo', 'Alejandro Saya', 'Aldo Ternavasio', 'Amadeo Pellegrino',
+            'Ana Claudia García', 'Arturo Carrasco', 'Benjamín Ávila', 'Bernabé Quiroga',
+            'Camila López Morales', 'Carolina Coppens', 'Daniel Araujo', 'Diego Viruel',
+            'Elena Burgo de Chazal', 'Enrique Escaño', 'Ezequiel Jiménez', 'Fabián Soberón',
+            'Felipe Cerisola', 'Fernando Gallucci', 'Florencia Padilla', 'Germán Azcoaga',
+            'Guillermo Del Pino', 'Gustavo Caro', 'José Guzzi', 'Juan Mascaró',
+            'Manuel Canseco', 'María José Medina', 'María Lenis', 'Melina Dulci',
+            'Pedro Arturo Gómez', 'Pedro Ponce', 'Romina Nahas', 'Romina Romano',
+            'Sergio Olivera', 'Víctor Martínez'
+          ];
 
-            await supabase.from('responsables').insert(docentes);
-            console.log('Docentes seeded internally');
+          const toInsert = docentesList
+            .filter(nombre => !existingNames.includes(nombre))
+            .map(nombre => ({ nombre_completo: nombre, activo: true }));
+
+          if (toInsert.length > 0) {
+            await supabase.from('responsables').insert(toInsert);
+            console.log(`Seeded ${toInsert.length} new docentes`);
           }
         } catch (e) {
           console.error('Failed to seed docentes:', e);

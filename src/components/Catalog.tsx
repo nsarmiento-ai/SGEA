@@ -143,10 +143,21 @@ export const Catalog: React.FC = () => {
 
     if (!eqRes.error && eqRes.data) {
       console.log(`Catalog: Se recibieron ${eqRes.data.length} equipos.`);
-      const mappedData = eqRes.data.map(eq => ({
-        ...eq,
-        estado: mapStatus(eq.estado)
-      }));
+      const mappedData = eqRes.data.map(eq => {
+        let parsedPiezas = eq.piezas;
+        if (typeof eq.piezas === 'string') {
+          try {
+            parsedPiezas = JSON.parse(eq.piezas || '[]');
+          } catch (e) {
+            parsedPiezas = [];
+          }
+        }
+        return {
+          ...eq,
+          piezas: parsedPiezas || [],
+          estado: mapStatus(eq.estado)
+        };
+      });
       setEquipments(mappedData);
     } else if (eqRes.error) {
       console.error('Catalog: Error Supabase (equipos):', eqRes.error);

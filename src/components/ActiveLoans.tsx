@@ -63,22 +63,33 @@ export const ActiveLoans: React.FC<{ filterMora?: boolean }> = ({ filterMora = f
       if (eqIds.length > 0) {
         const { data: eqData } = await supabase.from('equipamiento').select('*').in('id', eqIds);
         if (eqData) {
-          const eqMap = eqData.reduce((acc, eq) => ({ 
-            ...acc, 
-            [eq.id]: {
-              ...eq,
-              estado: (String(eq.estado || '').toLowerCase() === 'roto' || 
-                       String(eq.estado || '').toLowerCase() === 'en reparación' || 
-                       String(eq.estado || '').toLowerCase() === 'perdido' || 
-                       String(eq.estado || '').toLowerCase() === 'mantenimiento' || 
-                       String(eq.estado || '').toLowerCase() === 'incompleto' ||
-                       String(eq.estado || '').toLowerCase() === 'fuera de servicio') 
-                       ? 'Fuera de Servicio' 
-                       : (String(eq.estado || '').toLowerCase() === 'eliminado' || String(eq.estado || '').toLowerCase() === 'archivado' ? 'Archivado' : 
-                          String(eq.estado || '').toLowerCase() === 'disponible' ? 'Disponible' :
-                          String(eq.estado || '').toLowerCase() === 'prestado' ? 'Prestado' : eq.estado)
-            } 
-          }), {});
+          const eqMap = eqData.reduce((acc, eq) => {
+            let parsedPiezas = eq.piezas;
+            if (typeof eq.piezas === 'string') {
+              try {
+                parsedPiezas = JSON.parse(eq.piezas || '[]');
+              } catch (e) {
+                parsedPiezas = [];
+              }
+            }
+            return { 
+              ...acc, 
+              [eq.id]: {
+                ...eq,
+                piezas: parsedPiezas || [],
+                estado: (String(eq.estado || '').toLowerCase() === 'roto' || 
+                         String(eq.estado || '').toLowerCase() === 'en reparación' || 
+                         String(eq.estado || '').toLowerCase() === 'perdido' || 
+                         String(eq.estado || '').toLowerCase() === 'mantenimiento' || 
+                         String(eq.estado || '').toLowerCase() === 'incompleto' ||
+                         String(eq.estado || '').toLowerCase() === 'fuera de servicio') 
+                         ? 'Fuera de Servicio' 
+                         : (String(eq.estado || '').toLowerCase() === 'eliminado' || String(eq.estado || '').toLowerCase() === 'archivado' ? 'Archivado' : 
+                            String(eq.estado || '').toLowerCase() === 'disponible' ? 'Disponible' :
+                            String(eq.estado || '').toLowerCase() === 'prestado' ? 'Prestado' : eq.estado)
+              } 
+            };
+          }, {});
           setEquipments(eqMap);
         }
       }
@@ -218,28 +229,30 @@ const ReceiveModal: React.FC<{ loan: Loan, equipmentsMap: Record<string, Equipme
   const [observaciones, setObservaciones] = useState('');
   const [hasDamage, setHasDamage] = useState(false);
   
-  // State to track the status of each piece of each equipment
+  // State to track the status of each equipment
   const [equipmentStates, setEquipmentStates] = useState<Record<string, Equipment>>(() => {
     const initialState: Record<string, Equipment> = {};
     (loan.equipos_ids || []).forEach(id => {
       if (equipmentsMap && equipmentsMap[id]) {
-        // Deep copy to avoid mutating the original map
-        initialState[id] = JSON.parse(JSON.stringify(equipmentsMap[id]));
+        const eq = { ...equipmentsMap[id] };
+        
+        // Safeguard: If piezas comes as a string from DB, parse it
+        if (typeof eq.piezas === 'string') {
+          try {
+            eq.piezas = JSON.parse(eq.piezas || '[]');
+          } catch (e) {
+            eq.piezas = [];
+          }
+        }
+        
+        // Ensure it's at least an empty array
+        if (!eq.piezas) eq.piezas = [];
+        
+        initialState[id] = eq;
       }
     });
     return initialState;
   });
-
-  const handlePieceStatusChange = (eqId: string, pieceId: string, newStatus: PiezaEstado) => {
-    setEquipmentStates(prev => {
-      const eq = { ...prev[eqId] };
-      const pieceIndex = eq.piezas.findIndex(p => p.id === pieceId);
-      if (pieceIndex !== -1) {
-        eq.piezas[pieceIndex].estado = newStatus;
-      }
-      return { ...prev, [eqId]: eq };
-    });
-  };
 
   const handleConfirm = async () => {
     if (!observaciones.trim()) {
@@ -276,10 +289,19 @@ const ReceiveModal: React.FC<{ loan: Loan, equipmentsMap: Record<string, Equipme
         }
 
         console.log(`Actualizando equipo ${eqId} tras devolución. Nuevo estado:`, newEqStatus);
-        const { error: eqUpdateError } = await supabase.from('equipamiento').update({ 
-          estado: newEqStatus,
-          piezas: eq.piezas || []
-        }).eq('id', String(eqId));
+        
+        // Only update the necessary fields to avoid conflicts with complex types
+        const updateData: any = { estado: newEqStatus };
+        
+        // If it was a string '[]', we keep it as an empty array or the parsed array
+        if (eq.piezas) {
+          updateData.piezas = eq.piezas;
+        }
+
+        const { error: eqUpdateError } = await supabase
+          .from('equipamiento')
+          .update(updateData)
+          .eq('id', String(eqId));
 
         if (eqUpdateError) throw eqUpdateError;
 
@@ -366,33 +388,16 @@ const ReceiveModal: React.FC<{ loan: Loan, equipmentsMap: Record<string, Equipme
                     Este equipo no tiene piezas registradas. Se recibirá como unidad completa.
                   </div>
                 ) : (
-                  <div className="divide-y divide-slate-100">
-                    {eq.piezas.map(pieza => (
-                      <div key={pieza.id} className="p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                        <div className="flex items-center gap-2">
-                          <span className="font-medium text-sm text-slate-700">{pieza.nombre}</span>
-                          {pieza.obligatorio && <span className="px-2 py-0.5 bg-red-50 text-red-600 text-[10px] font-bold rounded uppercase">Obligatorio</span>}
+                  <div className="p-4 space-y-2">
+                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">Piezas del Kit</p>
+                    <div className="flex flex-wrap gap-2">
+                      {eq.piezas.map((pieza, idx) => (
+                        <div key={idx} className="px-3 py-1.5 bg-white border border-slate-200 rounded-lg text-xs font-medium text-slate-700 flex items-center gap-2">
+                          <div className="w-1.5 h-1.5 rounded-full bg-amber-500"></div>
+                          {typeof pieza === 'string' ? pieza : (pieza as any).nombre}
                         </div>
-                        <div className="flex gap-2">
-                          {(['OK', 'Dañado', 'Faltante'] as PiezaEstado[]).map(estado => (
-                            <button
-                              key={estado}
-                              onClick={() => handlePieceStatusChange(eqId, pieza.id, estado)}
-                              className={cn(
-                                "px-3 py-1.5 text-xs font-bold rounded-lg border transition-all",
-                                pieza.estado === estado 
-                                  ? estado === 'OK' ? "bg-green-500 text-white border-green-600" :
-                                    estado === 'Dañado' ? "bg-orange-500 text-white border-orange-600" :
-                                    "bg-red-500 text-white border-red-600"
-                                  : "bg-white text-slate-600 border-slate-200 hover:border-slate-300"
-                              )}
-                            >
-                              {estado}
-                            </button>
-                          ))}
-                        </div>
-                      </div>
-                    ))}
+                      ))}
+                    </div>
                   </div>
                 )}
               </div>

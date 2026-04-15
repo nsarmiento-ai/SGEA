@@ -83,17 +83,30 @@ export const LoanWizard: React.FC = () => {
 
   const fetchAvailable = async () => {
     setLoading(true);
-    const [eqRes, resRes] = await Promise.all([
-      supabase.from('equipamiento').select('*').ilike('estado', 'disponible'),
-      supabase.from('reservas').select('*')
-    ]);
-    
-    if (!eqRes.error && eqRes.data) {
-      console.log(`LoanWizard: Se encontraron ${eqRes.data.length} equipos disponibles.`);
-      setEquipments(eqRes.data);
+    try {
+      console.log('LoanWizard: Fetching available equipment...');
+      const [eqRes, resRes] = await Promise.all([
+        supabase.from('equipamiento').select('*'),
+        supabase.from('reservas').select('*')
+      ]);
+      
+      if (eqRes.error) throw eqRes.error;
+      
+      if (eqRes.data) {
+        // Filter in JS to handle any case variation and ensure we see everything
+        const available = eqRes.data.filter(e => 
+          String(e.estado || '').toLowerCase() === 'disponible'
+        );
+        console.log(`LoanWizard: Found ${available.length} available items out of ${eqRes.data.length} total.`);
+        setEquipments(available);
+      }
+      
+      if (resRes.data) setReservations(resRes.data);
+    } catch (err) {
+      console.error('LoanWizard: Error fetching available equipment:', err);
+    } finally {
+      setLoading(false);
     }
-    if (!resRes.error && resRes.data) setReservations(resRes.data);
-    setLoading(false);
   };
 
   const toggleSelect = (id: string) => {
