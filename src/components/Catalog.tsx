@@ -173,6 +173,7 @@ export const Catalog: React.FC = () => {
                          (eq?.modelo || '').toLowerCase().includes((search || '').toLowerCase()) ||
                          (eq?.numero_serie || '').toLowerCase().includes((search || '').toLowerCase());
     const matchesCategory = category === 'Todas' || (eq?.categoria || 'Otros') === category;
+    const matchesFavorites = showFavorites ? (profile?.favoritos || []).includes(eq?.id) : true;
     
     // For Docente, never show archived. For Admin, depends on showArchived toggle.
     if (role === 'Docente') {
