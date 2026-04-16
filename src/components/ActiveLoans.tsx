@@ -279,7 +279,7 @@ const ReceiveModal: React.FC<{ loan: Loan, equipmentsMap: Record<string, Equipme
         const eq = equipmentStates[eqId];
         if (!eq) continue;
 
-        let newEqStatus: string = hasDamage ? 'Mantenimiento' : 'Disponible';
+        let newEqStatus: string = hasDamage ? 'Fuera de Servicio' : 'Disponible';
         let hasIssues = hasDamage;
         let issueDetails = [];
 
