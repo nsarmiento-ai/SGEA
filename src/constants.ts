@@ -61,6 +61,9 @@ export const MATERIAS_CATEGORIES = {
     'Historia de la prensa escrita en Argentina',
     'Introducción a la Inteligencia Artificial',
     'Cine Documental e Intervención Social'
+  ],
+  'Otros': [
+    'Evento de Extensión'
   ]
 };
 
