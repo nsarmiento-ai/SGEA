@@ -93,7 +93,7 @@ const InventoryMetrics: React.FC<{ equipments: Equipment[] }> = ({ equipments })
 };
 
 export const Catalog: React.FC = () => {
-  const { activeResponsable, profile, toggleFavorite } = useApp();
+  const { activeResponsable, profile, toggleFavorite, role } = useApp();
   const [equipments, setEquipments] = useState<Equipment[]>([]);
   const [reservations, setReservations] = useState<Reservation[]>([]);
   const [loading, setLoading] = useState(true);
@@ -173,8 +173,14 @@ export const Catalog: React.FC = () => {
                          (eq?.modelo || '').toLowerCase().includes((search || '').toLowerCase()) ||
                          (eq?.numero_serie || '').toLowerCase().includes((search || '').toLowerCase());
     const matchesCategory = category === 'Todas' || (eq?.categoria || 'Otros') === category;
+    
+    // For Docente, never show archived. For Admin, depends on showArchived toggle.
+    if (role === 'Docente') {
+      if (eq?.estado === 'Archivado') return false;
+      return matchesSearch && matchesCategory && matchesFavorites;
+    }
+
     const matchesArchived = showArchived ? eq?.estado === 'Archivado' : eq?.estado !== 'Archivado';
-    const matchesFavorites = showFavorites ? (profile?.favoritos || []).includes(eq?.id) : true;
     return matchesSearch && matchesCategory && matchesArchived && matchesFavorites;
   });
 
@@ -196,10 +202,10 @@ export const Catalog: React.FC = () => {
   };
 
   const handleRestore = async (id: string, name: string) => {
-    console.log('Restaurando equipo. Valor enviado a Supabase:', 'Fuera de Servicio');
+    console.log('Restaurando equipo. Valor enviado a Supabase:', 'Disponible');
     const { error } = await supabase
       .from('equipamiento')
-      .update({ estado: 'Fuera de Servicio' })
+      .update({ estado: 'Disponible' })
       .eq('id', id);
     
     if (error) {
@@ -214,8 +220,12 @@ export const Catalog: React.FC = () => {
     <div className="p-8 max-w-7xl mx-auto">
       <header className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
         <div>
-          <h1 className="text-3xl font-display font-bold text-slate-900">Catálogo de Equipos</h1>
-          <p className="text-slate-500">Gestione el inventario de la escuela.</p>
+          <h1 className="text-3xl font-display font-bold text-slate-900">
+            {showArchived ? 'Archivo de Equipos (Bajas)' : 'Catálogo de Equipos'}
+          </h1>
+          <p className="text-slate-500">
+            {showArchived ? 'Equipos fuera de servicio permanente o históricos.' : 'Gestione el inventario de la escuela.'}
+          </p>
         </div>
         <div className="flex gap-2 self-start">
           <button 
@@ -230,25 +240,29 @@ export const Catalog: React.FC = () => {
             <Star className={cn("w-4 h-4", showFavorites ? "fill-current" : "text-amber-500")} />
             {showFavorites ? 'Viendo Habituales' : 'Ver Habituales'}
           </button>
-          <button 
-            onClick={() => setShowArchived(!showArchived)}
-            className={cn(
-              "flex items-center gap-2 px-4 py-2 rounded-xl font-bold text-sm transition-all border",
-              showArchived 
-                ? "bg-slate-900 text-white border-slate-900" 
-                : "bg-white text-slate-600 border-slate-200 hover:border-slate-300"
-            )}
-          >
-            <Trash2 className="w-4 h-4" />
-            {showArchived ? 'Ver Activos' : 'Ver Archivados'}
-          </button>
-          <button 
-            onClick={() => { setEditingItem(null); setIsModalOpen(true); }}
-            className="btn-primary flex items-center gap-2"
-          >
-            <Plus className="w-5 h-5" />
-            Nuevo Equipo
-          </button>
+          {role === 'Pañolero' && (
+            <button 
+              onClick={() => setShowArchived(!showArchived)}
+              className={cn(
+                "flex items-center gap-2 px-4 py-2 rounded-xl font-bold text-sm transition-all border",
+                showArchived 
+                  ? "bg-slate-900 text-white border-slate-900" 
+                  : "bg-white text-slate-600 border-slate-200 hover:border-slate-300"
+              )}
+            >
+              <Trash2 className="w-4 h-4" />
+              {showArchived ? 'Ver Activos' : 'Ver Archivados'}
+            </button>
+          )}
+          {role === 'Pañolero' && (
+            <button 
+              onClick={() => { setEditingItem(null); setIsModalOpen(true); }}
+              className="btn-primary flex items-center gap-2"
+            >
+              <Plus className="w-5 h-5" />
+              Nuevo Equipo
+            </button>
+          )}
         </div>
       </header>
 

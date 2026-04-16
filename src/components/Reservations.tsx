@@ -140,6 +140,9 @@ export const Reservations: React.FC = () => {
   };
 
   const filteredEquipments = (equipments || []).filter(eq => {
+    // Never show archived equipment for reservations
+    if (eq?.estado === 'Archivado') return false;
+
     const matchesSearch = (eq?.nombre || '').toLowerCase().includes((search || '').toLowerCase()) || 
                          (eq?.modelo || '').toLowerCase().includes((search || '').toLowerCase());
     const matchesCategory = category === 'Todas' || (eq?.categoria || 'Otros') === category;
@@ -227,6 +230,13 @@ export const Reservations: React.FC = () => {
     const equiposIds = (cart || []).map(eq => eq.id);
     if (checkOverlap(equiposIds, formData.fecha_inicio, formData.fecha_fin)) {
       setError('Uno o más equipos ya tienen una reserva en ese rango de fechas.');
+      return;
+    }
+    
+    // Safety check: Ensure no archived items are being reserved
+    const hasArchived = cart.some(eq => eq.estado === 'Archivado');
+    if (hasArchived) {
+      setError('No se pueden reservar equipos que están en el archivo/baja.');
       return;
     }
 
