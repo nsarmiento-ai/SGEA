@@ -140,8 +140,8 @@ export const Reservations: React.FC = () => {
   };
 
   const filteredEquipments = (equipments || []).filter(eq => {
-    // Never show archived equipment for reservations
-    if (eq?.estado === 'Archivado') return false;
+    // Only show 'Disponible' equipment for new reservations
+    if (eq?.estado !== 'Disponible') return false;
 
     const matchesSearch = (eq?.nombre || '').toLowerCase().includes((search || '').toLowerCase()) || 
                          (eq?.modelo || '').toLowerCase().includes((search || '').toLowerCase());
@@ -233,15 +233,19 @@ export const Reservations: React.FC = () => {
       return;
     }
     
-    // Safety check: Ensure no archived items are being reserved
-    const hasArchived = cart.some(eq => eq.estado === 'Archivado');
-    if (hasArchived) {
-      setError('No se pueden reservar equipos que están en el archivo/baja.');
-      return;
-    }
-
     setSubmitting(true);
     try {
+      // Final availability check before creating reservation
+      const { data: latestStatus } = await supabase
+        .from('equipamiento')
+        .select('id, nombre, estado')
+        .in('id', equiposIds);
+      
+      const unavailable = latestStatus?.filter(eq => eq.estado !== 'Disponible');
+      if (unavailable && unavailable.length > 0) {
+        throw new Error(`Los siguientes equipos ya no están disponibles: ${unavailable.map(u => u.nombre).join(', ')}`);
+      }
+
       const { data: { user } } = await supabase.auth.getUser();
       
       if (!user) {

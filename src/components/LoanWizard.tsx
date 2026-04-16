@@ -93,9 +93,9 @@ export const LoanWizard: React.FC = () => {
       if (eqRes.error) throw eqRes.error;
       
       if (eqRes.data) {
-        // Filter in JS to handle any case variation and ensure we see everything
+        // Strict filter for 'Disponible' items
         const available = eqRes.data.filter(e => 
-          String(e.estado || '').toLowerCase() === 'disponible'
+          String(e.estado || '').toLowerCase() === 'disponible' || e.estado === 'Disponible'
         );
         console.log(`LoanWizard: Found ${available.length} available items out of ${eqRes.data.length} total.`);
         setEquipments(available);
@@ -174,6 +174,17 @@ export const LoanWizard: React.FC = () => {
     setSubmitting(true);
 
     try {
+      // Final availability check before creating loan
+      const { data: latestStatus } = await supabase
+        .from('equipamiento')
+        .select('id, nombre, estado')
+        .in('id', selectedIds);
+      
+      const unavailable = latestStatus?.filter(eq => String(eq.estado || '').toLowerCase() !== 'disponible');
+      if (unavailable && unavailable.length > 0) {
+        throw new Error(`Los siguientes equipos ya no están disponibles: ${unavailable.map(u => u.nombre).join(', ')}`);
+      }
+
       // 1. Create Loan
       const loanData: Partial<Loan> = {
         alumno_nombre: formData.alumno_nombre,
