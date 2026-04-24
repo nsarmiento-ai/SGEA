@@ -98,12 +98,12 @@ export const ActiveLoans: React.FC<{ filterMora?: boolean }> = ({ filterMora = f
   };
 
   return (
-    <div className="p-8 max-w-7xl mx-auto">
+    <div className="p-4 md:p-8 max-w-7xl mx-auto pt-16 lg:pt-8">
       <header className="mb-8">
-        <h1 className="text-3xl font-display font-bold text-slate-900">
+        <h1 className="text-2xl md:text-3xl font-display font-bold text-slate-900">
           {filterMora ? 'Panel de Mora' : (role === 'Docente' ? 'Mis Préstamos' : 'Devolución de Equipos')}
         </h1>
-        <p className="text-slate-500">
+        <p className="text-sm md:text-base text-slate-500">
           {filterMora ? 'Equipos con fecha de devolución vencida.' : (role === 'Docente' ? 'Seguimiento de sus equipos retirados.' : 'Gestión de recepción de equipos.')}
         </p>
       </header>
@@ -111,15 +111,15 @@ export const ActiveLoans: React.FC<{ filterMora?: boolean }> = ({ filterMora = f
       {loading ? (
         <div className="flex justify-center py-20"><Loader2 className="animate-spin text-amber-500 w-10 h-10" /></div>
       ) : loans.length === 0 ? (
-        <div className="bg-white rounded-2xl p-12 text-center border border-dashed border-slate-300">
-          <div className="bg-slate-100 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
-            <Package className="text-slate-400 w-8 h-8" />
+        <div className="bg-white rounded-2xl md:rounded-3xl p-8 md:p-12 text-center border border-dashed border-slate-300">
+          <div className="bg-slate-100 w-12 h-12 md:w-16 md:h-16 rounded-full flex items-center justify-center mx-auto mb-4">
+            <Package className="text-slate-400 w-6 h-6 md:w-8 md:h-8" />
           </div>
-          <h3 className="text-lg font-bold text-slate-900">No hay préstamos {filterMora ? 'en mora' : 'activos'}</h3>
-          <p className="text-slate-500">Todo el equipo está en orden.</p>
+          <h3 className="text-base md:text-lg font-bold text-slate-900">No hay préstamos {filterMora ? 'en mora' : 'activos'}</h3>
+          <p className="text-xs md:text-sm text-slate-500">Todo el grupo de equipos está en orden.</p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
           {loans.map((loan) => {
             const daysDiff = differenceInDays(new Date(), new Date(loan.fecha_devolucion_estimada));
             const isMora = isPast(new Date(loan.fecha_devolucion_estimada));
@@ -130,41 +130,40 @@ export const ActiveLoans: React.FC<{ filterMora?: boolean }> = ({ filterMora = f
                 key={loan.id}
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
-                className={cn("card flex flex-col", isMora ? "border-red-200 ring-1 ring-red-100" : "")}
+                className={cn("bg-white rounded-2xl md:rounded-3xl border border-slate-200 shadow-sm flex flex-col overflow-hidden", isMora ? "border-red-200 ring-1 ring-red-100" : "")}
               >
                 <div className={cn("p-4 flex justify-between items-center border-b", isMora ? "bg-red-50 border-red-100" : "bg-slate-50 border-slate-100")}>
                   <div className="flex items-center gap-3">
-                    <div className={cn("w-10 h-10 rounded-full flex items-center justify-center", isMora ? "bg-red-500 text-white" : "bg-amber-500 text-white")}>
+                    <div className={cn("w-10 h-10 rounded-full flex items-center justify-center shrink-0", isMora ? "bg-red-500 text-white" : "bg-amber-500 text-white")}>
                       <User className="w-5 h-5" />
                     </div>
-                    <div>
-                      <h3 className="font-bold text-slate-900">{loan.alumno_nombre}</h3>
-                      <p className="text-xs text-slate-500">DNI: {loan.alumno_dni}</p>
-                      <p className="text-[10px] uppercase font-bold text-slate-500">Folio: {loan.id.slice(0, 8)}</p>
+                    <div className="min-w-0">
+                      <h3 className="font-bold text-slate-900 text-sm md:text-base truncate">{loan.alumno_nombre}</h3>
+                      <p className="text-[10px] md:text-xs text-slate-500 truncate">DNI: {loan.alumno_dni}</p>
                     </div>
                   </div>
                   {isMora && (
-                    <div className="bg-red-600 text-white px-3 py-1 rounded-full text-[10px] font-black uppercase flex items-center gap-1 animate-pulse">
+                    <div className="bg-red-600 text-white px-2.5 py-1 rounded-full text-[9px] md:text-[10px] font-black uppercase flex items-center gap-1 shrink-0">
                       <AlertCircle className="w-3 h-3" />
-                      {daysDiff} Días de Mora
+                      {daysDiff}d Mora
                     </div>
                   )}
                 </div>
 
-                <div className="p-6 flex-1 grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="p-4 md:p-6 flex-1 grid grid-cols-1 sm:grid-cols-2 gap-6">
                   <div className="space-y-4">
                     <div className="flex items-start gap-3">
                       <Clock className="w-4 h-4 text-slate-400 mt-0.5" />
                       <div>
-                        <p className="text-[10px] uppercase font-bold text-slate-400">Salida</p>
-                        <p className="text-sm font-medium">{formatDate(loan.fecha_salida)}</p>
+                        <p className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">Salida</p>
+                        <p className="text-xs md:text-sm font-medium">{formatDate(loan.fecha_salida)}</p>
                       </div>
                     </div>
                     <div className="flex items-start gap-3">
                       <Calendar className="w-4 h-4 text-slate-400 mt-0.5" />
                       <div>
-                        <p className="text-[10px] uppercase font-bold text-slate-400">Devolución Estimada</p>
-                        <p className={cn("text-sm font-bold", isMora ? "text-red-600" : "text-amber-600")}>
+                        <p className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">Devolución Estimada</p>
+                        <p className={cn("text-xs md:text-sm font-bold", isMora ? "text-red-600" : "text-amber-600")}>
                           {formatDate(loan.fecha_devolucion_estimada)}
                         </p>
                       </div>
@@ -172,18 +171,18 @@ export const ActiveLoans: React.FC<{ filterMora?: boolean }> = ({ filterMora = f
                     <div className="flex items-start gap-3">
                       <ArrowRight className="w-4 h-4 text-slate-400 mt-0.5" />
                       <div>
-                        <p className="text-[10px] uppercase font-bold text-slate-400">Responsable</p>
-                        <p className="text-sm font-medium">{loan.responsable_nombre}</p>
+                        <p className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">Responsable</p>
+                        <p className="text-xs md:text-sm font-medium">{loan.responsable_nombre}</p>
                       </div>
                     </div>
                   </div>
 
                   <div className="space-y-2">
-                    <p className="text-[10px] uppercase font-bold text-slate-400 mb-2">Equipos ({(loan.equipos_ids || []).length})</p>
-                    <div className="space-y-2 max-h-32 overflow-y-auto pr-2">
+                    <p className="text-[10px] uppercase font-bold text-slate-400 mb-2 tracking-wider">Equipos ({(loan.equipos_ids || []).length})</p>
+                    <div className="space-y-2 max-h-32 overflow-y-auto pr-2 custom-scrollbar">
                       {(loan.equipos_ids || []).map(id => (
-                        <div key={id} className="flex items-center gap-2 text-xs bg-slate-50 p-2 rounded-lg border border-slate-100">
-                          <Package className="w-3 h-3 text-slate-400" />
+                        <div key={id} className="flex items-center gap-2 text-[10px] md:text-xs bg-slate-50 p-2 rounded-lg border border-slate-100">
+                          <Package className="w-3 h-3 text-slate-400 shrink-0" />
                           <span className="font-medium truncate">{(equipments && equipments[id])?.nombre || 'Cargando...'}</span>
                         </div>
                       ))}
@@ -192,10 +191,10 @@ export const ActiveLoans: React.FC<{ filterMora?: boolean }> = ({ filterMora = f
                 </div>
 
                 {role === 'Pañolero' && (
-                  <div className="p-4 bg-slate-50 border-t border-slate-100 flex justify-end">
+                  <div className="p-4 bg-slate-50 border-t border-slate-100 mt-auto">
                     <button
                       onClick={() => setSelectedLoan(loan)}
-                      className="flex items-center gap-2 px-6 py-2 bg-slate-900 text-white rounded-xl font-bold text-sm hover:bg-slate-800 transition-all"
+                      className="w-full flex items-center justify-center gap-2 px-6 py-3 bg-slate-900 text-white rounded-xl font-bold text-sm hover:bg-amber-500 transition-all shadow-lg shadow-slate-200"
                     >
                       <CheckCircle className="w-4 h-4" />
                       Recibir Equipos
@@ -280,20 +279,10 @@ const ReceiveModal: React.FC<{ loan: Loan, equipmentsMap: Record<string, Equipme
         if (!eq) continue;
 
         let newEqStatus: string = hasDamage ? 'Fuera de Servicio' : 'Disponible';
-        let hasIssues = hasDamage;
-        let issueDetails = [];
-
-        // piezas is now string[], so we don't have per-piece status in DB
-        if (hasIssues) {
-          issueDetails = ['Daños reportados en la recepción'];
-        }
-
-        console.log(`Actualizando equipo ${eqId} tras devolución. Nuevo estado:`, newEqStatus);
         
         // Only update the necessary fields to avoid conflicts with complex types
         const updateData: any = { estado: newEqStatus };
         
-        // If it was a string '[]', we keep it as an empty array or the parsed array
         if (eq.piezas) {
           updateData.piezas = eq.piezas;
         }
@@ -326,26 +315,24 @@ const ReceiveModal: React.FC<{ loan: Loan, equipmentsMap: Record<string, Equipme
 
         if (historyError) console.error('Error logging resource history:', historyError);
 
-        if (hasIssues) {
+        if (hasDamage) {
           await logAction(activeResponsable!, 'INCIDENCIA_EQUIPO', { 
             equipoId: eqId, 
             equipoNombre: eq.nombre, 
             loanId: loan.id,
             alumno_nombre: loan.alumno_nombre,
             alumno_dni: loan.alumno_dni,
-            detalles: `Problemas detectados al recibir: ${issueDetails.join(', ')}. Obs: ${observaciones}` 
+            detalles: `Problemas detectados al recibir. Obs: ${observaciones}` 
           });
         }
       }
 
-      // 3. Log the general return action
       await logAction(activeResponsable!, 'DEVOLUCION_PRESTAMO', { 
         loanId: loan.id, 
         alumno: `${loan.alumno_nombre} (${loan.alumno_dni})`,
         observaciones 
       });
       
-      // 4. Generate Return PDF
       const returnedEquipments = Object.values(equipmentStates) as Equipment[];
       generateReturnPDF(loan, returnedEquipments, activeResponsable!);
 
@@ -359,40 +346,40 @@ const ReceiveModal: React.FC<{ loan: Loan, equipmentsMap: Record<string, Equipme
   };
 
   return (
-    <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-      <div className="bg-white rounded-2xl shadow-xl w-full max-w-3xl max-h-[90vh] flex flex-col">
-        <div className="p-6 border-b border-slate-100 flex justify-between items-center shrink-0">
+    <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-2 md:p-4 overflow-y-auto">
+      <div className="bg-white rounded-2xl md:rounded-3xl shadow-xl w-full max-w-2xl my-auto flex flex-col overflow-hidden">
+        <div className="p-4 md:p-6 border-b border-slate-100 flex justify-between items-center shrink-0 bg-slate-50">
           <div>
-            <h2 className="text-xl font-bold">Checklist de Recepción</h2>
-            <p className="text-sm text-slate-500">Verifique el estado de los equipos y sus piezas.</p>
+            <h2 className="text-lg md:text-xl font-bold text-slate-900">Checklist de Recepción</h2>
+            <p className="text-xs md:text-sm text-slate-500 font-medium">Verifique el estado de los equipos.</p>
           </div>
-          <button onClick={onClose} className="text-slate-400 hover:text-slate-600">
+          <button onClick={onClose} className="text-slate-400 hover:text-slate-600 p-2">
             <XCircle className="w-6 h-6" />
           </button>
         </div>
         
-        <div className="p-6 overflow-y-auto flex-1 space-y-6">
+        <div className="p-4 md:p-6 overflow-y-auto flex-1 space-y-6 max-h-[60vh] custom-scrollbar">
           {(loan.equipos_ids || []).map(eqId => {
             const eq = equipmentStates && equipmentStates[eqId];
             if (!eq) return null;
 
             return (
-              <div key={eqId} className="border border-slate-200 rounded-xl overflow-hidden">
-                <div className="bg-slate-50 px-4 py-3 border-b border-slate-200 font-bold text-slate-800 flex items-center gap-2">
+              <div key={eqId} className="border border-slate-200 rounded-xl overflow-hidden shadow-sm">
+                <div className="bg-slate-50 px-4 py-3 border-b border-slate-200 font-bold text-slate-800 flex items-center gap-2 text-sm">
                   <Package className="w-4 h-4 text-amber-500" />
                   {eq.nombre}
                 </div>
                 
                 {(!eq.piezas || eq.piezas.length === 0) ? (
-                  <div className="p-4 text-sm text-slate-500 italic">
-                    Este equipo no tiene piezas registradas. Se recibirá como unidad completa.
+                  <div className="p-4 text-[10px] md:text-xs text-slate-500 italic">
+                    Sin piezas registradas. Se recibe como unidad completa.
                   </div>
                 ) : (
                   <div className="p-4 space-y-2">
                     <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">Piezas del Kit</p>
                     <div className="flex flex-wrap gap-2">
                       {eq.piezas.map((pieza, idx) => (
-                        <div key={idx} className="px-3 py-1.5 bg-white border border-slate-200 rounded-lg text-xs font-medium text-slate-700 flex items-center gap-2">
+                        <div key={idx} className="px-2.5 py-1.5 bg-white border border-slate-200 rounded-lg text-[10px] font-bold text-slate-700 flex items-center gap-2 shadow-sm">
                           <div className="w-1.5 h-1.5 rounded-full bg-amber-500"></div>
                           {typeof pieza === 'string' ? pieza : (pieza as any).nombre}
                         </div>
@@ -406,54 +393,61 @@ const ReceiveModal: React.FC<{ loan: Loan, equipmentsMap: Record<string, Equipme
 
           <div className="space-y-4 pt-4 border-t border-slate-100">
             <div>
-              <label className="flex items-center gap-2 text-sm font-bold text-slate-700 mb-2">
+              <label className="flex items-center gap-2 text-xs font-black text-slate-500 mb-2 uppercase tracking-wider">
                 <AlertCircle className="w-4 h-4 text-amber-500" />
-                Observaciones de Devolución (Obligatorio)
+                Observaciones de Devolución
               </label>
               <textarea
                 required
                 value={observaciones}
                 onChange={e => setObservaciones(e.target.value)}
-                className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-amber-500 transition-all resize-none"
+                className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-amber-500 transition-all resize-none text-sm placeholder:text-slate-400"
                 placeholder="Describa el estado en que se recibe el equipo..."
                 rows={3}
               />
             </div>
 
-            <label className="flex items-center justify-between p-4 bg-slate-50 rounded-xl border border-slate-200 cursor-pointer group">
+            <label className="flex items-center justify-between p-4 bg-slate-50 rounded-2xl border border-slate-200 cursor-pointer group active:bg-slate-100 transition-colors">
               <div className="flex items-center gap-3">
                 <div className={cn(
-                  "w-10 h-10 rounded-full flex items-center justify-center transition-colors",
-                  hasDamage ? "bg-red-100 text-red-600" : "bg-slate-200 text-slate-500"
+                  "w-10 h-10 rounded-full flex items-center justify-center transition-colors shrink-0",
+                  hasDamage ? "bg-red-500 text-white" : "bg-slate-200 text-slate-500"
                 )}>
                   <XCircle className="w-5 h-5" />
                 </div>
-                <div>
-                  <p className="text-sm font-bold text-slate-900">¿Faltante o Rotura?</p>
-                  <p className="text-xs text-slate-500">Marque si el equipo requiere mantenimiento o tiene piezas faltantes.</p>
+                <div className="min-w-0">
+                  <p className="text-sm font-bold text-slate-900 truncate">¿Rotura o Faltante?</p>
+                  <p className="text-[10px] text-slate-500 font-medium">Marcando esta opción el equipo quedará Fuera de Servicio.</p>
                 </div>
               </div>
               <input
                 type="checkbox"
                 checked={hasDamage}
                 onChange={e => setHasDamage(e.target.checked)}
-                className="w-6 h-6 rounded border-slate-300 text-amber-500 focus:ring-amber-500"
+                className="w-6 h-6 rounded-lg border-slate-300 text-amber-500 focus:ring-amber-500 h-5 w-5 md:h-6 md:w-6 transition-all"
               />
             </label>
           </div>
         </div>
 
-        <div className="p-6 border-t border-slate-100 flex justify-end gap-3 shrink-0 bg-slate-50 rounded-b-2xl">
-          <button onClick={onClose} className="px-6 py-2 text-slate-600 font-medium">Cancelar</button>
+        <div className="p-4 md:p-6 border-t border-slate-100 flex flex-col sm:flex-row justify-end gap-3 shrink-0 bg-slate-50">
+          <button 
+            onClick={onClose} 
+            className="order-2 sm:order-1 px-6 py-3 text-slate-600 font-black uppercase tracking-wider text-xs hover:bg-slate-200 rounded-xl transition-all"
+          >
+            Cancelar
+          </button>
           <button 
             onClick={handleConfirm} 
             disabled={loading} 
-            className="btn-primary min-w-[150px] flex justify-center"
+            className="order-1 sm:order-2 bg-slate-900 text-white px-8 py-3.5 rounded-xl font-black uppercase tracking-wider text-xs flex items-center justify-center gap-2 hover:bg-amber-500 transition-all shadow-lg shadow-slate-200 disabled:opacity-50"
           >
-            {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : 'Confirmar Recepción'}
+            {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : <CheckCircle className="w-5 h-5" />}
+            Confirmar Devolución
           </button>
         </div>
       </div>
     </div>
   );
 };
+

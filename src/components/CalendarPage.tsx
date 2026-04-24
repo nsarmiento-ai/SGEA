@@ -64,33 +64,31 @@ export const CalendarPage: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  };
-
-  const renderHeader = () => {
+  };  const renderHeader = () => {
     return (
-      <div className="flex items-center justify-between mb-8">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-8">
         <div>
-          <h1 className="text-3xl font-display font-bold text-slate-900 capitalize">
+          <h1 className="text-2xl md:text-3xl font-display font-bold text-slate-900 capitalize">
             {format(currentMonth, 'MMMM yyyy', { locale: es })}
           </h1>
-          <p className="text-slate-500">Visualización de ocupación y disponibilidad de equipos.</p>
+          <p className="text-sm md:text-base text-slate-500">Ocupación y disponibilidad de equipos.</p>
         </div>
-        <div className="flex items-center gap-2 bg-white p-1 rounded-xl border border-slate-200 shadow-sm">
+        <div className="flex items-center gap-2 bg-white p-1 rounded-xl border border-slate-200 shadow-sm w-full sm:w-auto">
           <button
             onClick={() => setCurrentMonth(subMonths(currentMonth, 1))}
-            className="p-2 hover:bg-slate-50 rounded-lg transition-colors text-slate-600"
+            className="p-2 hover:bg-slate-50 rounded-lg transition-colors text-slate-600 flex-1 sm:flex-none flex justify-center"
           >
             <ChevronLeft className="w-5 h-5" />
           </button>
           <button
             onClick={() => setCurrentMonth(new Date())}
-            className="px-4 py-2 text-sm font-bold text-amber-600 hover:bg-amber-50 rounded-lg transition-colors"
+            className="px-4 py-2 text-xs md:text-sm font-bold text-amber-600 hover:bg-amber-50 rounded-lg transition-colors flex-1 sm:flex-none flex justify-center"
           >
             Hoy
           </button>
           <button
             onClick={() => setCurrentMonth(addMonths(currentMonth, 1))}
-            className="p-2 hover:bg-slate-50 rounded-lg transition-colors text-slate-600"
+            className="p-2 hover:bg-slate-50 rounded-lg transition-colors text-slate-600 flex-1 sm:flex-none flex justify-center"
           >
             <ChevronRight className="w-5 h-5" />
           </button>
@@ -100,11 +98,12 @@ export const CalendarPage: React.FC = () => {
   };
 
   const renderDays = () => {
-    const days = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
+    const days = ['D', 'L', 'M', 'X', 'J', 'V', 'S'];
+    const fullDays = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
     return (
       <div className="grid grid-cols-7 mb-2">
-        {days.map((day, i) => (
-          <div key={i} className="text-center text-xs font-bold text-slate-400 uppercase tracking-widest py-2">
+        {(window.innerWidth < 640 ? days : fullDays).map((day, i) => (
+          <div key={i} className="text-center text-[10px] md:text-xs font-bold text-slate-400 uppercase tracking-widest py-2">
             {day}
           </div>
         ))}
@@ -128,7 +127,6 @@ export const CalendarPage: React.FC = () => {
         formattedDate = format(day, "d");
         const cloneDay = day;
         
-        // Find reservations for this day
         const dayReservations = (reservations || []).filter(res => {
           if (!res.fecha_inicio || !res.fecha_fin) return false;
           const start = startOfDay(parseISO(res.fecha_inicio));
@@ -140,7 +138,7 @@ export const CalendarPage: React.FC = () => {
           <div
             key={day.toString()}
             className={cn(
-              "min-h-[120px] bg-white border border-slate-100 p-2 transition-all cursor-pointer hover:bg-slate-50 relative group",
+              "min-h-[80px] md:min-h-[120px] bg-white border border-slate-100 p-1 md:p-2 transition-all cursor-pointer hover:bg-slate-50 relative group",
               !isSameMonth(day, monthStart) ? "bg-slate-50/50 text-slate-300" : "text-slate-900",
               isSameDay(day, new Date()) && "ring-2 ring-inset ring-amber-500/20 bg-amber-50/30"
             )}
@@ -150,7 +148,7 @@ export const CalendarPage: React.FC = () => {
             }}
           >
             <span className={cn(
-              "text-sm font-bold inline-flex items-center justify-center w-7 h-7 rounded-full mb-1",
+              "text-xs md:text-sm font-bold inline-flex items-center justify-center w-6 h-6 md:w-7 md:h-7 rounded-full mb-1",
               isSameDay(day, new Date()) ? "bg-amber-500 text-white" : ""
             )}>
               {formattedDate}
@@ -159,25 +157,27 @@ export const CalendarPage: React.FC = () => {
             <div className="space-y-1 overflow-hidden">
               {dayReservations.slice(0, 3).map((res) => {
                 const statusColor = res.estado === 'Pendiente' 
-                  ? 'bg-amber-100 text-amber-700 border-amber-200' 
-                  : 'bg-blue-100 text-blue-700 border-blue-200';
+                  ? 'bg-amber-400' 
+                  : 'bg-blue-500';
                 
                 return (
                   <div 
                     key={res.id} 
-                    className={cn(
-                      "text-[10px] px-1.5 py-0.5 rounded border truncate font-medium",
-                      statusColor
-                    )}
+                    className="flex md:block"
                   >
-                    {isPañolero ? `${res.docente_nombre}: ` : ''}
-                    {(res.equipos_ids || []).map(id => (equipments || []).find(e => e.id === id)?.nombre).filter(Boolean).join(', ')}
+                    {/* Dots for mobile, text labels for desktop */}
+                    <div className={cn("w-1.5 h-1.5 md:w-auto md:h-auto rounded-full md:rounded md:px-1.5 md:py-0.5 md:border md:truncate md:text-[10px] md:font-medium", statusColor, "md:bg-opacity-10 md:border-opacity-20 md:text-slate-700")}>
+                      <span className="hidden md:inline">
+                         {isPañolero ? `${res.docente_nombre.split(' ')[0]}: ` : ''}
+                         {(res.equipos_ids || []).map(id => (equipments || []).find(e => e.id === id)?.nombre).filter(Boolean).join(', ')}
+                      </span>
+                    </div>
                   </div>
                 );
               })}
               {dayReservations.length > 3 && (
-                <div className="text-[9px] text-slate-400 font-bold pl-1">
-                  + {dayReservations.length - 3} más
+                <div className="text-[8px] md:text-[9px] text-slate-400 font-bold pl-1">
+                  + {dayReservations.length - 3}
                 </div>
               )}
             </div>
@@ -192,7 +192,7 @@ export const CalendarPage: React.FC = () => {
       );
       days = [];
     }
-    return <div className="rounded-2xl border border-slate-200 overflow-hidden shadow-sm">{rows}</div>;
+    return <div className="rounded-xl md:rounded-2xl border border-slate-200 overflow-hidden shadow-sm">{rows}</div>;
   };
 
   const renderDetailModal = () => {
@@ -207,23 +207,23 @@ export const CalendarPage: React.FC = () => {
     return (
       <AnimatePresence>
         {showDetail && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-2 md:p-4 bg-slate-900/60 backdrop-blur-sm overflow-y-auto">
             <motion.div
               initial={{ opacity: 0, scale: 0.95, y: 20 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 20 }}
-              className="bg-white rounded-3xl shadow-2xl w-full max-w-2xl overflow-hidden"
+              className="bg-white rounded-2xl md:rounded-3xl shadow-2xl w-full max-w-2xl overflow-hidden my-auto"
             >
-              <div className="p-6 border-b border-slate-100 flex items-center justify-between bg-slate-50">
+              <div className="p-4 md:p-6 border-b border-slate-100 flex items-center justify-between bg-slate-50">
                 <div className="flex items-center gap-3">
-                  <div className="w-12 h-12 rounded-2xl bg-amber-500 flex items-center justify-center text-white shadow-lg shadow-amber-500/20">
-                    <CalendarIcon className="w-6 h-6" />
+                  <div className="w-10 h-10 md:w-12 md:h-12 rounded-xl md:rounded-2xl bg-amber-500 flex items-center justify-center text-white shadow-lg shadow-amber-500/20 shrink-0">
+                    <CalendarIcon className="w-5 h-5 md:w-6 md:h-6" />
                   </div>
-                  <div>
-                    <h2 className="text-xl font-bold text-slate-900">
+                  <div className="min-w-0">
+                    <h2 className="text-lg md:text-xl font-bold text-slate-900 truncate">
                       {format(selectedDate, "EEEE d 'de' MMMM", { locale: es })}
                     </h2>
-                    <p className="text-sm text-slate-500">Detalle de ocupación para este día.</p>
+                    <p className="text-xs md:text-sm text-slate-500">Ocupación para el día.</p>
                   </div>
                 </div>
                 <button 
@@ -234,59 +234,57 @@ export const CalendarPage: React.FC = () => {
                 </button>
               </div>
 
-              <div className="p-6 max-h-[60vh] overflow-y-auto">
+              <div className="p-4 md:p-6 max-h-[60vh] overflow-y-auto space-y-4 custom-scrollbar">
                 {dayReservations.length === 0 ? (
-                  <div className="text-center py-12">
+                  <div className="text-center py-10">
                     <div className="w-16 h-16 bg-slate-50 rounded-full flex items-center justify-center mx-auto mb-4">
                       <Package className="w-8 h-8 text-slate-300" />
                     </div>
-                    <p className="text-slate-500 font-medium">No hay reservas para este día.</p>
-                    <p className="text-sm text-slate-400">Todos los equipos están disponibles.</p>
+                    <p className="text-slate-500 font-bold">No hay reservas</p>
+                    <p className="text-xs text-slate-400">Todo el equipamiento está libre.</p>
                   </div>
                 ) : (
                   <div className="space-y-4">
                     {dayReservations.map((res) => (
-                      <div key={res.id} className="bg-slate-50 rounded-2xl p-5 border border-slate-100">
+                      <div key={res.id} className="bg-slate-50 rounded-2xl p-4 md:p-5 border border-slate-200">
                         <div className="flex items-center justify-between mb-4">
-                          <div className="flex items-center gap-2">
-                            <span className={cn(
-                              "px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider",
-                              res.estado === 'Pendiente' ? "bg-amber-100 text-amber-700" : "bg-blue-100 text-blue-700"
-                            )}>
-                              {res.estado}
-                            </span>
-                          </div>
-                          <div className="flex items-center gap-2 text-xs text-slate-500 font-medium">
-                            <Clock className="w-3.5 h-3.5" />
+                          <span className={cn(
+                            "px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-wider border",
+                            res.estado === 'Pendiente' ? "bg-amber-50 text-amber-600 border-amber-200" : "bg-blue-50 text-blue-600 border-blue-200"
+                          )}>
+                            {res.estado}
+                          </span>
+                          <div className="flex items-center gap-2 text-[10px] md:text-xs text-slate-500 font-bold">
+                            <Clock className="w-4 h-4" />
                             {format(parseISO(res.fecha_inicio), 'HH:mm')} - {format(parseISO(res.fecha_fin), 'HH:mm')}
                           </div>
                         </div>
 
                         {isPañolero && (
-                          <div className="flex items-center gap-3 mb-4 p-3 bg-white rounded-xl border border-slate-100">
-                            <div className="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center">
+                          <div className="flex items-center gap-3 mb-4 p-3 bg-white rounded-xl border border-slate-100 shadow-sm">
+                            <div className="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center shrink-0">
                               <User className="w-4 h-4 text-slate-500" />
                             </div>
-                            <div>
-                              <p className="text-[10px] text-slate-400 font-bold uppercase tracking-tighter">Docente</p>
-                              <p className="text-sm font-bold text-slate-900">{res.docente_nombre}</p>
+                            <div className="min-w-0">
+                              <p className="text-[10px] text-slate-400 font-black uppercase tracking-tight">Docente</p>
+                              <p className="text-sm font-bold text-slate-900 truncate">{res.docente_nombre}</p>
                             </div>
                           </div>
                         )}
 
                         <div className="space-y-2">
-                          <p className="text-[10px] text-slate-400 font-bold uppercase tracking-tighter mb-1">Equipos Reservados</p>
+                          <p className="text-[10px] text-slate-400 font-black uppercase tracking-tight mb-2">Equipos Reservados</p>
                           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                             {(res.equipos_ids || []).map(id => {
                               const eq = (equipments || []).find(e => e.id === id);
                               return (
-                                <div key={id} className="flex items-center gap-2 p-2 bg-white rounded-lg border border-slate-100">
-                                  <div className="w-8 h-8 rounded bg-slate-900 overflow-hidden flex-shrink-0">
+                                <div key={id} className="flex items-center gap-2 p-2 bg-white rounded-xl border border-slate-100 shadow-sm">
+                                  <div className="w-10 h-10 rounded-lg bg-slate-900 overflow-hidden flex-shrink-0">
                                     <img src={eq?.foto_url || 'https://picsum.photos/seed/gear/50/50'} className="w-full h-full object-cover opacity-80" referrerPolicy="no-referrer" />
                                   </div>
                                   <div className="min-w-0">
-                                    <p className="text-xs font-bold text-slate-900 truncate">{eq?.nombre || 'Equipo no encontrado'}</p>
-                                    <p className="text-[9px] text-slate-500 truncate">{eq?.modelo}</p>
+                                    <p className="text-xs font-bold text-slate-900 truncate">{eq?.nombre || 'General'}</p>
+                                    <p className="text-[10px] text-slate-500 truncate">{eq?.modelo || 'Audiovisual'}</p>
                                   </div>
                                 </div>
                               );
@@ -299,12 +297,12 @@ export const CalendarPage: React.FC = () => {
                 )}
               </div>
 
-              <div className="p-6 bg-slate-50 border-t border-slate-100 flex justify-end">
+              <div className="p-4 md:p-6 bg-slate-50 border-t border-slate-100 flex justify-end">
                 <button
                   onClick={() => setShowDetail(false)}
-                  className="px-6 py-2.5 bg-slate-900 text-white font-bold rounded-xl hover:bg-slate-800 transition-all shadow-lg shadow-slate-900/10"
+                  className="w-full sm:w-auto px-8 py-3 bg-slate-900 text-white font-black uppercase tracking-wider text-xs rounded-xl hover:bg-amber-500 transition-all shadow-lg shadow-slate-200"
                 >
-                  Entendido
+                  Cerrar
                 </button>
               </div>
             </motion.div>
@@ -316,28 +314,28 @@ export const CalendarPage: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
+      <div className="min-h-screen flex items-center justify-center p-4">
         <div className="text-center">
           <Loader2 className="w-12 h-12 animate-spin text-amber-500 mx-auto mb-4" />
-          <p className="text-slate-500 font-medium">Cargando calendario...</p>
+          <p className="text-slate-500 font-bold">Iniciando Calendario...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="p-8 max-w-7xl mx-auto">
+    <div className="p-4 md:p-8 max-w-7xl mx-auto pt-16 lg:pt-8">
       {renderHeader()}
       
-      <div className="bg-white p-6 rounded-3xl shadow-sm border border-slate-200">
-        <div className="flex items-center gap-6 mb-6 text-xs font-bold uppercase tracking-widest text-slate-400">
+      <div className="bg-white p-3 md:p-6 rounded-2xl md:rounded-3xl shadow-sm border border-slate-200">
+        <div className="flex flex-wrap items-center gap-4 md:gap-6 mb-6 text-[10px] font-black uppercase tracking-widest text-slate-400">
           <div className="flex items-center gap-2">
             <div className="w-3 h-3 rounded-full bg-amber-400"></div>
             <span>Pendiente</span>
           </div>
           <div className="flex items-center gap-2">
-            <div className="w-3 h-3 rounded-full bg-blue-400"></div>
-            <span>Aprobada / Entregada</span>
+            <div className="w-3 h-3 rounded-full bg-blue-500"></div>
+            <span>Confirmada</span>
           </div>
         </div>
 

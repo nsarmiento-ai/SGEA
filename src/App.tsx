@@ -15,12 +15,13 @@ import { AuditLogs } from './components/AuditLogs';
 import { Reservations } from './components/Reservations';
 import { PendingReservations } from './components/PendingReservations';
 import { CalendarPage } from './components/CalendarPage';
-import { Loader2 } from 'lucide-react';
-import { useEffect } from 'react';
+import { Loader2, Menu } from 'lucide-react';
+import { useEffect, useState } from 'react';
 import { supabase } from './lib/supabase';
 
 function AppContent() {
   const { activeResponsable, loading, role, profile } = useApp();
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
   useEffect(() => {
     // Force PostgREST schema refresh after DB updates
@@ -113,9 +114,18 @@ function AppContent() {
   const isPañolero = role === 'Pañolero';
 
   return (
-    <div className="flex min-h-screen">
-      <Sidebar />
-      <main className="flex-1 overflow-x-hidden">
+    <div className="flex min-h-screen relative">
+      <Sidebar isOpen={isSidebarOpen} onClose={() => setIsSidebarOpen(false)} />
+      
+      {/* Mobile Toggle Button */}
+      <button 
+        onClick={() => setIsSidebarOpen(true)}
+        className="fixed top-4 left-4 z-30 p-2 bg-slate-900 text-white rounded-lg lg:hidden shadow-lg"
+      >
+        <Menu className="w-6 h-6" />
+      </button>
+
+      <main className="flex-1 w-full overflow-x-hidden">
         <Routes>
           {/* Redirección inicial basada en el rol */}
           <Route 

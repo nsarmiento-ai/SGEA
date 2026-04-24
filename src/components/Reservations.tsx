@@ -24,7 +24,8 @@ import {
   BookOpen,
   Lock,
   MapPin,
-  User
+  User,
+  Package
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { cn } from '../lib/utils';
@@ -335,18 +336,18 @@ export const Reservations: React.FC = () => {
   }
 
   return (
-    <div className="p-8 max-w-7xl mx-auto">
-      <header className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
+    <div className="p-4 md:p-8 max-w-7xl mx-auto pt-16 lg:pt-8">
+      <header className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 mb-8">
         <div>
-          <h1 className="text-3xl font-display font-bold text-slate-900">Reservas</h1>
-          <p className="text-slate-500">Gestione sus reservas de equipamiento.</p>
+          <h1 className="text-2xl md:text-3xl font-display font-bold text-slate-900">Reservas</h1>
+          <p className="text-sm md:text-base text-slate-500">Gestione sus reservas de equipamiento.</p>
         </div>
-        <div className="flex flex-wrap gap-3">
-          <div className="bg-slate-100 p-1 rounded-2xl flex">
+        <div className="flex flex-col sm:flex-row flex-wrap gap-3">
+          <div className="bg-slate-100 p-1 rounded-2xl flex w-full sm:w-auto shadow-inner">
             <button
               onClick={() => setActiveTab('catalogo')}
               className={cn(
-                "px-6 py-2.5 rounded-xl font-bold text-sm transition-all",
+                "flex-1 sm:flex-none px-4 md:px-6 py-2.5 rounded-xl font-bold text-xs md:text-sm transition-all",
                 activeTab === 'catalogo' ? "bg-white text-slate-900 shadow-sm" : "text-slate-500 hover:text-slate-700"
               )}
             >
@@ -355,64 +356,67 @@ export const Reservations: React.FC = () => {
             <button
               onClick={() => setActiveTab('mis-reservas')}
               className={cn(
-                "px-6 py-2.5 rounded-xl font-bold text-sm transition-all",
+                "flex-1 sm:flex-none px-4 md:px-6 py-2.5 rounded-xl font-bold text-xs md:text-sm transition-all",
                 activeTab === 'mis-reservas' ? "bg-white text-slate-900 shadow-sm" : "text-slate-500 hover:text-slate-700"
               )}
             >
               Mis Reservas
             </button>
           </div>
-          {activeTab === 'catalogo' && (
-            <div className="bg-white border border-slate-200 rounded-2xl p-1 flex shadow-sm">
+          <div className="flex gap-2 w-full sm:w-auto">
+            {activeTab === 'catalogo' && (
+              <div className="bg-white border border-slate-200 rounded-2xl p-1 flex shadow-sm flex-1 sm:flex-none">
+                <button 
+                  onClick={() => setViewMode('grid')}
+                  className={cn("flex-1 p-2 rounded-xl transition-all", viewMode === 'grid' ? "bg-slate-100 text-slate-900" : "text-slate-400 hover:text-slate-600")}
+                >
+                  <LayoutGrid className="w-5 h-5 mx-auto" />
+                </button>
+                <button 
+                  onClick={() => setViewMode('list')}
+                  className={cn("flex-1 p-2 rounded-xl transition-all", viewMode === 'list' ? "bg-slate-100 text-slate-900" : "text-slate-400 hover:text-slate-600")}
+                >
+                  <List className="w-5 h-5 mx-auto" />
+                </button>
+              </div>
+            )}
+            {activeTab === 'catalogo' && (
               <button 
-                onClick={() => setViewMode('grid')}
-                className={cn("p-2 rounded-xl transition-all", viewMode === 'grid' ? "bg-slate-100 text-slate-900" : "text-slate-400 hover:text-slate-600")}
+                onClick={() => setShowFavorites(!showFavorites)}
+                className={cn(
+                  "flex items-center justify-center gap-2 px-4 md:px-6 py-3 rounded-2xl font-bold text-xs md:text-sm transition-all border shadow-sm flex-1 sm:flex-none",
+                  showFavorites 
+                    ? "bg-amber-500 text-white border-amber-600 shadow-amber-200" 
+                    : "bg-white text-slate-600 border-slate-200 hover:border-amber-500"
+                )}
               >
-                <LayoutGrid className="w-5 h-5" />
+                <Star className={cn("w-4 h-4 md:w-5 md:h-5", showFavorites ? "fill-current" : "text-amber-500")} />
+                <span className="hidden sm:inline">{showFavorites ? 'Viendo habituales' : 'Ver habituales'}</span>
+                <span className="sm:hidden">Habituales</span>
               </button>
-              <button 
-                onClick={() => setViewMode('list')}
-                className={cn("p-2 rounded-xl transition-all", viewMode === 'list' ? "bg-slate-100 text-slate-900" : "text-slate-400 hover:text-slate-600")}
-              >
-                <List className="w-5 h-5" />
-              </button>
-            </div>
-          )}
-          {activeTab === 'catalogo' && (
-            <button 
-              onClick={() => setShowFavorites(!showFavorites)}
-              className={cn(
-                "flex items-center gap-2 px-6 py-3 rounded-2xl font-bold text-sm transition-all border shadow-sm",
-                showFavorites 
-                  ? "bg-amber-500 text-white border-amber-600 shadow-amber-200" 
-                  : "bg-white text-slate-600 border-slate-200 hover:border-amber-500"
-              )}
-            >
-              <Star className={cn("w-5 h-5", showFavorites ? "fill-current" : "text-amber-500")} />
-              {showFavorites ? 'Viendo habituales' : 'Ver habituales'}
-            </button>
-          )}
+            )}
+          </div>
           {activeTab === 'catalogo' && cart.length > 0 && (
             <button 
               onClick={() => setIsModalOpen(true)}
-              className="bg-slate-900 text-white px-6 py-3 rounded-2xl font-bold text-sm flex items-center gap-2 shadow-lg shadow-slate-200 animate-in fade-in zoom-in"
+              className="bg-slate-900 text-white px-6 py-3 rounded-2xl font-bold text-sm flex items-center justify-center gap-2 shadow-lg shadow-slate-200 animate-in fade-in zoom-in w-full sm:w-auto"
             >
               <ShoppingCart className="w-5 h-5" />
-              Confirmar Reserva ({cart.length})
+              Confirmar ({cart.length})
             </button>
           )}
         </div>
       </header>
 
       {error && (
-        <div className="bg-red-50 border border-red-200 text-red-600 p-6 rounded-3xl mb-8 flex items-center gap-4 animate-in fade-in slide-in-from-top-4">
-          <AlertCircle className="w-8 h-8 shrink-0" />
+        <div className="bg-red-50 border border-red-200 text-red-600 p-4 md:p-6 rounded-2xl md:rounded-3xl mb-8 flex items-center gap-4 animate-in fade-in slide-in-from-top-4">
+          <AlertCircle className="w-6 h-6 md:w-8 md:h-8 shrink-0" />
           <div>
-            <h3 className="font-bold text-lg">Error al cargar el catálogo</h3>
-            <p className="text-sm opacity-90">{error}</p>
+            <h3 className="font-bold text-base md:text-lg">Error al cargar el catálogo</h3>
+            <p className="text-xs md:text-sm opacity-90">{error}</p>
             <button 
               onClick={() => fetchData()} 
-              className="mt-2 text-xs font-black uppercase tracking-wider bg-red-600 text-white px-4 py-2 rounded-xl hover:bg-red-700 transition-colors"
+              className="mt-2 text-[10px] font-black uppercase tracking-wider bg-red-600 text-white px-3 py-1.5 md:px-4 md:py-2 rounded-xl hover:bg-red-700 transition-colors"
             >
               Reintentar
             </button>
@@ -423,40 +427,46 @@ export const Reservations: React.FC = () => {
       {activeTab === 'catalogo' ? (
         <>
           {/* Date selection at the top */}
-          <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm mb-8">
-            <div className="flex flex-col md:flex-row items-end gap-6">
+          <div className="bg-white p-4 md:p-6 rounded-2xl md:rounded-3xl border border-slate-200 shadow-sm mb-8">
+            <div className="flex flex-col lg:flex-row lg:items-end gap-6">
               <div className="flex-1 w-full">
-                <label className="block text-xs font-black text-slate-500 mb-2 uppercase tracking-wider">¿Para cuándo necesitas el equipo?</label>
+                <label className="block text-xs font-black text-slate-500 mb-3 uppercase tracking-wider">¿Para cuándo necesitas el equipo?</label>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="relative">
-                    <Clock className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 w-5 h-5" />
-                    <input
-                      type="datetime-local"
-                      value={formData.fecha_inicio}
-                      onChange={e => setFormData({...formData, fecha_inicio: e.target.value})}
-                      className="w-full pl-12 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:ring-2 focus:ring-amber-500 font-medium text-sm"
-                    />
+                  <div className="space-y-1">
+                    <p className="text-[10px] font-bold text-slate-400 ml-1 uppercase">Entrada</p>
+                    <div className="relative">
+                      <Clock className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 w-5 h-5" />
+                      <input
+                        type="datetime-local"
+                        value={formData.fecha_inicio}
+                        onChange={e => setFormData({...formData, fecha_inicio: e.target.value})}
+                        className="w-full pl-12 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:ring-2 focus:ring-amber-500 font-medium text-sm shadow-sm"
+                      />
+                    </div>
                   </div>
-                  <div className="relative">
-                    <Clock className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 w-5 h-5" />
-                    <input
-                      type="datetime-local"
-                      value={formData.fecha_fin}
-                      onChange={e => setFormData({...formData, fecha_fin: e.target.value})}
-                      className="w-full pl-12 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:ring-2 focus:ring-amber-500 font-medium text-sm"
-                    />
+                  <div className="space-y-1">
+                    <p className="text-[10px] font-bold text-slate-400 ml-1 uppercase">Salida</p>
+                    <div className="relative">
+                      <Clock className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 w-5 h-5" />
+                      <input
+                        type="datetime-local"
+                        value={formData.fecha_fin}
+                        onChange={e => setFormData({...formData, fecha_fin: e.target.value})}
+                        className="w-full pl-12 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:ring-2 focus:ring-amber-500 font-medium text-sm shadow-sm"
+                      />
+                    </div>
                   </div>
                 </div>
               </div>
-              <div className="hidden md:block pb-1">
-                <div className="p-3 bg-amber-50 rounded-2xl border border-amber-100" title="Selecciona fechas para verificar disponibilidad en tiempo real">
+              <div className="hidden lg:block pb-1">
+                <div className="p-3 bg-amber-50 rounded-2xl border border-amber-100 shadow-sm" title="Selecciona fechas para verificar disponibilidad en tiempo real">
                   <Info className="w-5 h-5 text-amber-500" />
                 </div>
               </div>
             </div>
           </div>
 
-          <div className="flex flex-col md:flex-row gap-4 mb-8">
+          <div className="flex flex-col lg:flex-row gap-4 mb-8">
             <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 w-5 h-5" />
               <input
@@ -467,7 +477,7 @@ export const Reservations: React.FC = () => {
                 className="w-full pl-10 pr-4 py-3 bg-white border border-slate-200 rounded-2xl focus:ring-2 focus:ring-amber-500 outline-none shadow-sm"
               />
             </div>
-            <div className="flex gap-2 overflow-x-auto pb-2 md:pb-0">
+            <div className="flex gap-2 overflow-x-auto pb-4 lg:pb-0 no-scrollbar">
               {categories.map(cat => (
                 <button
                   key={cat}
@@ -486,23 +496,23 @@ export const Reservations: React.FC = () => {
           </div>
 
           {selectedIds.length > 0 && (
-            <div className="fixed bottom-8 left-1/2 -translate-x-1/2 z-40 animate-in fade-in slide-in-from-bottom-4">
-              <div className="bg-slate-900 text-white px-6 py-4 rounded-2xl shadow-2xl flex items-center gap-6 border border-slate-800">
+            <div className="fixed bottom-4 md:bottom-8 left-4 right-4 md:left-1/2 md:right-auto md:-translate-x-1/2 z-40 animate-in fade-in slide-in-from-bottom-4">
+              <div className="bg-slate-900 text-white px-4 md:px-6 py-3 md:py-4 rounded-2xl shadow-2xl flex flex-col md:flex-row items-center gap-3 md:gap-6 border border-slate-800">
                 <div className="flex items-center gap-2">
                   <CheckSquare className="w-5 h-5 text-amber-500" />
-                  <span className="font-bold">{selectedIds.length} seleccionados</span>
+                  <span className="font-bold whitespace-nowrap">{selectedIds.length} seleccionados</span>
                 </div>
-                <div className="h-6 w-px bg-slate-800"></div>
-                <div className="flex gap-2">
+                <div className="hidden md:block h-6 w-px bg-slate-800"></div>
+                <div className="flex gap-2 w-full md:w-auto">
                   <button 
                     onClick={addSelectedToCart}
-                    className="bg-amber-500 hover:bg-amber-600 text-white px-4 py-2 rounded-xl font-bold text-sm transition-all"
+                    className="flex-1 md:flex-none bg-amber-500 hover:bg-amber-600 text-white px-4 py-2 rounded-xl font-bold text-sm transition-all"
                   >
-                    Reservar Seleccionados
+                    Añadir al carrito
                   </button>
                   <button 
                     onClick={() => setSelectedIds([])}
-                    className="text-slate-400 hover:text-white text-sm font-bold"
+                    className="flex-1 md:flex-none bg-slate-800 hover:bg-slate-700 md:bg-transparent text-slate-400 hover:text-white px-4 py-2 md:p-0 rounded-xl md:rounded-none text-sm font-bold"
                   >
                     Cancelar
                   </button>
@@ -751,80 +761,135 @@ export const Reservations: React.FC = () => {
               })}
             </div>
           ) : (
-            <div className="bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden">
-              <table className="w-full text-left border-collapse">
-                <thead>
-                  <tr className="bg-slate-50 border-b border-slate-200">
-                    <th className="p-4 w-10">
-                      <button onClick={selectAll} className="text-slate-400 hover:text-slate-600">
-                        {selectedIds.length === filteredEquipments.length ? <CheckSquare className="w-5 h-5 text-amber-500" /> : <Square className="w-5 h-5" />}
-                      </button>
-                    </th>
-                    <th className="p-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Recurso</th>
-                    <th className="p-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Categoría</th>
-                    <th className="p-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Estado</th>
-                    <th className="p-4 text-xs font-bold text-slate-500 uppercase tracking-wider text-right">Acción</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100">
-                  {filteredEquipments.map(eq => {
-                    const isInCart = (cart || []).find(item => item.id === eq.id);
-                    const isReservedForDates = checkOverlap([eq.id], formData.fecha_inicio, formData.fecha_fin);
-                    const isOutOfService = eq.estado === 'Fuera de Servicio';
-                    const isArchived = eq.estado === 'Archivado';
-                    const isUnavailable = isReservedForDates || isOutOfService || isArchived;
+            <div className="space-y-4 lg:space-y-0">
+              {/* Mobile Card List */}
+              <div className="lg:hidden space-y-4">
+                {filteredEquipments.map(eq => {
+                  const isInCart = (cart || []).find(item => item.id === eq.id);
+                  const isReservedForDates = checkOverlap([eq.id], formData.fecha_inicio, formData.fecha_fin);
+                  const isOutOfService = eq.estado === 'Fuera de Servicio';
+                  const isArchived = eq.estado === 'Archivado';
+                  const isUnavailable = isReservedForDates || isOutOfService || isArchived;
 
-                    return (
-                      <tr key={eq.id} className={cn("hover:bg-slate-50 transition-colors group", selectedIds.includes(eq.id) && "bg-amber-50/30")}>
-                        <td className="p-4">
-                          <button onClick={() => toggleSelect(eq.id)} className={cn("transition-all", selectedIds.includes(eq.id) ? "text-amber-500" : "text-slate-300 group-hover:text-slate-400")}>
-                            {selectedIds.includes(eq.id) ? <CheckSquare className="w-5 h-5" /> : <Square className="w-5 h-5" />}
-                          </button>
-                        </td>
-                        <td className="p-4">
-                          <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 rounded-lg bg-slate-100 overflow-hidden shrink-0">
-                              <img src={eq.foto_url || 'https://picsum.photos/seed/gear/100/100'} className="w-full h-full object-cover" />
-                            </div>
-                            <div>
-                              <p className="font-bold text-slate-900 text-sm">{eq.nombre}</p>
-                              <p className="text-xs text-slate-500">{eq.modelo}</p>
-                            </div>
-                          </div>
-                        </td>
-                        <td className="p-4">
-                          <span className="px-2 py-1 bg-slate-100 text-slate-600 text-[10px] font-bold rounded uppercase tracking-wider">
-                            {eq.categoria}
-                          </span>
-                        </td>
-                        <td className="p-4">
-                          <div className={cn(
-                            "inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold border",
-                            isUnavailable ? "bg-red-50 text-red-600 border-red-100" : "bg-green-50 text-green-600 border-green-100"
-                          )}>
-                            {isUnavailable ? 'No Disponible' : 'Disponible'}
-                          </div>
-                        </td>
-                        <td className="p-4 text-right">
+                  return (
+                    <div key={eq.id} className={cn("bg-white p-4 rounded-2xl border border-slate-200 shadow-sm space-y-4", selectedIds.includes(eq.id) && "ring-2 ring-amber-500 bg-amber-50/30")}>
+                      <div className="flex items-center gap-3">
+                        <button onClick={() => toggleSelect(eq.id)} className={cn("transition-all", selectedIds.includes(eq.id) ? "text-amber-500" : "text-slate-300")}>
+                          {selectedIds.includes(eq.id) ? <CheckSquare className="w-6 h-6" /> : <Square className="w-6 h-6" />}
+                        </button>
+                        <div className="w-12 h-12 rounded-lg bg-slate-100 overflow-hidden shrink-0">
+                          <img src={eq.foto_url || 'https://picsum.photos/seed/gear/100/100'} className="w-full h-full object-cover" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="font-bold text-slate-900 text-base truncate">{eq.nombre}</p>
+                          <p className="text-xs text-slate-500 truncate">{eq.modelo}</p>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center justify-between pt-2 border-t border-slate-100">
+                        <div className={cn(
+                          "inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold border",
+                          isUnavailable ? "bg-red-50 text-red-600 border-red-100" : "bg-green-50 text-green-600 border-green-100"
+                        )}>
+                          {isUnavailable ? 'No Disponible' : 'Disponible'}
+                        </div>
+                        <div className="flex gap-2">
                           {isInCart ? (
-                            <button onClick={() => removeFromCart(eq.id)} className="p-2 text-red-500 hover:bg-red-50 rounded-xl">
+                            <button onClick={() => removeFromCart(eq.id)} className="p-2 text-red-500 bg-red-50 rounded-xl">
                               <Trash2 className="w-5 h-5" />
                             </button>
                           ) : (
                             <button 
                               onClick={() => addToCart(eq)} 
                               disabled={isUnavailable}
-                              className={cn("p-2 rounded-xl transition-all", isUnavailable ? "text-slate-300" : "text-amber-500 hover:bg-amber-50")}
+                              className={cn("p-2 rounded-xl transition-all", isUnavailable ? "text-slate-200" : "text-amber-500 bg-amber-50")}
                             >
                               <Plus className="w-5 h-5" />
                             </button>
                           )}
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+
+              {/* Desktop Table */}
+              <div className="hidden lg:block bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden">
+                <table className="w-full text-left border-collapse">
+                  <thead>
+                    <tr className="bg-slate-50 border-b border-slate-200">
+                      <th className="p-4 w-10">
+                        <button onClick={selectAll} className="text-slate-400 hover:text-slate-600">
+                          {selectedIds.length === filteredEquipments.length ? <CheckSquare className="w-5 h-5 text-amber-500" /> : <Square className="w-5 h-5" />}
+                        </button>
+                      </th>
+                      <th className="p-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Recurso</th>
+                      <th className="p-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Categoría</th>
+                      <th className="p-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Estado</th>
+                      <th className="p-4 text-xs font-bold text-slate-500 uppercase tracking-wider text-right">Acción</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100">
+                    {filteredEquipments.map(eq => {
+                      const isInCart = (cart || []).find(item => item.id === eq.id);
+                      const isReservedForDates = checkOverlap([eq.id], formData.fecha_inicio, formData.fecha_fin);
+                      const isOutOfService = eq.estado === 'Fuera de Servicio';
+                      const isArchived = eq.estado === 'Archivado';
+                      const isUnavailable = isReservedForDates || isOutOfService || isArchived;
+
+                      return (
+                        <tr key={eq.id} className={cn("hover:bg-slate-50 transition-colors group", selectedIds.includes(eq.id) && "bg-amber-50/30")}>
+                          <td className="p-4">
+                            <button onClick={() => toggleSelect(eq.id)} className={cn("transition-all", selectedIds.includes(eq.id) ? "text-amber-500" : "text-slate-300 group-hover:text-slate-400")}>
+                              {selectedIds.includes(eq.id) ? <CheckSquare className="w-5 h-5" /> : <Square className="w-5 h-5" />}
+                            </button>
+                          </td>
+                          <td className="p-4">
+                            <div className="flex items-center gap-3">
+                              <div className="w-10 h-10 rounded-lg bg-slate-100 overflow-hidden shrink-0">
+                                <img src={eq.foto_url || 'https://picsum.photos/seed/gear/100/100'} className="w-full h-full object-cover" />
+                              </div>
+                              <div>
+                                <p className="font-bold text-slate-900 text-sm">{eq.nombre}</p>
+                                <p className="text-xs text-slate-500">{eq.modelo}</p>
+                              </div>
+                            </div>
+                          </td>
+                          <td className="p-4">
+                            <span className="px-2 py-1 bg-slate-100 text-slate-600 text-[10px] font-bold rounded uppercase tracking-wider">
+                              {eq.categoria}
+                            </span>
+                          </td>
+                          <td className="p-4">
+                            <div className={cn(
+                              "inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold border",
+                              isUnavailable ? "bg-red-50 text-red-600 border-red-100" : "bg-green-50 text-green-600 border-green-100"
+                            )}>
+                              {isUnavailable ? 'No Disponible' : 'Disponible'}
+                            </div>
+                          </td>
+                          <td className="p-4 text-right">
+                            {isInCart ? (
+                              <button onClick={() => removeFromCart(eq.id)} className="p-2 text-red-500 hover:bg-red-50 rounded-xl">
+                                <Trash2 className="w-5 h-5" />
+                              </button>
+                            ) : (
+                              <button 
+                                onClick={() => addToCart(eq)} 
+                                disabled={isUnavailable}
+                                className={cn("p-2 rounded-xl transition-all", isUnavailable ? "text-slate-300" : "text-amber-500 hover:bg-amber-50")}
+                              >
+                                <Plus className="w-5 h-5" />
+                              </button>
+                            )}
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
             </div>
           )}
         </>
@@ -839,11 +904,11 @@ export const Reservations: React.FC = () => {
           ) : (
             <div className="grid grid-cols-1 gap-4">
               {(reservations || []).filter(r => r.docente_nombre === activeResponsable).map(res => (
-                <div key={res.id} className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm flex flex-col md:flex-row gap-6">
+                <div key={res.id} className="bg-white p-4 md:p-6 rounded-2xl md:rounded-3xl border border-slate-200 shadow-sm flex flex-col lg:flex-row lg:items-center gap-4 md:gap-6">
                   <div className="flex-1">
-                    <div className="flex items-center gap-3 mb-4">
+                    <div className="flex flex-col sm:flex-row sm:items-center gap-3 mb-4">
                       <span className={cn(
-                        "px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider",
+                        "px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider w-fit",
                         res.estado === 'Pendiente' ? "bg-amber-100 text-amber-700" :
                         res.estado === 'Entregada' ? "bg-green-100 text-green-700" :
                         res.estado === 'Cancelada' ? "bg-red-100 text-red-700" :
@@ -851,7 +916,8 @@ export const Reservations: React.FC = () => {
                       )}>
                         {res.estado}
                       </span>
-                      <span className="text-sm text-slate-500">
+                      <span className="text-xs md:text-sm font-bold text-slate-500 flex items-center gap-1">
+                        <Clock className="w-3.5 h-3.5" />
                         {new Date(res.fecha_inicio).toLocaleDateString()} - {new Date(res.fecha_fin).toLocaleDateString()}
                       </span>
                     </div>
@@ -859,18 +925,20 @@ export const Reservations: React.FC = () => {
                       {(res.equipos_ids || []).map(id => {
                         const eq = (equipments || []).find(e => e.id === id);
                         return eq ? (
-                          <div key={id} className="flex items-center gap-2 bg-slate-50 px-3 py-2 rounded-xl border border-slate-100">
-                            <span className="text-sm font-bold text-slate-700">{eq.nombre}</span>
+                          <div key={id} className="flex items-center gap-2 bg-slate-50 px-2.5 py-1.5 rounded-lg border border-slate-100 shadow-sm">
+                            <Package className="w-3.5 h-3.5 text-amber-500" />
+                            <span className="text-xs font-bold text-slate-700">{eq.nombre}</span>
                           </div>
                         ) : null;
                       })}
                     </div>
                   </div>
-                  <div className="flex items-center justify-end">
+                  <div className="flex items-center justify-end border-t lg:border-t-0 pt-4 lg:pt-0">
                     <button 
                       onClick={() => generateReservationPDF(res, (equipments || []).filter(e => (res.equipos_ids || []).includes(e.id)))}
-                      className="flex items-center gap-2 px-4 py-2 text-sm font-bold text-slate-600 hover:text-amber-600 bg-slate-50 hover:bg-amber-50 rounded-xl transition-colors"
+                      className="w-full lg:w-auto flex items-center justify-center gap-2 px-6 py-3 text-sm font-bold text-slate-600 hover:text-amber-600 bg-slate-100 hover:bg-amber-50 rounded-xl transition-all"
                     >
+                      <Info className="w-4 h-4" />
                       Descargar Comprobante
                     </button>
                   </div>
@@ -884,46 +952,46 @@ export const Reservations: React.FC = () => {
       {/* Cart Modal */}
       <AnimatePresence>
         {isModalOpen && (
-          <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-2 md:p-4 overflow-y-auto">
             <motion.div 
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: 20 }}
-              className="bg-white rounded-[2rem] shadow-2xl w-full max-w-2xl overflow-hidden"
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              className="bg-white rounded-2xl md:rounded-[2rem] shadow-2xl w-full max-w-2xl my-auto overflow-hidden"
             >
-              <div className="p-8 border-b border-slate-100 flex justify-between items-center bg-slate-50">
-                <div className="flex items-center gap-4">
-                  <div className="w-12 h-12 rounded-2xl bg-amber-500 flex items-center justify-center text-white shadow-lg shadow-amber-200">
-                    <ShoppingCart className="w-6 h-6" />
+              <div className="p-4 md:p-8 border-b border-slate-100 flex justify-between items-center bg-slate-50">
+                <div className="flex items-center gap-3 md:gap-4">
+                  <div className="w-10 h-10 md:w-12 md:h-12 rounded-xl md:rounded-2xl bg-amber-500 flex items-center justify-center text-white shadow-lg shadow-amber-200">
+                    <ShoppingCart className="w-5 h-5 md:w-6 md:h-6" />
                   </div>
                   <div>
-                    <h2 className="text-xl font-black text-slate-900">Confirmar Pedido</h2>
-                    <p className="text-sm text-slate-500">{cart.length} equipos seleccionados</p>
+                    <h2 className="text-lg md:text-xl font-black text-slate-900">Confirmar Pedido</h2>
+                    <p className="text-xs md:text-sm text-slate-500 font-bold">{cart.length} equipos seleccionados</p>
                   </div>
                 </div>
                 <button onClick={() => setIsModalOpen(false)} className="text-slate-400 hover:text-slate-600 p-2 hover:bg-white rounded-full transition-colors">
-                  <XCircle className="w-7 h-7" />
+                  <XCircle className="w-6 h-6 md:w-7 md:h-7" />
                 </button>
               </div>
 
-              <form onSubmit={handleSubmit} className="p-8 space-y-6">
+              <form onSubmit={handleSubmit} className="p-4 md:p-8 space-y-6">
                 {error && (
-                  <div className="bg-red-50 border border-red-200 text-red-600 p-4 rounded-2xl text-sm flex items-center gap-3 font-medium">
+                  <div className="bg-red-50 border border-red-200 text-red-600 p-4 rounded-2xl text-xs md:text-sm flex items-center gap-3 font-medium">
                     <AlertCircle className="w-5 h-5 shrink-0" />
                     {error}
                   </div>
                 )}
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
                   <div className="md:col-span-2">
-                    <label className="block text-sm font-black text-slate-700 mb-2 uppercase tracking-wider">Materia</label>
+                    <label className="block text-[10px] md:text-xs font-black text-slate-500 mb-2 uppercase tracking-wider">Materia</label>
                     <div className="relative">
                       <BookOpen className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 w-5 h-5" />
                       <select
                         required
                         value={formData.materia}
                         onChange={e => setFormData({...formData, materia: e.target.value})}
-                        className="w-full pl-12 pr-4 py-4 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:ring-2 focus:ring-amber-500 font-medium appearance-none"
+                        className="w-full pl-12 pr-4 py-3.5 md:py-4 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:ring-2 focus:ring-amber-500 font-medium appearance-none text-sm"
                       >
                         <option value="">Seleccione una materia...</option>
                         {Object.entries(MATERIAS_CATEGORIES).map(([cat, materias]) => (
@@ -936,14 +1004,14 @@ export const Reservations: React.FC = () => {
                   </div>
 
                   <div>
-                    <label className="block text-sm font-black text-slate-700 mb-2 uppercase tracking-wider">Aula / Espacio</label>
+                    <label className="block text-[10px] md:text-xs font-black text-slate-500 mb-2 uppercase tracking-wider">Aula / Espacio</label>
                     <div className="relative">
                       <MapPin className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 w-5 h-5" />
                       <select
                         required
                         value={formData.aula}
                         onChange={e => setFormData({...formData, aula: e.target.value})}
-                        className="w-full pl-12 pr-4 py-4 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:ring-2 focus:ring-amber-500 font-medium appearance-none"
+                        className="w-full pl-12 pr-4 py-3.5 md:py-4 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:ring-2 focus:ring-amber-500 font-medium appearance-none text-sm"
                       >
                         <option value="">Seleccione aula...</option>
                         <option value="Aula A">Aula A</option>
@@ -960,7 +1028,7 @@ export const Reservations: React.FC = () => {
                   </div>
 
                   <div>
-                    <label className="block text-sm font-black text-slate-700 mb-2 uppercase tracking-wider">Docente Responsable</label>
+                    <label className="block text-[10px] md:text-xs font-black text-slate-500 mb-2 uppercase tracking-wider">Docente Responsable</label>
                     <div className="relative">
                       <User className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 w-5 h-5" />
                       <input
@@ -970,7 +1038,7 @@ export const Reservations: React.FC = () => {
                         value={formData.docente_nombre}
                         onFocus={() => setShowDocenteSuggestions(true)}
                         onChange={e => setFormData({...formData, docente_nombre: e.target.value})}
-                        className="w-full pl-12 pr-4 py-4 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:ring-2 focus:ring-amber-500 font-medium"
+                        className="w-full pl-12 pr-4 py-3.5 md:py-4 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:ring-2 focus:ring-amber-500 font-medium text-sm"
                       />
                       {showDocenteSuggestions && (
                         <div className="absolute z-50 w-full mt-1 bg-white border border-slate-200 rounded-2xl shadow-xl max-h-60 overflow-y-auto">
@@ -988,7 +1056,7 @@ export const Reservations: React.FC = () => {
                                   setFormData({...formData, docente_nombre: d.nombre_completo});
                                   setShowDocenteSuggestions(false);
                                 }}
-                                className="w-full text-left px-4 py-2 text-sm hover:bg-amber-50 hover:text-amber-700 transition-colors border-b border-slate-50 last:border-0"
+                                className="w-full text-left px-4 py-3 text-sm hover:bg-amber-50 hover:text-amber-700 transition-colors border-b border-slate-50 last:border-0"
                               >
                                 {d.nombre_completo}
                               </button>
@@ -1006,7 +1074,7 @@ export const Reservations: React.FC = () => {
                   </div>
 
                   <div>
-                    <label className="block text-sm font-black text-slate-700 mb-2 uppercase tracking-wider">Alumno Responsable</label>
+                    <label className="block text-[10px] md:text-xs font-black text-slate-500 mb-2 uppercase tracking-wider">Alumno Responsable</label>
                     <div className="relative">
                       <User className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 w-5 h-5" />
                       <input
@@ -1015,70 +1083,74 @@ export const Reservations: React.FC = () => {
                         placeholder="Nombre del alumno"
                         value={formData.alumno_nombre}
                         onChange={e => setFormData({...formData, alumno_nombre: e.target.value})}
-                        className="w-full pl-12 pr-4 py-4 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:ring-2 focus:ring-amber-500 font-medium"
+                        className="w-full pl-12 pr-4 py-3.5 md:py-4 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:ring-2 focus:ring-amber-500 font-medium text-sm"
                       />
                     </div>
                   </div>
 
-                  <div>
-                    <label className="block text-sm font-black text-slate-700 mb-2 uppercase tracking-wider">Fecha Desde</label>
-                    <div className="relative">
-                      <Clock className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 w-5 h-5" />
-                      <input
-                        required
-                        type="datetime-local"
-                        value={formData.fecha_inicio}
-                        onChange={e => setFormData({...formData, fecha_inicio: e.target.value})}
-                        className="w-full pl-12 pr-4 py-4 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:ring-2 focus:ring-amber-500 font-medium"
-                      />
-                    </div>
-                  </div>
-                  <div>
-                    <label className="block text-sm font-black text-slate-700 mb-2 uppercase tracking-wider">Fecha Hasta</label>
-                    <div className="relative">
-                      <Clock className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 w-5 h-5" />
-                      <input
-                        required
-                        type="datetime-local"
-                        value={formData.fecha_fin}
-                        onChange={e => setFormData({...formData, fecha_fin: e.target.value})}
-                        className="w-full pl-12 pr-4 py-4 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:ring-2 focus:ring-amber-500 font-medium"
-                      />
+                  <div className="grid grid-cols-1 gap-4 md:col-span-2">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-[10px] md:text-xs font-black text-slate-500 mb-2 uppercase tracking-wider">Fecha Desde</label>
+                        <div className="relative">
+                          <Clock className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 w-5 h-5" />
+                          <input
+                            required
+                            type="datetime-local"
+                            value={formData.fecha_inicio}
+                            onChange={e => setFormData({...formData, fecha_inicio: e.target.value})}
+                            className="w-full pl-12 pr-4 py-3.5 md:py-4 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:ring-2 focus:ring-amber-500 font-medium text-sm"
+                          />
+                        </div>
+                      </div>
+                      <div>
+                        <label className="block text-[10px] md:text-xs font-black text-slate-500 mb-2 uppercase tracking-wider">Fecha Hasta</label>
+                        <div className="relative">
+                          <Clock className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 w-5 h-5" />
+                          <input
+                            required
+                            type="datetime-local"
+                            value={formData.fecha_fin}
+                            onChange={e => setFormData({...formData, fecha_fin: e.target.value})}
+                            className="w-full pl-12 pr-4 py-3.5 md:py-4 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:ring-2 focus:ring-amber-500 font-medium text-sm"
+                          />
+                        </div>
+                      </div>
                     </div>
                   </div>
                 </div>
 
-                <div className="max-h-40 overflow-y-auto space-y-2 pr-2">
-                  <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-2">Equipos en el pedido</p>
+                <div className="max-h-40 overflow-y-auto space-y-2 pr-2 custom-scrollbar">
+                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">Equipos en el pedido</p>
                   {(cart || []).map(eq => (
-                    <div key={eq.id} className="flex items-center justify-between bg-slate-50 p-3 rounded-xl border border-slate-100">
+                    <div key={eq.id} className="flex items-center justify-between bg-slate-50 p-2.5 rounded-xl border border-slate-100">
                       <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 rounded-lg bg-slate-200 overflow-hidden">
+                        <div className="w-8 h-8 rounded-lg bg-slate-200 overflow-hidden shrink-0">
                           <img src={eq.foto_url || 'https://picsum.photos/seed/gear/50/50'} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
                         </div>
-                        <span className="text-sm font-bold text-slate-700">{eq.nombre}</span>
+                        <span className="text-xs font-bold text-slate-700 truncate">{eq.nombre}</span>
                       </div>
-                      <button type="button" onClick={() => removeFromCart(eq.id)} className="text-red-400 hover:text-red-600">
+                      <button type="button" onClick={() => removeFromCart(eq.id)} className="text-red-400 hover:text-red-600 p-1">
                         <Trash2 className="w-4 h-4" />
                       </button>
                     </div>
                   ))}
                 </div>
 
-                <div className="pt-4 flex gap-4">
+                <div className="pt-4 flex flex-col sm:flex-row gap-3">
                   <button 
                     type="button" 
                     onClick={() => setIsModalOpen(false)} 
-                    className="flex-1 px-6 py-4 text-slate-600 font-black uppercase tracking-wider hover:bg-slate-100 rounded-2xl transition-all"
+                    className="flex-1 px-6 py-3.5 text-slate-600 font-black uppercase tracking-wider hover:bg-slate-100 rounded-2xl transition-all text-sm border border-transparent hover:border-slate-200"
                   >
                     Cancelar
                   </button>
                   <button 
                     type="submit" 
                     disabled={submitting || !currentUser}
-                    className="flex-1 bg-slate-900 text-white font-black uppercase tracking-wider py-4 rounded-2xl flex items-center justify-center gap-2 hover:bg-amber-500 transition-all shadow-lg shadow-slate-200 disabled:opacity-50"
+                    className="flex-1 bg-slate-900 text-white font-black uppercase tracking-wider py-3.5 rounded-2xl flex items-center justify-center gap-2 hover:bg-amber-500 transition-all shadow-lg shadow-slate-200 disabled:opacity-50 text-sm"
                   >
-                    {submitting ? <Loader2 className="w-6 h-6 animate-spin" /> : <CheckCircle2 className="w-6 h-6" />}
+                    {submitting ? <Loader2 className="w-5 h-5 animate-spin" /> : <CheckCircle2 className="w-5 h-5" />}
                     Confirmar Reserva
                   </button>
                 </div>

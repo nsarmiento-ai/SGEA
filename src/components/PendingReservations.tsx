@@ -84,20 +84,20 @@ export const PendingReservations: React.FC = () => {
   }
 
   return (
-    <div className="p-8 max-w-6xl mx-auto">
+    <div className="p-4 md:p-8 max-w-6xl mx-auto pt-16 lg:pt-8">
       <header className="mb-8">
-        <h1 className="text-3xl font-display font-bold text-slate-900">Reservas Pendientes</h1>
-        <p className="text-slate-500">Gestione las solicitudes de los docentes para su despacho.</p>
+        <h1 className="text-2xl md:text-3xl font-display font-bold text-slate-900">Reservas Pendientes</h1>
+        <p className="text-sm md:text-base text-slate-500">Gestione las solicitudes de los docentes para su despacho.</p>
       </header>
 
       {reservations.length === 0 ? (
-        <div className="bg-white rounded-3xl p-12 text-center border border-dashed border-slate-300">
-          <CheckCircle2 className="w-12 h-12 text-green-500 mx-auto mb-4" />
-          <h3 className="text-lg font-bold text-slate-900">No hay reservas pendientes</h3>
-          <p className="text-slate-500">Todo el despacho está al día.</p>
+        <div className="bg-white rounded-2xl md:rounded-3xl p-8 md:p-12 text-center border border-dashed border-slate-300">
+          <CheckCircle2 className="w-10 h-10 md:w-12 md:h-12 text-green-500 mx-auto mb-4" />
+          <h3 className="text-base md:text-lg font-bold text-slate-900">No hay reservas pendientes</h3>
+          <p className="text-xs md:text-sm text-slate-500">Todo el despacho está al día.</p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 gap-6">
+        <div className="grid grid-cols-1 gap-4 md:gap-6">
           <AnimatePresence>
             {reservations.map((res) => (
               <motion.div
@@ -105,34 +105,32 @@ export const PendingReservations: React.FC = () => {
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, scale: 0.95 }}
-                className="bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden flex flex-col md:flex-row"
+                className="bg-white rounded-2xl md:rounded-3xl border border-slate-200 shadow-sm overflow-hidden flex flex-col lg:flex-row"
               >
-                <div className="p-6 md:w-1/3 bg-slate-50 border-b md:border-b-0 md:border-r border-slate-100">
+                <div className="p-4 md:p-6 lg:w-1/3 bg-slate-50 border-b lg:border-b-0 lg:border-r border-slate-100">
                   <div className="flex items-center gap-3 mb-4">
-                    <div className="w-10 h-10 rounded-full bg-amber-100 flex items-center justify-center text-amber-600">
+                    <div className="w-10 h-10 rounded-full bg-amber-100 flex items-center justify-center text-amber-600 shrink-0">
                       <User className="w-5 h-5" />
                     </div>
-                    <div>
-                      <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">Docente</p>
-                      <p className="font-bold text-slate-900">{res.docente_nombre}</p>
+                    <div className="min-w-0">
+                      <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Docente</p>
+                      <p className="font-bold text-slate-900 truncate">{res.docente_nombre}</p>
                     </div>
                   </div>
                   <div className="space-y-3">
-                    <div className="flex items-center gap-3 text-sm text-slate-600">
+                    <div className="flex items-center gap-3 text-xs md:text-sm text-slate-600">
                       <Calendar className="w-4 h-4 text-slate-400" />
-                      <span>Desde: {format(parseISO(res.fecha_inicio), 'dd/MM/yyyy HH:mm')}</span>
-                    </div>
-                    <div className="flex items-center gap-3 text-sm text-slate-600">
-                      <Clock className="w-4 h-4 text-slate-400" />
-                      <span>Hasta: {format(parseISO(res.fecha_fin), 'dd/MM/yyyy HH:mm')}</span>
+                      <span>{format(parseISO(res.fecha_inicio), 'dd/MM/yy HH:mm')}</span>
+                      <ArrowRight className="w-3 h-3" />
+                      <span>{format(parseISO(res.fecha_fin), 'dd/MM/yy HH:mm')}</span>
                     </div>
                   </div>
                 </div>
 
-                <div className="p-6 flex-1 flex flex-col">
+                <div className="p-4 md:p-6 flex-1 flex flex-col">
                   <div className="flex items-center gap-2 mb-4">
                     <Package className="w-4 h-4 text-amber-500" />
-                    <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">Equipamiento Solicitado</p>
+                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Equipamiento Solicitado</p>
                   </div>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mb-6">
                     {(res.equipos_ids || []).map(id => {
@@ -148,7 +146,7 @@ export const PendingReservations: React.FC = () => {
                     })}
                   </div>
 
-                  <div className="mt-auto flex gap-3">
+                  <div className="mt-auto flex flex-col sm:flex-row gap-3">
                     <button 
                       onClick={() => handleCancel(res.id)}
                       className="flex-1 px-4 py-3 border border-slate-200 text-slate-600 rounded-2xl font-bold text-sm hover:bg-red-50 hover:text-red-600 hover:border-red-200 transition-all flex items-center justify-center gap-2"
