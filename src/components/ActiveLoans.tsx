@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { supabase, logAction } from '../lib/supabase';
-import { Loan, Equipment, LoanStatus, PiezaEstado, EquipmentStatus } from '../types';
+import { Loan, Equipment, LoanStatus, PiezaEstado, EquipmentStatus, Responsable } from '../types';
 import { useApp } from '../context/AppContext';
 import { generateReturnPDF } from '../lib/pdf';
+import { sendAssistedEmail } from '../lib/email';
 import { 
   Clock, 
   User, 
@@ -13,11 +14,13 @@ import {
   Loader2,
   ArrowRight,
   XCircle,
-  Download
+  Download,
+  Mail,
+  Check
 } from 'lucide-react';
 import { motion } from 'motion/react';
 import { cn, formatDate } from '../lib/utils';
-import { differenceInDays, isPast } from 'date-fns';
+import { differenceInDays, isPast, format } from 'date-fns';
 
 export const ActiveLoans: React.FC<{ filterMora?: boolean }> = ({ filterMora = false }) => {
   const { activeResponsable, profile, role } = useApp();
@@ -25,6 +28,8 @@ export const ActiveLoans: React.FC<{ filterMora?: boolean }> = ({ filterMora = f
   const [equipments, setEquipments] = useState<Record<string, Equipment>>({});
   const [loading, setLoading] = useState(true);
   const [selectedLoan, setSelectedLoan] = useState<Loan | null>(null);
+  const [finishedReturn, setFinishedReturn] = useState<any>(null);
+  const [docentes, setDocentes] = useState<Responsable[]>([]);
 
   useEffect(() => {
     fetchData();
@@ -32,23 +37,19 @@ export const ActiveLoans: React.FC<{ filterMora?: boolean }> = ({ filterMora = f
 
   const fetchData = async () => {
     setLoading(true);
-    let query = supabase
-      .from('prestamos')
-      .select('*')
-      .eq('estado', 'Activo')
-      .order('fecha_devolucion_estimada', { ascending: true });
+    const [loansRes, docentesRes] = await Promise.all([
+      supabase
+        .from('prestamos')
+        .select('*')
+        .eq('estado', 'Activo')
+        .order('fecha_devolucion_estimada', { ascending: true }),
+      supabase.from('responsables').select('*')
+    ]);
     
-    if (role === 'Docente' && profile?.id) {
-      // Assuming there's a way to link loans to users. 
-      // The user mentioned "Mis Préstamos" for Docentes.
-      // If the loan table doesn't have usuario_id, we might need to filter by docente_responsable name or add the field.
-      // Let's assume we filter by docente_responsable matching profile email or name for now, 
-      // but ideally we should have usuario_id in prestamos too.
-      // For now, let's use docente_responsable as a proxy if usuario_id is missing.
-      query = query.eq('docente_responsable', activeResponsable);
-    }
-    
-    const { data: loansData, error: loansError } = await query;
+    if (docentesRes.data) setDocentes(docentesRes.data);
+
+    let loansData = loansRes.data;
+    let loansError = loansRes.error;
     
     if (!loansError && loansData) {
       const processedLoans = loansData.map(l => ({
@@ -96,6 +97,65 @@ export const ActiveLoans: React.FC<{ filterMora?: boolean }> = ({ filterMora = f
     }
     setLoading(false);
   };
+
+  const handleSendEmail = () => {
+    if (!finishedReturn) return;
+    const { loan, equipments, responsableRecibe, docenteEmail } = finishedReturn;
+    
+    sendAssistedEmail({
+      to: docenteEmail || '',
+      cc: profile?.email || undefined,
+      subject: `SGEA - Comprobante de Devolución - Escuela de Cine`,
+      body: `Hola,\n\nSe ha registrado la devolución del equipamiento audiovisual solicitado.\n\nDocente a Cargo: ${loan.docente_responsable}\nAlumno: ${loan.alumno_nombre}\nFecha Devolución: ${format(new Date(), 'dd/MM/yyyy HH:mm')}\nRecibido por: ${responsableRecibe}\n\nEquipos Recibidos:\n${equipments.map((e: any) => `- ${e.nombre} (${e.modelo})`).join('\n')}\n\nNota: Se adjunta el comprobante en PDF (Favor de adjuntar el archivo descargado manualmente).\n\nSaludos,\nSistema SGEA`
+    });
+  };
+
+  if (finishedReturn) {
+    return (
+      <div className="p-4 md:p-8 max-w-2xl mx-auto pt-20">
+        <motion.div
+          initial={{ scale: 0.95, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
+          className="bg-white p-8 md:p-12 rounded-3xl shadow-xl border border-slate-100 flex flex-col items-center text-center"
+        >
+          <div className="w-20 h-20 bg-green-100 text-green-600 rounded-full flex items-center justify-center mb-6">
+            <Check className="w-10 h-10" />
+          </div>
+          <h2 className="text-2xl md:text-3xl font-display font-bold text-slate-900 mb-2">¡Devolución Completada!</h2>
+          <p className="text-sm md:text-base text-slate-500 mb-8 max-w-md mx-auto">
+            La devolución ha sido registrada. El comprobante PDF se ha descargado automáticamente.
+          </p>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 w-full">
+            <button
+              onClick={() => generateReturnPDF(finishedReturn.loan, finishedReturn.equipments, finishedReturn.responsableRecibe, finishedReturn.docenteEmail)}
+              className="flex items-center justify-center gap-2 px-6 py-4 border border-slate-200 text-slate-700 rounded-2xl font-bold hover:bg-slate-50 transition-all text-sm"
+            >
+              <Download className="w-5 h-5" />
+              Bajar PDF
+            </button>
+            <button
+              onClick={handleSendEmail}
+              className="flex items-center justify-center gap-2 px-6 py-4 bg-amber-500 text-white rounded-2xl font-bold shadow-lg shadow-amber-200 hover:bg-amber-600 transition-all text-sm"
+            >
+              <Mail className="w-5 h-5" />
+              Enviar Email
+            </button>
+          </div>
+          
+          <button
+            onClick={() => {
+              setFinishedReturn(null);
+              fetchData();
+            }}
+            className="mt-8 text-slate-400 font-bold hover:text-slate-600 text-sm uppercase tracking-widest"
+          >
+            Continuar
+          </button>
+        </motion.div>
+      </div>
+    );
+  }
 
   return (
     <div className="p-4 md:p-8 max-w-7xl mx-auto pt-16 lg:pt-8">
@@ -211,10 +271,11 @@ export const ActiveLoans: React.FC<{ filterMora?: boolean }> = ({ filterMora = f
         <ReceiveModal 
           loan={selectedLoan} 
           equipmentsMap={equipments} 
+          docentes={docentes}
           onClose={() => setSelectedLoan(null)} 
-          onSuccess={() => {
+          onSuccess={(details) => {
             setSelectedLoan(null);
-            fetchData();
+            setFinishedReturn(details);
           }} 
         />
       )}
@@ -222,7 +283,7 @@ export const ActiveLoans: React.FC<{ filterMora?: boolean }> = ({ filterMora = f
   );
 };
 
-const ReceiveModal: React.FC<{ loan: Loan, equipmentsMap: Record<string, Equipment>, onClose: () => void, onSuccess: () => void }> = ({ loan, equipmentsMap, onClose, onSuccess }) => {
+const ReceiveModal: React.FC<{ loan: Loan, equipmentsMap: Record<string, Equipment>, docentes: Responsable[], onClose: () => void, onSuccess: (details: any) => void }> = ({ loan, equipmentsMap, docentes, onClose, onSuccess }) => {
   const { activeResponsable } = useApp();
   const [loading, setLoading] = useState(false);
   const [observaciones, setObservaciones] = useState('');
@@ -334,9 +395,10 @@ const ReceiveModal: React.FC<{ loan: Loan, equipmentsMap: Record<string, Equipme
       });
       
       const returnedEquipments = Object.values(equipmentStates) as Equipment[];
-      generateReturnPDF(loan, returnedEquipments, activeResponsable!);
+      const targetDocente = docentes.find(d => d.nombre_completo === loan.docente_responsable);
+      generateReturnPDF(loan, returnedEquipments, activeResponsable!, targetDocente?.email);
 
-      onSuccess();
+      onSuccess({ loan, equipments: returnedEquipments, responsableRecibe: activeResponsable!, docenteEmail: targetDocente?.email });
     } catch (error) {
       console.error(error);
       alert('Error al procesar la devolución.');

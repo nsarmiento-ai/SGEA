@@ -25,12 +25,16 @@ import {
   Lock,
   MapPin,
   User,
-  Package
+  Package,
+  Mail,
+  Download,
+  Check
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { cn } from '../lib/utils';
-import { parseISO, areIntervalsOverlapping } from 'date-fns';
+import { parseISO, areIntervalsOverlapping, format } from 'date-fns';
 import { generateReservationPDF } from '../lib/pdf';
+import { sendAssistedEmail } from '../lib/email';
 import { MATERIAS_CATEGORIES } from '../constants';
 
 const mapStatus = (status: string | null | undefined): EquipmentStatus => {
@@ -65,6 +69,7 @@ export const Reservations: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [docentes, setDocentes] = useState<Responsable[]>([]);
   const [showDocenteSuggestions, setShowDocenteSuggestions] = useState(false);
+  const [finishedReservation, setFinishedReservation] = useState<any>(null);
 
   const [formData, setFormData] = useState({
     fecha_inicio: '',
@@ -281,7 +286,14 @@ export const Reservations: React.FC = () => {
       });
 
       // Generar PDF
-      generateReservationPDF(insertedData || newReservation, cart);
+      const targetDocente = docentes.find(d => d.nombre_completo === newReservation.docente_nombre);
+      generateReservationPDF(insertedData || newReservation, cart, targetDocente?.email);
+
+      setFinishedReservation({ 
+        reservation: insertedData || newReservation, 
+        equipments: cart, 
+        docenteEmail: targetDocente?.email 
+      });
 
       setIsModalOpen(false);
       setCart([]);
@@ -290,11 +302,10 @@ export const Reservations: React.FC = () => {
         fecha_fin: '', 
         materia: '',
         aula: '',
-        alumno_nombre: ''
+        alumno_nombre: '',
+        docente_nombre: activeResponsable || ''
       });
-      await fetchData(); // Ensure data is fetched before switching tab
-      setActiveTab('mis-reservas');
-      alert('Reserva realizada con éxito. Se ha descargado tu comprobante.');
+      await fetchData();
     } catch (err: any) {
       console.error('ERROR DE SUPABASE:', err);
       const errorMsg = err.message || JSON.stringify(err);
@@ -304,6 +315,65 @@ export const Reservations: React.FC = () => {
       setSubmitting(false);
     }
   };
+
+  const handleSendEmail = () => {
+    if (!finishedReservation) return;
+    const { reservation, equipments, docenteEmail } = finishedReservation;
+    
+    sendAssistedEmail({
+      to: docenteEmail || '',
+      cc: profile?.email || undefined,
+      subject: `SGEA - Comprobante de Reserva - Escuela de Cine`,
+      body: `Hola,\n\nSe ha registrado una nueva solicitud de reserva de equipamiento.\n\nDocente: ${reservation.docente_nombre}\nUso: ${reservation.materia}\nFecha Inicio: ${format(parseISO(reservation.fecha_inicio), 'dd/MM/yyyy HH:mm')}\nFecha Fin: ${format(parseISO(reservation.fecha_fin), 'dd/MM/yyyy HH:mm')}\n\nEquipos:\n${equipments.map((e: any) => `- ${e.nombre} (${e.modelo})`).join('\n')}\n\nNota: Se adjunta el comprobante en PDF (Favor de adjuntar el archivo descargado manualmente).\n\nSaludos,\nSistema SGEA`
+    });
+  };
+
+  if (finishedReservation) {
+    return (
+      <div className="p-4 md:p-8 max-w-2xl mx-auto pt-20">
+        <motion.div
+          initial={{ scale: 0.95, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
+          className="bg-white p-8 md:p-12 rounded-3xl shadow-xl border border-slate-100 flex flex-col items-center text-center"
+        >
+          <div className="w-20 h-20 bg-green-100 text-green-600 rounded-full flex items-center justify-center mb-6">
+            <Check className="w-10 h-10" />
+          </div>
+          <h2 className="text-2xl md:text-3xl font-display font-bold text-slate-900 mb-2">¡Reserva Solicitada!</h2>
+          <p className="text-sm md:text-base text-slate-500 mb-8 max-w-md mx-auto">
+            Tu reserva ha sido registrada y está pendiente de aprobación. El comprobante PDF se ha descargado automáticamente.
+          </p>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 w-full">
+            <button
+              onClick={() => generateReservationPDF(finishedReservation.reservation, finishedReservation.equipments, finishedReservation.docenteEmail)}
+              className="flex items-center justify-center gap-2 px-6 py-4 border border-slate-200 text-slate-700 rounded-2xl font-bold hover:bg-slate-50 transition-all text-sm"
+            >
+              <Download className="w-5 h-5" />
+              Bajar PDF
+            </button>
+            <button
+              onClick={handleSendEmail}
+              className="flex items-center justify-center gap-2 px-6 py-4 bg-amber-500 text-white rounded-2xl font-bold shadow-lg shadow-amber-200 hover:bg-amber-600 transition-all text-sm"
+            >
+              <Mail className="w-5 h-5" />
+              Enviar Email
+            </button>
+          </div>
+          
+          <button
+            onClick={() => {
+              setFinishedReservation(null);
+              setActiveTab('mis-reservas');
+            }}
+            className="mt-8 text-slate-400 font-bold hover:text-slate-600 text-sm uppercase tracking-widest"
+          >
+            Ver mis Reservas
+          </button>
+        </motion.div>
+      </div>
+    );
+  }
 
   if (authLoading) {
     return (
@@ -1056,9 +1126,10 @@ export const Reservations: React.FC = () => {
                                   setFormData({...formData, docente_nombre: d.nombre_completo});
                                   setShowDocenteSuggestions(false);
                                 }}
-                                className="w-full text-left px-4 py-3 text-sm hover:bg-amber-50 hover:text-amber-700 transition-colors border-b border-slate-50 last:border-0"
+                                className="w-full text-left px-4 py-3 hover:bg-amber-50 transition-colors border-b border-slate-50 last:border-0"
                               >
-                                {d.nombre_completo}
+                                <p className="text-sm font-bold text-slate-700">{d.nombre_completo}</p>
+                                <p className="text-[10px] text-slate-400 font-medium">{d.email}</p>
                               </button>
                             ))}
                           <button

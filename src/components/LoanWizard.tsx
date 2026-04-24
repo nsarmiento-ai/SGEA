@@ -3,6 +3,7 @@ import { supabase, logAction } from '../lib/supabase';
 import { Equipment, Loan, Reservation, Responsable } from '../types';
 import { useApp } from '../context/AppContext';
 import { generateLoanPDF } from '../lib/pdf';
+import { sendAssistedEmail } from '../lib/email';
 import { 
   Check, 
   ChevronRight, 
@@ -16,7 +17,9 @@ import {
   X,
   AlertCircle,
   BookOpen,
-  Lock
+  Lock,
+  Mail,
+  Download
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { cn } from '../lib/utils';
@@ -26,7 +29,7 @@ import { MATERIAS_CATEGORIES } from '../constants';
 import { useNavigate } from 'react-router-dom';
 
 export const LoanWizard: React.FC = () => {
-  const { activeResponsable } = useApp();
+  const { activeResponsable, profile } = useApp();
   const navigate = useNavigate();
   const [step, setStep] = useState(1);
   const [equipments, setEquipments] = useState<Equipment[]>([]);
@@ -37,6 +40,7 @@ export const LoanWizard: React.FC = () => {
   const [search, setSearch] = useState('');
   const [docentes, setDocentes] = useState<Responsable[]>([]);
   const [showDocenteSuggestions, setShowDocenteSuggestions] = useState(false);
+  const [finishedLoan, setFinishedLoan] = useState<any>(null);
   
   const [formData, setFormData] = useState({
     alumno_nombre: '',
@@ -256,11 +260,11 @@ export const LoanWizard: React.FC = () => {
 
       // 4. Generate PDF
       const selectedEquipments = (equipments || []).filter(e => (selectedIds || []).includes(e.id));
-      generateLoanPDF(loan as Loan, selectedEquipments);
+      const targetDocente = docentes.find(d => d.nombre_completo === formData.docente_responsable);
+      generateLoanPDF(loan as Loan, selectedEquipments, targetDocente?.email);
 
-      // 5. Reset
-      alert('Préstamo registrado con éxito. El comprobante se ha descargado.');
-      navigate('/');
+      // 5. Success State
+      setFinishedLoan({ loan, equipments: selectedEquipments, docenteEmail: targetDocente?.email });
     } catch (error) {
       console.error('Error al registrar el préstamo:', error);
       alert('Error al registrar el préstamo. Revisa la consola.');
@@ -268,6 +272,62 @@ export const LoanWizard: React.FC = () => {
       setSubmitting(false);
     }
   };
+
+  const handleSendEmail = () => {
+    if (!finishedLoan) return;
+    const { loan, equipments, docenteEmail } = finishedLoan;
+    
+    sendAssistedEmail({
+      to: docenteEmail || '',
+      cc: profile?.email || undefined,
+      subject: `SGEA - Comprobante de Préstamo - Escuela de Cine`,
+      body: `Hola,\n\nSe ha registrado un préstamo de equipamiento audiovisual.\n\nAlumno: ${loan.alumno_nombre}\nMateria: ${loan.materia}\nFecha de Salida: ${format(parseISO(loan.fecha_salida), 'dd/MM/yyyy HH:mm')}\nFecha de Devolución Estimada: ${format(parseISO(loan.fecha_devolucion_estimada), 'dd/MM/yyyy HH:mm')}\n\nEquipos:\n${equipments.map((e: any) => `- ${e.nombre} (${e.modelo})`).join('\n')}\n\nNota: Se adjunta el comprobante en PDF (Favor de adjuntar el archivo descargado manualmente).\n\nSaludos,\nSistema SGEA`
+    });
+  };
+
+  if (finishedLoan) {
+    return (
+      <div className="p-4 md:p-8 max-w-2xl mx-auto pt-20">
+        <motion.div
+          initial={{ scale: 0.95, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
+          className="bg-white p-8 md:p-12 rounded-3xl shadow-xl border border-slate-100 flex flex-col items-center text-center"
+        >
+          <div className="w-20 h-20 bg-green-100 text-green-600 rounded-full flex items-center justify-center mb-6">
+            <Check className="w-10 h-10" />
+          </div>
+          <h2 className="text-2xl md:text-3xl font-display font-bold text-slate-900 mb-2">¡Préstamo Registrado!</h2>
+          <p className="text-sm md:text-base text-slate-500 mb-8 max-w-md mx-auto">
+            El préstamo se ha guardado correctamente y el comprobante PDF se ha descargado de forma automática.
+          </p>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 w-full">
+            <button
+              onClick={() => generateLoanPDF(finishedLoan.loan, finishedLoan.equipments, finishedLoan.docenteEmail)}
+              className="flex items-center justify-center gap-2 px-6 py-4 border border-slate-200 text-slate-700 rounded-2xl font-bold hover:bg-slate-50 transition-all text-sm"
+            >
+              <Download className="w-5 h-5" />
+              Bajar PDF
+            </button>
+            <button
+              onClick={handleSendEmail}
+              className="flex items-center justify-center gap-2 px-6 py-4 bg-amber-500 text-white rounded-2xl font-bold shadow-lg shadow-amber-200 hover:bg-amber-600 transition-all text-sm"
+            >
+              <Mail className="w-5 h-5" />
+              Enviar Email
+            </button>
+          </div>
+          
+          <button
+            onClick={() => navigate('/')}
+            className="mt-8 text-slate-400 font-bold hover:text-slate-600 text-sm uppercase tracking-widest"
+          >
+            Volver al Inicio
+          </button>
+        </motion.div>
+      </div>
+    );
+  }
 
   const filtered = (equipments || []).filter(e => 
     (e?.nombre || '').toLowerCase().includes((search || '').toLowerCase()) ||
@@ -483,9 +543,10 @@ export const LoanWizard: React.FC = () => {
                                 setFormData({...formData, docente_responsable: d.nombre_completo});
                                 setShowDocenteSuggestions(false);
                               }}
-                              className="w-full text-left px-4 py-3 text-xs font-bold text-slate-700 hover:bg-amber-50 hover:text-amber-700 transition-colors border-b border-slate-50 last:border-0"
+                              className="w-full text-left px-4 py-3 hover:bg-amber-50 transition-colors border-b border-slate-50 last:border-0"
                             >
-                              {d.nombre_completo}
+                              <p className="text-xs font-bold text-slate-700">{d.nombre_completo}</p>
+                              <p className="text-[10px] text-slate-400 font-medium">{d.email}</p>
                             </button>
                           ))}
                         <button

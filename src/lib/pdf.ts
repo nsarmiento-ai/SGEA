@@ -3,10 +3,14 @@ import autoTable from 'jspdf-autotable';
 import { Equipment, Loan } from '../types';
 import { formatDate } from './utils';
 
-export const generateLoanPDF = (loan: Loan, equipments: Equipment[]) => {
+export const generateLoanPDF = (loan: Loan, equipments: Equipment[], docenteEmail?: string) => {
   const doc = new jsPDF();
   const pageWidth = doc.internal.pageSize.getWidth();
 
+  // Header Icon/Logo (Simple Circle for logo)
+  doc.setFillColor(245, 158, 11);
+  doc.circle(20, 20, 5, 'F');
+  
   // Header
   doc.setFontSize(20);
   doc.setTextColor(15, 23, 42); // Slate 900
@@ -18,16 +22,17 @@ export const generateLoanPDF = (loan: Loan, equipments: Equipment[]) => {
   // Loan Info
   doc.setFontSize(10);
   doc.setTextColor(100);
-  doc.text(`Folio: ${loan.id.slice(0, 8).toUpperCase()}`, 20, 45);
-  doc.text(`Fecha de Salida: ${formatDate(loan.fecha_salida)}`, 20, 52);
-  doc.text(`Responsable de Turno: ${loan.responsable_nombre}`, 20, 59);
+  doc.text(`Nro de Operación: ${loan.id.slice(0, 8).toUpperCase()}`, 20, 45);
+  doc.text(`Fecha: ${formatDate(loan.fecha_salida)}`, 20, 52);
+  doc.text(`Responsable (Pañol): ${loan.responsable_nombre}`, 20, 59);
   
   doc.setFontSize(12);
   doc.setTextColor(0);
-  doc.text(`Alumno: ${loan.alumno_nombre} (DNI: ${loan.alumno_dni})`, 20, 70);
-  doc.text(`Materia: ${loan.materia || 'N/A'}`, 20, 77);
-  doc.text(`Docente Responsable: ${loan.docente_responsable || 'N/A'}`, 20, 84);
-  doc.text(`Devolución Estimada: ${formatDate(loan.fecha_devolucion_estimada)}`, 20, 91);
+  doc.text(`Docente: ${loan.docente_responsable || 'N/A'}`, 20, 70);
+  doc.text(`Email Docente: ${docenteEmail || 'N/A'}`, 20, 77);
+  doc.text(`Alumno: ${loan.alumno_nombre} (DNI: ${loan.alumno_dni})`, 20, 84);
+  doc.text(`Materia: ${loan.materia || 'N/A'}`, 20, 91);
+  doc.text(`Devolución Estimada: ${formatDate(loan.fecha_devolucion_estimada)}`, 20, 98);
 
   // Equipment Table
   const tableData: any[][] = [];
@@ -58,7 +63,7 @@ export const generateLoanPDF = (loan: Loan, equipments: Equipment[]) => {
   });
 
   autoTable(doc, {
-    startY: 98,
+    startY: 105,
     head: [['#', 'Equipo / Kit', 'Modelo', 'Nº Serie', 'Categoría']],
     body: tableData,
     headStyles: { fillColor: [245, 158, 11] }, // Amber 500
@@ -83,9 +88,13 @@ export const generateLoanPDF = (loan: Loan, equipments: Equipment[]) => {
   doc.save(`prestamo_${loan.alumno_nombre.replace(/\s+/g, '_')}_${new Date().getTime()}.pdf`);
 };
 
-export const generateReservationPDF = (reservation: any, equipments: Equipment[]) => {
+export const generateReservationPDF = (reservation: any, equipments: Equipment[], docenteEmail?: string) => {
   const doc = new jsPDF();
   const pageWidth = doc.internal.pageSize.getWidth();
+
+  // Header Icon/Logo
+  doc.setFillColor(15, 23, 42);
+  doc.circle(20, 20, 5, 'F');
 
   // Header
   doc.setFontSize(20);
@@ -98,10 +107,12 @@ export const generateReservationPDF = (reservation: any, equipments: Equipment[]
   // Reservation Info
   doc.setFontSize(10);
   doc.setTextColor(100);
-  doc.text(`Docente: ${reservation.docente_nombre}`, 20, 45);
-  doc.text(`Fecha Desde: ${formatDate(reservation.fecha_inicio)}`, 20, 52);
-  doc.text(`Fecha Hasta: ${formatDate(reservation.fecha_fin)}`, 20, 59);
-  doc.text(`Estado: ${reservation.estado.toUpperCase()}`, 20, 66);
+  doc.text(`Nro de Operación: ${reservation.id?.slice(0, 8).toUpperCase() || 'N/A'}`, 20, 45);
+  doc.text(`Docente: ${reservation.docente_nombre}`, 20, 52);
+  doc.text(`Email Docente: ${docenteEmail || 'N/A'}`, 20, 59);
+  doc.text(`Fecha Desde: ${formatDate(reservation.fecha_inicio)}`, 20, 66);
+  doc.text(`Fecha Hasta: ${formatDate(reservation.fecha_fin)}`, 20, 73);
+  doc.text(`Estado: ${reservation.estado.toUpperCase()}`, 20, 80);
 
   // Equipment Table
   const tableData = equipments.map((eq, index) => [
@@ -112,7 +123,7 @@ export const generateReservationPDF = (reservation: any, equipments: Equipment[]
   ]);
 
   autoTable(doc, {
-    startY: 75,
+    startY: 90,
     head: [['#', 'Equipo', 'Modelo', 'Categoría']],
     body: tableData,
     headStyles: { fillColor: [15, 23, 42] },
@@ -123,9 +134,13 @@ export const generateReservationPDF = (reservation: any, equipments: Equipment[]
   doc.save(`reserva_${reservation.docente_nombre.replace(/\s+/g, '_')}_${new Date().getTime()}.pdf`);
 };
 
-export const generateReturnPDF = (loan: Loan, equipments: Equipment[], responsableRecibe: string) => {
+export const generateReturnPDF = (loan: Loan, equipments: Equipment[], responsableRecibe: string, docenteEmail?: string) => {
   const doc = new jsPDF();
   const pageWidth = doc.internal.pageSize.getWidth();
+
+  // Header Icon/Logo
+  doc.setFillColor(34, 197, 94);
+  doc.circle(20, 20, 5, 'F');
 
   // Header
   doc.setFontSize(20);
@@ -138,13 +153,15 @@ export const generateReturnPDF = (loan: Loan, equipments: Equipment[], responsab
   // Return Info
   doc.setFontSize(10);
   doc.setTextColor(100);
-  doc.text(`Folio Préstamo: ${loan.id.slice(0, 8).toUpperCase()}`, 20, 45);
+  doc.text(`Nro de Operación (Préstamo): ${loan.id.slice(0, 8).toUpperCase()}`, 20, 45);
   doc.text(`Fecha de Devolución: ${formatDate(new Date().toISOString())}`, 20, 52);
-  doc.text(`Recibido por: ${responsableRecibe}`, 20, 59);
+  doc.text(`Responsable (Pañol): ${responsableRecibe}`, 20, 59);
+  doc.text(`Email Docente: ${docenteEmail || 'N/A'}`, 20, 66);
   
   doc.setFontSize(12);
   doc.setTextColor(0);
-  doc.text(`Alumno: ${loan.alumno_nombre} (DNI: ${loan.alumno_dni})`, 20, 70);
+  doc.text(`Docente a Cargo: ${loan.docente_responsable || 'N/A'}`, 20, 77);
+  doc.text(`Alumno: ${loan.alumno_nombre} (DNI: ${loan.alumno_dni})`, 20, 84);
 
   // Equipment Table
   const tableData = equipments.map((eq, index) => {
@@ -159,7 +176,7 @@ export const generateReturnPDF = (loan: Loan, equipments: Equipment[], responsab
   });
 
   autoTable(doc, {
-    startY: 80,
+    startY: 95,
     head: [['#', 'Equipo', 'Modelo', 'Nº Serie', 'Estado al Recibir']],
     body: tableData,
     headStyles: { fillColor: [15, 23, 42] },
