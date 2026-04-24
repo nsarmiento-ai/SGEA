@@ -8,15 +8,14 @@ export interface EmailConfig {
 
 export const generateMailtoLink = (config: EmailConfig) => {
   const { to, cc, subject, body } = config;
-  const params = new URLSearchParams();
-  if (cc) params.append('cc', cc);
-  params.append('subject', subject);
-  params.append('body', body);
-  
-  return `mailto:${to}?${params.toString().replace(/\+/g, '%20')}`;
+  let link = `mailto:${to}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+  if (cc) {
+    link += `&cc=${encodeURIComponent(cc)}`;
+  }
+  return link;
 };
 
 export const sendAssistedEmail = (config: EmailConfig) => {
   const link = generateMailtoLink(config);
-  window.open(link, '_blank');
+  window.location.href = link;
 };

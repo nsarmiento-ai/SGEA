@@ -320,8 +320,13 @@ export const Reservations: React.FC = () => {
     if (!finishedReservation) return;
     const { reservation, equipments, docenteEmail } = finishedReservation;
     
+    if (!docenteEmail) {
+      alert('No se puede enviar el email: El docente no tiene un correo electrónico registrado.');
+      return;
+    }
+    
     sendAssistedEmail({
-      to: docenteEmail || '',
+      to: docenteEmail,
       cc: profile?.email || undefined,
       subject: `SGEA - Comprobante de Reserva - Escuela de Cine`,
       body: `Hola,\n\nSe ha registrado una nueva solicitud de reserva de equipamiento.\n\nDocente: ${reservation.docente_nombre}\nUso: ${reservation.materia}\nFecha Inicio: ${format(parseISO(reservation.fecha_inicio), 'dd/MM/yyyy HH:mm')}\nFecha Fin: ${format(parseISO(reservation.fecha_fin), 'dd/MM/yyyy HH:mm')}\n\nEquipos:\n${equipments.map((e: any) => `- ${e.nombre} (${e.modelo})`).join('\n')}\n\nNota: Se adjunta el comprobante en PDF (Favor de adjuntar el archivo descargado manualmente).\n\nSaludos,\nSistema SGEA`
@@ -354,10 +359,15 @@ export const Reservations: React.FC = () => {
             </button>
             <button
               onClick={handleSendEmail}
-              className="flex items-center justify-center gap-2 px-6 py-4 bg-amber-500 text-white rounded-2xl font-bold shadow-lg shadow-amber-200 hover:bg-amber-600 transition-all text-sm"
+              className={cn(
+                "flex items-center justify-center gap-2 px-6 py-4 rounded-2xl font-bold transition-all text-sm shadow-lg",
+                finishedReservation.docenteEmail 
+                  ? "bg-amber-500 text-white shadow-amber-200 hover:bg-amber-600" 
+                  : "bg-slate-100 text-slate-400 shadow-transparent cursor-not-allowed"
+              )}
             >
               <Mail className="w-5 h-5" />
-              Enviar Email
+              {finishedReservation.docenteEmail ? 'Enviar Email' : 'Email no disponible'}
             </button>
           </div>
           
