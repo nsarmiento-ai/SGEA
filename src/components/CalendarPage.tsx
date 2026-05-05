@@ -29,7 +29,7 @@ import {
 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { useApp } from '../context/AppContext';
-import { Reservation, Equipment } from '../types';
+import { Reservation, Equipment, Loan } from '../types';
 import { motion, AnimatePresence } from 'motion/react';
 import { cn } from '../lib/utils';
 
@@ -41,6 +41,7 @@ export const CalendarPage: React.FC = () => {
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [reservations, setReservations] = useState<Reservation[]>([]);
+  const [loans, setLoans] = useState<Loan[]>([]);
   const [equipments, setEquipments] = useState<Equipment[]>([]);
   const [loading, setLoading] = useState(true);
   const [showDetail, setShowDetail] = useState(false);
@@ -52,12 +53,14 @@ export const CalendarPage: React.FC = () => {
   const fetchData = async () => {
     setLoading(true);
     try {
-      const [resData, eqData] = await Promise.all([
-        supabase.from('reservas').select('*').in('estado', ['Pendiente', 'Aprobada', 'Entregada']),
+      const [resData, loanData, eqData] = await Promise.all([
+        supabase.from('reservas').select('*').in('estado', ['Pendiente', 'Aprobada']),
+        supabase.from('prestamos').select('*').eq('estado', 'Activo'),
         supabase.from('equipamiento').select('*')
       ]);
 
       if (resData.data) setReservations(resData.data);
+      if (loanData.data) setLoans(loanData.data);
       if (eqData.data) setEquipments(eqData.data);
     } catch (error) {
       console.error('Error fetching calendar data:', error);
@@ -134,11 +137,20 @@ export const CalendarPage: React.FC = () => {
           return isWithinInterval(cloneDay, { start, end });
         });
 
+        const dayLoans = (loans || []).filter(loan => {
+          if (!loan.fecha_salida || !loan.fecha_devolucion_estimada) return false;
+          const start = startOfDay(parseISO(loan.fecha_salida));
+          const end = endOfDay(parseISO(loan.fecha_devolucion_estimada));
+          return isWithinInterval(cloneDay, { start, end });
+        });
+
+        const totalEvents = [...dayReservations.map(r => ({ ...r, type: 'reservation' })), ...dayLoans.map(l => ({ ...l, type: 'loan' }))];
+
         days.push(
           <div
             key={day.toString()}
             className={cn(
-              "min-h-[80px] md:min-h-[120px] bg-white border border-slate-100 p-1 md:p-2 transition-all cursor-pointer hover:bg-slate-50 relative group",
+              "min-h-[80px] md:min-h-[120px] bg-white border border-slate-100 p-1 md:p-2 transition-all cursor-pointer hover:bg-slate-50 relative group text-left",
               !isSameMonth(day, monthStart) ? "bg-slate-50/50 text-slate-300" : "text-slate-900",
               isSameDay(day, new Date()) && "ring-2 ring-inset ring-amber-500/20 bg-amber-50/30"
             )}
@@ -155,29 +167,29 @@ export const CalendarPage: React.FC = () => {
             </span>
             
             <div className="space-y-1 overflow-hidden">
-              {dayReservations.slice(0, 3).map((res) => {
-                const statusColor = res.estado === 'Pendiente' 
-                  ? 'bg-amber-400' 
-                  : 'bg-blue-500';
+              {totalEvents.slice(0, 3).map((event: any) => {
+                const isLoan = event.type === 'loan';
+                const statusColor = isLoan ? 'bg-emerald-500' : (event.estado === 'Pendiente' ? 'bg-amber-400' : 'bg-blue-500');
+                const label = isLoan ? event.docente_responsable : event.docente_nombre;
                 
                 return (
                   <div 
-                    key={res.id} 
+                    key={`${event.type}-${event.id}`} 
                     className="flex md:block"
                   >
-                    {/* Dots for mobile, text labels for desktop */}
-                    <div className={cn("w-1.5 h-1.5 md:w-auto md:h-auto rounded-full md:rounded md:px-1.5 md:py-0.5 md:border md:truncate md:text-[10px] md:font-medium", statusColor, "md:bg-opacity-10 md:border-opacity-20 md:text-slate-700")}>
+                    <div className={cn("w-1.5 h-1.5 md:w-auto md:h-auto rounded-full md:rounded md:px-1.5 md:py-0.5 md:border md:truncate md:text-[10px] md:font-semibold", statusColor, "md:bg-opacity-10 md:border-opacity-20 md:text-slate-700")}>
                       <span className="hidden md:inline">
-                         {isPañolero ? `${res.docente_nombre.split(' ')[0]}: ` : ''}
-                         {(res.equipos_ids || []).map(id => (equipments || []).find(e => e.id === id)?.nombre).filter(Boolean).join(', ')}
+                         {isPañolero ? `${label.split(' ')[0]}: ` : ''}
+                         {(event.equipos_ids || []).map((id: string) => (equipments || []).find(e => e.id === id)?.nombre).filter(Boolean).slice(0, 2).join(', ')}
+                         {(event.equipos_ids || []).length > 2 && '...'}
                       </span>
                     </div>
                   </div>
                 );
               })}
-              {dayReservations.length > 3 && (
-                <div className="text-[8px] md:text-[9px] text-slate-400 font-bold pl-1">
-                  + {dayReservations.length - 3}
+              {totalEvents.length > 3 && (
+                <div className="text-[8px] md:text-[9px] text-slate-400 font-black pl-1 uppercase">
+                  + {totalEvents.length - 3} items
                 </div>
               )}
             </div>
@@ -204,6 +216,14 @@ export const CalendarPage: React.FC = () => {
       return isWithinInterval(selectedDate, { start, end });
     });
 
+    const dayLoans = (loans || []).filter(loan => {
+      const start = startOfDay(parseISO(loan.fecha_salida));
+      const end = endOfDay(parseISO(loan.fecha_devolucion_estimada));
+      return isWithinInterval(selectedDate, { start, end });
+    });
+
+    const totalEvents = [...dayReservations.map(r => ({ ...r, type: 'reservation' })), ...dayLoans.map(l => ({ ...l, type: 'loan' }))];
+
     return (
       <AnimatePresence>
         {showDetail && (
@@ -216,83 +236,89 @@ export const CalendarPage: React.FC = () => {
             >
               <div className="p-4 md:p-6 border-b border-slate-100 flex items-center justify-between bg-slate-50">
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 md:w-12 md:h-12 rounded-xl md:rounded-2xl bg-amber-500 flex items-center justify-center text-white shadow-lg shadow-amber-500/20 shrink-0">
+                  <div className="w-10 h-10 md:w-12 md:h-12 rounded-xl md:rounded-2xl bg-slate-900 flex items-center justify-center text-white shadow-lg shadow-slate-900/20 shrink-0">
                     <CalendarIcon className="w-5 h-5 md:w-6 md:h-6" />
                   </div>
                   <div className="min-w-0">
                     <h2 className="text-lg md:text-xl font-bold text-slate-900 truncate">
                       {format(selectedDate, "EEEE d 'de' MMMM", { locale: es })}
                     </h2>
-                    <p className="text-xs md:text-sm text-slate-500">Ocupación para el día.</p>
+                    <p className="text-xs md:text-sm text-slate-500">Cronograma de movimientos.</p>
                   </div>
                 </div>
                 <button 
-                  onClick={() => setShowDetail(false)}
-                  className="p-2 hover:bg-slate-200 rounded-xl transition-colors text-slate-400"
+                   onClick={() => setShowDetail(false)}
+                   className="p-2 hover:bg-slate-200 rounded-xl transition-colors text-slate-400"
                 >
                   <X className="w-6 h-6" />
                 </button>
               </div>
 
-              <div className="p-4 md:p-6 max-h-[60vh] overflow-y-auto space-y-4 custom-scrollbar">
-                {dayReservations.length === 0 ? (
+              <div className="p-4 md:p-6 max-h-[65vh] overflow-y-auto space-y-4 custom-scrollbar">
+                {totalEvents.length === 0 ? (
                   <div className="text-center py-10">
                     <div className="w-16 h-16 bg-slate-50 rounded-full flex items-center justify-center mx-auto mb-4">
                       <Package className="w-8 h-8 text-slate-300" />
                     </div>
-                    <p className="text-slate-500 font-bold">No hay reservas</p>
-                    <p className="text-xs text-slate-400">Todo el equipamiento está libre.</p>
+                    <p className="text-slate-500 font-bold">Sin actividad programada</p>
+                    <p className="text-xs text-slate-400">No hay préstamos ni reservas para este día.</p>
                   </div>
                 ) : (
                   <div className="space-y-4">
-                    {dayReservations.map((res) => (
-                      <div key={res.id} className="bg-slate-50 rounded-2xl p-4 md:p-5 border border-slate-200">
-                        <div className="flex items-center justify-between mb-4">
-                          <span className={cn(
-                            "px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-wider border",
-                            res.estado === 'Pendiente' ? "bg-amber-50 text-amber-600 border-amber-200" : "bg-blue-50 text-blue-600 border-blue-200"
-                          )}>
-                            {res.estado}
-                          </span>
-                          <div className="flex items-center gap-2 text-[10px] md:text-xs text-slate-500 font-bold">
-                            <Clock className="w-4 h-4" />
-                            {format(parseISO(res.fecha_inicio), 'HH:mm')} - {format(parseISO(res.fecha_fin), 'HH:mm')}
-                          </div>
-                        </div>
-
-                        {isPañolero && (
-                          <div className="flex items-center gap-3 mb-4 p-3 bg-white rounded-xl border border-slate-100 shadow-sm">
-                            <div className="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center shrink-0">
-                              <User className="w-4 h-4 text-slate-500" />
-                            </div>
-                            <div className="min-w-0">
-                              <p className="text-[10px] text-slate-400 font-black uppercase tracking-tight">Docente</p>
-                              <p className="text-sm font-bold text-slate-900 truncate">{res.docente_nombre}</p>
+                    {totalEvents.map((event: any) => {
+                      const isLoan = event.type === 'loan';
+                      const start = isLoan ? event.fecha_salida : event.fecha_inicio;
+                      const end = isLoan ? event.fecha_devolucion_estimada : event.fecha_fin;
+                      const label = isLoan ? event.docente_responsable : event.docente_nombre;
+                      const subLabel = isLoan ? 'Préstamo Activo' : `Reserva ${event.estado}`;
+                      
+                      return (
+                        <div key={`${event.type}-${event.id}`} className="bg-white rounded-2xl p-4 md:p-5 border border-slate-200 shadow-sm">
+                          <div className="flex items-center justify-between mb-4">
+                            <span className={cn(
+                              "px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider border",
+                              isLoan ? "bg-emerald-50 text-emerald-600 border-emerald-200" : (event.estado === 'Pendiente' ? "bg-amber-50 text-amber-600 border-amber-200" : "bg-blue-50 text-blue-600 border-blue-200")
+                            )}>
+                              {subLabel}
+                            </span>
+                            <div className="flex items-center gap-2 text-[10px] md:text-xs text-slate-500 font-bold">
+                              <Clock className="w-4 h-4" />
+                              {format(parseISO(start), 'HH:mm')} - {format(parseISO(end), 'HH:mm')}
                             </div>
                           </div>
-                        )}
 
-                        <div className="space-y-2">
-                          <p className="text-[10px] text-slate-400 font-black uppercase tracking-tight mb-2">Equipos Reservados</p>
-                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                            {(res.equipos_ids || []).map(id => {
-                              const eq = (equipments || []).find(e => e.id === id);
-                              return (
-                                <div key={id} className="flex items-center gap-2 p-2 bg-white rounded-xl border border-slate-100 shadow-sm">
-                                  <div className="w-10 h-10 rounded-lg bg-slate-900 overflow-hidden flex-shrink-0">
-                                    <img src={eq?.foto_url || 'https://picsum.photos/seed/gear/50/50'} className="w-full h-full object-cover opacity-80" referrerPolicy="no-referrer" />
+                          <div className="flex items-center gap-3 mb-4 p-3 bg-slate-50 rounded-xl border border-slate-100">
+                             <div className="w-8 h-8 rounded-full bg-slate-200 flex items-center justify-center shrink-0">
+                               <User className="w-4 h-4 text-slate-500" />
+                             </div>
+                             <div className="min-w-0">
+                               <p className="text-[10px] text-slate-400 font-black uppercase tracking-tight">Docente / Responsable</p>
+                               <p className="text-sm font-bold text-slate-900 truncate">{label}</p>
+                             </div>
+                          </div>
+
+                          <div className="space-y-2">
+                            <p className="text-[10px] text-slate-400 font-black uppercase tracking-tight mb-2">Equipamiento Asociado</p>
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                              {(event.equipos_ids || []).map((id: string) => {
+                                const eq = (equipments || []).find(e => e.id === id);
+                                return (
+                                  <div key={id} className="flex items-center gap-2 p-2 bg-slate-50/50 rounded-xl border border-slate-100">
+                                    <div className="w-8 h-8 rounded-lg bg-slate-200 overflow-hidden flex-shrink-0">
+                                      <img src={eq?.foto_url || `https://picsum.photos/seed/${id}/50/50`} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+                                    </div>
+                                    <div className="min-w-0">
+                                      <p className="text-[11px] font-bold text-slate-900 truncate">{eq?.nombre || 'General'}</p>
+                                      <p className="text-[9px] text-slate-500 truncate">{eq?.modelo || 'SGEA'}</p>
+                                    </div>
                                   </div>
-                                  <div className="min-w-0">
-                                    <p className="text-xs font-bold text-slate-900 truncate">{eq?.nombre || 'General'}</p>
-                                    <p className="text-[10px] text-slate-500 truncate">{eq?.modelo || 'Audiovisual'}</p>
-                                  </div>
-                                </div>
-                              );
-                            })}
+                                );
+                              })}
+                            </div>
                           </div>
                         </div>
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 )}
               </div>
@@ -331,11 +357,15 @@ export const CalendarPage: React.FC = () => {
         <div className="flex flex-wrap items-center gap-4 md:gap-6 mb-6 text-[10px] font-black uppercase tracking-widest text-slate-400">
           <div className="flex items-center gap-2">
             <div className="w-3 h-3 rounded-full bg-amber-400"></div>
-            <span>Pendiente</span>
+            <span>Reserva Pendiente</span>
           </div>
           <div className="flex items-center gap-2">
             <div className="w-3 h-3 rounded-full bg-blue-500"></div>
-            <span>Confirmada</span>
+            <span>Reserva Aprobada</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="w-3 h-3 rounded-full bg-emerald-500"></div>
+            <span>Préstamo en Curso</span>
           </div>
         </div>
 
