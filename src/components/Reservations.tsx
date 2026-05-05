@@ -40,9 +40,11 @@ import { MATERIAS_CATEGORIES } from '../constants';
 const mapStatus = (status: string | null | undefined): EquipmentStatus => {
   if (!status) return 'Disponible';
   const s = String(status).toLowerCase();
-  if (s === 'roto' || s === 'en reparación' || s === 'perdido' || s === 'mantenimiento' || s === 'incompleto' || s === 'fuera de servicio') {
+  if (s === 'roto' || s === 'en reparación' || s === 'perdido' || s === 'incompleto' || s === 'fuera de servicio') {
     return 'Fuera de Servicio';
   }
+  if (s === 'mantenimiento' || s === 'en mantenimiento') return 'En Mantenimiento';
+  if (s === 'en mora' || s === 'mora') return 'En Mora';
   if (s === 'eliminado' || s === 'archivado') return 'Archivado';
   if (s === 'disponible') return 'Disponible';
   if (s === 'prestado') return 'Prestado';

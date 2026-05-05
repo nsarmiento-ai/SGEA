@@ -346,71 +346,76 @@ const ReceiveModal: React.FC<{ loan: Loan, equipmentsMap: Record<string, Equipme
       return;
     }
 
-    const hasAnyChecked = Object.values(checkedItems).some(val => val);
-    const allChecked = (loan.equipos_ids || []).every(id => checkedItems[id]);
+    const loanItems = (loan.equipos_ids || []);
+    const checkedIds = loanItems.filter(id => !!checkedItems[id]);
+    const missingIds = loanItems.filter(id => !checkedItems[id]);
+    const isAllReturned = missingIds.length === 0;
 
     setLoading(true);
     try {
-      const returnedIds: string[] = [];
-      const missingIds: string[] = [];
       const returnedEquipmentsData: Equipment[] = [];
 
-      for (const eqId of loan.equipos_ids) {
-        if (checkedItems[eqId]) {
-          returnedIds.push(eqId);
-          const eq = equipmentStates[eqId];
-          const status = itemStatuses[eqId];
-          
-          // 1. Update equipment in DB
-          const updateData: any = { estado: status };
-          if (eq && eq.piezas) updateData.piezas = eq.piezas;
+      // PATH A: Process Returned Items
+      for (const eqId of checkedIds) {
+        const eq = equipmentStates[eqId];
+        const status = itemStatuses[eqId] || 'Disponible';
+        
+        // 1. Update equipment in DB
+        const updateData: any = { estado: status };
+        if (eq && eq.piezas) updateData.piezas = eq.piezas;
 
-          const { error: eqErr } = await supabase
-            .from('equipamiento')
-            .update(updateData)
-            .eq('id', eqId);
-          if (eqErr) throw eqErr;
+        const { error: eqErr } = await supabase
+          .from('equipamiento')
+          .update(updateData)
+          .eq('id', eqId);
+        if (eqErr) throw eqErr;
 
-          // 2. Log History for returned items
-          await supabase.from('historial_recursos').insert([{
-            recurso_id: eqId,
-            docente_nombre: loan.docente_responsable,
-            materia: loan.materia,
-            pañolero_entrega: loan.responsable_nombre,
-            pañolero_recibe: activeResponsable!,
-            fecha_salida: loan.fecha_salida,
-            fecha_entrada: new Date().toISOString(),
-            alumno_nombre: loan.alumno_nombre,
-            estado_salida: 'Bueno', 
-            estado_entrada: status === 'Disponible' ? 'Bueno' : 'Con Incidencias',
-            observaciones_entrada: observaciones,
-            prestamo_id: loan.id,
-            tipo_accion: 'Devolución'
-          }]);
+        // 2. Log History for returned items
+        await supabase.from('historial_recursos').insert([{
+          recurso_id: eqId,
+          docente_nombre: loan.docente_responsable,
+          materia: loan.materia,
+          pañolero_entrega: loan.responsable_nombre,
+          pañolero_recibe: activeResponsable!,
+          fecha_salida: loan.fecha_salida,
+          fecha_entrada: new Date().toISOString(),
+          alumno_nombre: loan.alumno_nombre,
+          estado_salida: 'Bueno', 
+          estado_entrada: status === 'Disponible' ? 'Bueno' : 'Con Incidencias',
+          observaciones_entrada: observaciones,
+          prestamo_id: loan.id,
+          tipo_accion: 'Devolución'
+        }]);
 
-          if (eq) {
-            returnedEquipmentsData.push({ ...eq, estado: status as any });
-          }
-        } else {
-          missingIds.push(eqId);
-          // 3. Mark missing as 'En Mora' in inventory
-          await supabase
-            .from('equipamiento')
-            .update({ estado: 'En Mora' })
-            .eq('id', eqId);
+        if (eq) {
+          returnedEquipmentsData.push({ ...eq, estado: status as any });
         }
       }
 
-      // 4. Update loan status
+      // PATH B: Process Missing Items (Mora)
+      for (const eqId of missingIds) {
+        // Enforce 'En Mora' status for anything not checked
+        const { error: moraErr } = await supabase
+          .from('equipamiento')
+          .update({ estado: 'En Mora' })
+          .eq('id', eqId);
+        
+        if (moraErr) {
+          console.error(`Error updating missing item ${eqId}:`, moraErr);
+        }
+      }
+
+      // 3. Update loan record
       const loanUpdate: any = {
-        observaciones_recepcion: `${allChecked ? '' : '[DEVOLUCIÓN PARCIAL] '}${observaciones}`,
+        observaciones_recepcion: `${isAllReturned ? '' : '[DEVOLUCIÓN PARCIAL] '}${observaciones}`,
         fecha_devolucion_real: new Date().toISOString()
       };
 
-      if (allChecked) {
+      if (isAllReturned) {
         loanUpdate.estado = 'Finalizado';
+        loanUpdate.equipos_ids = loan.equipos_ids; // Keep all IDs for history
       } else {
-        // Keep active but only with missing IDs
+        // Persistence of Responsibility: Keep active but only with missing IDs
         loanUpdate.equipos_ids = missingIds;
         loanUpdate.estado = 'Activo';
       }
@@ -422,18 +427,17 @@ const ReceiveModal: React.FC<{ loan: Loan, equipmentsMap: Record<string, Equipme
 
       if (loanError) throw loanError;
 
-      // 5. Final Logs
+      // 4. Activity Log
       await logAction(activeResponsable!, 'DEVOLUCION_PRESTAMO', { 
         loanId: loan.id, 
         alumno: `${loan.alumno_nombre} (${loan.alumno_dni})`,
-        itemsDevueltos: returnedIds.length,
-        itemsPendientes: missingIds.length,
+        itemsDevueltos: checkedIds.length,
+        itemsMora: missingIds.length,
+        isParcial: !isAllReturned,
         observaciones 
       });
 
       const targetDocente = docentes.find(d => d.nombre_completo === loan.docente_responsable);
-      
-      // Only generate PDF for what was actually returned
       if (returnedEquipmentsData.length > 0) {
         generateReturnPDF(loan, returnedEquipmentsData, activeResponsable!, targetDocente?.email);
       }
