@@ -37,15 +37,19 @@ const statusConfig: Record<EquipmentStatus, { color: string, icon: any, label: s
   'Prestado': { color: 'text-blue-600 bg-blue-50 border-blue-200', icon: Clock, label: 'Prestado' },
   'Fuera de Servicio': { color: 'text-red-600 bg-red-50 border-red-200', icon: XCircle, label: 'Fuera de Servicio' },
   'Archivado': { color: 'text-slate-500 bg-slate-50 border-slate-200', icon: Trash2, label: 'Archivado' },
+  'En Mantenimiento': { color: 'text-amber-600 bg-amber-50 border-amber-200', icon: AlertCircle, label: 'Mantenimiento' },
+  'En Mora': { color: 'text-purple-600 bg-purple-50 border-purple-200', icon: AlertCircle, label: 'En Mora' },
 };
 
 const mapStatus = (status: string | null | undefined): EquipmentStatus => {
   if (!status) return 'Disponible';
   const s = String(status).toLowerCase();
   
-  if (s === 'roto' || s === 'en reparación' || s === 'perdido' || s === 'incompleto' || s === 'fuera de servicio' || s === 'mantenimiento') {
+  if (s === 'roto' || s === 'en reparación' || s === 'perdido' || s === 'incompleto' || s === 'fuera de servicio') {
     return 'Fuera de Servicio';
   }
+  if (s === 'mantenimiento' || s === 'en mantenimiento') return 'En Mantenimiento';
+  if (s === 'en mora' || s === 'mora') return 'En Mora';
   if (s === 'eliminado' || s === 'archivado') return 'Archivado';
   if (s === 'disponible') return 'Disponible';
   if (s === 'prestado') return 'Prestado';
