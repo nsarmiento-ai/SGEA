@@ -15,6 +15,7 @@ import { AuditLogs } from './components/AuditLogs';
 import { Reservations } from './components/Reservations';
 import { PendingReservations } from './components/PendingReservations';
 import { CalendarPage } from './components/CalendarPage';
+import { PublicView } from './components/PublicView';
 import { Loader2, Menu } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { supabase } from './lib/supabase';
@@ -108,69 +109,75 @@ function AppContent() {
     );
   }
 
-  if (!activeResponsable) {
-    return <ResponsableModal />;
-  }
-
-  if (activeResponsable && role === null) {
-    return <RoleSelectionModal />;
-  }
-
-  const isPañolero = role === 'Pañolero';
-
+  // Handle Public Routes without Auth
   return (
-    <div className="flex min-h-screen relative">
-      <Sidebar isOpen={isSidebarOpen} onClose={() => setIsSidebarOpen(false)} />
-      
-      {/* Mobile Toggle Button */}
-      <button 
-        onClick={() => setIsSidebarOpen(true)}
-        className="fixed top-4 left-4 z-30 p-2 bg-slate-900 text-white rounded-lg lg:hidden shadow-lg"
-      >
-        <Menu className="w-6 h-6" />
-      </button>
+    <Routes>
+      <Route path="/catalogo-publico" element={<PublicView />} />
+      <Route 
+        path="*" 
+        element={
+          !activeResponsable ? (
+            <ResponsableModal />
+          ) : role === null ? (
+            <RoleSelectionModal />
+          ) : (
+            <div className="flex min-h-screen relative">
+              <Sidebar isOpen={isSidebarOpen} onClose={() => setIsSidebarOpen(false)} />
+              
+              {/* Mobile Toggle Button */}
+              <button 
+                onClick={() => setIsSidebarOpen(true)}
+                className="fixed top-4 left-4 z-30 p-2 bg-slate-900 text-white rounded-lg lg:hidden shadow-lg"
+              >
+                <Menu className="w-6 h-6" />
+              </button>
 
-      <main className="flex-1 w-full overflow-x-hidden">
-        <Routes>
-          {/* Redirección inicial basada en el rol */}
-          <Route 
-            path="/" 
-            element={isPañolero ? <Navigate to="/catalogo" replace /> : <Navigate to="/reservas" replace />} 
-          />
+              <main className="flex-1 w-full overflow-x-hidden">
+                <Routes>
+                  {/* Redirección inicial basada en el rol */}
+                  <Route 
+                    path="/" 
+                    element={role === 'Pañolero' ? <Navigate to="/catalogo" replace /> : <Navigate to="/reservas" replace />} 
+                  />
 
-          {/* Rutas de Pañolero (Admin) */}
-          <Route 
-            path="/catalogo" 
-            element={isPañolero ? <Catalog /> : <Navigate to="/reservas" replace />} 
-          />
-          <Route 
-            path="/reservas-pendientes" 
-            element={isPañolero ? <PendingReservations /> : <Navigate to="/reservas" replace />} 
-          />
-          <Route 
-            path="/nuevo-prestamo" 
-            element={isPañolero ? <LoanWizard /> : <Navigate to="/reservas" replace />} 
-          />
-          <Route 
-            path="/historial" 
-            element={isPañolero ? <AuditLogs /> : <Navigate to="/reservas" replace />} 
-          />
+                  {/* Rutas de Pañolero (Admin) */}
+                  <Route 
+                    path="/catalogo" 
+                    element={role === 'Pañolero' ? <Catalog /> : <Navigate to="/reservas" replace />} 
+                  />
+                  <Route 
+                    path="/reservas-pendientes" 
+                    element={role === 'Pañolero' ? <PendingReservations /> : <Navigate to="/reservas" replace />} 
+                  />
+                  <Route 
+                    path="/nuevo-prestamo" 
+                    element={role === 'Pañolero' ? <LoanWizard /> : <Navigate to="/reservas" replace />} 
+                  />
+                  <Route 
+                    path="/historial" 
+                    element={role === 'Pañolero' ? <AuditLogs /> : <Navigate to="/reservas" replace />} 
+                  />
 
-          {/* Rutas compartidas o específicas de Docente */}
-          <Route path="/reservas" element={<Reservations />} />
-          <Route path="/calendario" element={<CalendarPage />} />
-          <Route path="/mora" element={<ActiveLoans filterMora />} />
-          <Route path="/activos" element={<ActiveLoans />} />
+                  {/* Rutas compartidas o específicas de Docente */}
+                  <Route path="/reservas" element={<Reservations />} />
+                  <Route path="/calendario" element={<CalendarPage />} />
+                  <Route path="/mora" element={<ActiveLoans filterMora />} />
+                  <Route path="/activos" element={<ActiveLoans />} />
 
-          {/* Aliases y Fallbacks */}
-          <Route path="/admin" element={<Navigate to={isPañolero ? "/catalogo" : "/reservas"} replace />} />
-          <Route path="/configuracion" element={<Navigate to={isPañolero ? "/catalogo" : "/reservas"} replace />} />
-          <Route path="*" element={<Navigate to="/" replace />} />
-        </Routes>
-      </main>
-    </div>
+                  {/* Aliases y Fallbacks */}
+                  <Route path="/admin" element={<Navigate to={role === 'Pañolero' ? "/catalogo" : "/reservas"} replace />} />
+                  <Route path="/configuracion" element={<Navigate to={role === 'Pañolero' ? "/catalogo" : "/reservas"} replace />} />
+                  <Route path="*" element={<Navigate to="/" replace />} />
+                </Routes>
+              </main>
+            </div>
+          )
+        } 
+      />
+    </Routes>
   );
 }
+
 
 export default function App() {
   return (
