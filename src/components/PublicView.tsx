@@ -103,13 +103,15 @@ export const PublicView: React.FC = () => {
       {/* Navigation Header */}
       <header className="bg-white border-b border-slate-200 sticky top-0 z-30 px-4 md:px-8 py-4">
         <div className="max-w-7xl mx-auto flex flex-col md:flex-row md:items-center justify-between gap-4">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-slate-900 rounded-xl flex items-center justify-center text-white shadow-lg">
-              <Package className="w-6 h-6" />
-            </div>
-            <div>
-              <h1 className="text-lg font-bold tracking-tight">SGEA - Escuela de Cine</h1>
-              <p className="text-[10px] uppercase font-black tracking-widest text-slate-400">Consulta Pública de Equipamiento</p>
+          <div className="flex items-center gap-4">
+            <img 
+              src="https://res.cloudinary.com/divij23kk/image/upload/v1775522044/Logo-Escuela_clscco_1_pe7ao5.png" 
+              alt="Logo Escuela de Cine" 
+              className="h-10 w-auto object-contain bg-white p-0.5 rounded shadow-sm border border-slate-100"
+            />
+            <div className="min-w-0">
+              <h1 className="text-lg font-bold tracking-tight text-slate-900">SGEA</h1>
+              <p className="text-[10px] uppercase font-black tracking-widest text-slate-400">Escuela Universitaria de Cine - UNT</p>
             </div>
           </div>
 

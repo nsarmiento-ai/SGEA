@@ -40,7 +40,7 @@ export const ResponsableModal: React.FC = () => {
         animate={{ scale: 1, opacity: 1 }}
         className="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden"
       >
-        <div className="bg-slate-900 p-8 text-white text-center">
+        <div className="bg-white p-8 text-slate-900 text-center border-b border-slate-100">
           <div className="mb-6 flex justify-center">
             <img 
               src="https://res.cloudinary.com/divij23kk/image/upload/v1775522044/Logo-Escuela_clscco_1_pe7ao5.png" 
@@ -49,8 +49,8 @@ export const ResponsableModal: React.FC = () => {
               referrerPolicy="no-referrer"
             />
           </div>
-          <h2 className="text-3xl font-display font-bold">SGEA</h2>
-          <p className="text-slate-400 text-sm mt-2 uppercase tracking-widest font-bold">Sistema de Gestión Audiovisual</p>
+          <h2 className="text-3xl font-display font-black text-slate-900 tracking-tight">SGEA</h2>
+          <p className="text-slate-500 text-[10px] mt-2 uppercase tracking-[0.2em] font-black">Sistema de Gestión Audiovisual</p>
         </div>
 
         <div className="p-8">
