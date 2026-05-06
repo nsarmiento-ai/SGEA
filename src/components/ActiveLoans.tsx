@@ -175,7 +175,7 @@ export const ActiveLoans: React.FC<{ filterMora?: boolean }> = ({ filterMora = f
           {filterMora ? 'Panel de Mora' : (role === 'Docente' ? 'Mis Préstamos' : 'Devolución de Equipos')}
         </h1>
         <p className="text-sm md:text-base text-slate-500">
-          {filterMora ? 'Equipos con fecha de devolución vencida.' : (role === 'Docente' ? 'Seguimiento de sus equipos retirados.' : 'Gestión de recepción de equipos.')}
+          {filterMora ? 'Equipos con fecha de devolución vencida.' : (role === 'Docente' ? 'Seguimiento de sus equipos retirados.' : 'Administración de recepción de equipos.')}
         </p>
       </header>
 
@@ -571,7 +571,7 @@ const ReceiveModal: React.FC<{ loan: Loan, equipmentsMap: Record<string, Equipme
             className="order-1 sm:order-2 bg-slate-900 text-white px-8 py-3.5 rounded-xl font-black uppercase tracking-wider text-xs flex items-center justify-center gap-2 hover:bg-amber-500 transition-all shadow-lg shadow-slate-200 disabled:opacity-50"
           >
             {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : <CheckCircle className="w-5 h-5" />}
-            Confirmar Devolución
+            Confirmar Entrega a Administración
           </button>
         </div>
       </div>

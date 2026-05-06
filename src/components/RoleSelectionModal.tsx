@@ -23,8 +23,8 @@ export const RoleSelectionModal: React.FC = () => {
             >
               <Shield className="w-8 h-8 text-amber-500" />
               <div className="text-left">
-                <p className="font-bold text-slate-900">Pañolero</p>
-                <p className="text-sm text-slate-500">Acceso administrativo total</p>
+                <p className="font-bold text-slate-900">Administrador</p>
+                <p className="text-sm text-slate-500">Gestión total de Administración</p>
               </div>
             </button>
           )}

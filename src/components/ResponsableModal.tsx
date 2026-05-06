@@ -57,7 +57,7 @@ export const ResponsableModal: React.FC = () => {
           <div className="space-y-6">
             <div>
               <p className="text-slate-600 text-center mb-6 font-medium">
-                Acceso para Docentes y Pañoleros
+                Acceso para Docentes y Administradores
               </p>
               <button
                 onClick={handleGoogleLogin}

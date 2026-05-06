@@ -65,7 +65,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
             </div>
             <div>
               <h1 className="font-display font-bold text-white text-xl leading-none">SGEA</h1>
-              <span className="text-[10px] uppercase tracking-widest text-slate-500 font-bold">Pañol Abierto</span>
+              <span className="text-[10px] uppercase tracking-widest text-slate-500 font-bold">Administración Abierta</span>
             </div>
           </div>
         </div>

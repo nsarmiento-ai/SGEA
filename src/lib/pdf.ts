@@ -24,7 +24,7 @@ export const generateLoanPDF = (loan: Loan, equipments: Equipment[], docenteEmai
   doc.setTextColor(100);
   doc.text(`Nro de Operación: ${loan.id.slice(0, 8).toUpperCase()}`, 20, 45);
   doc.text(`Fecha: ${formatDate(loan.fecha_salida)}`, 20, 52);
-  doc.text(`Responsable (Pañol): ${loan.responsable_nombre}`, 20, 59);
+  doc.text(`Responsable (Administración): ${loan.responsable_nombre}`, 20, 59);
   
   doc.setFontSize(12);
   doc.setTextColor(0);
@@ -155,7 +155,7 @@ export const generateReturnPDF = (loan: Loan, equipments: Equipment[], responsab
   doc.setTextColor(100);
   doc.text(`Nro de Operación (Préstamo): ${loan.id.slice(0, 8).toUpperCase()}`, 20, 45);
   doc.text(`Fecha de Devolución: ${formatDate(new Date().toISOString())}`, 20, 52);
-  doc.text(`Responsable (Pañol): ${responsableRecibe}`, 20, 59);
+  doc.text(`Responsable (Administración): ${responsableRecibe}`, 20, 59);
   doc.text(`Email Docente: ${docenteEmail || 'N/A'}`, 20, 66);
   
   doc.setFontSize(12);
@@ -186,7 +186,7 @@ export const generateReturnPDF = (loan: Loan, equipments: Equipment[], responsab
   // Signature
   const finalY = (doc as any).lastAutoTable.finalY + 30;
   doc.line(pageWidth / 2 - 30, finalY, pageWidth / 2 + 30, finalY);
-  doc.text('Firma Digital Pañolero', pageWidth / 2, finalY + 5, { align: 'center' });
+  doc.text('Firma Digital (Administrador)', pageWidth / 2, finalY + 5, { align: 'center' });
   doc.setFontSize(8);
   doc.text(responsableRecibe, pageWidth / 2, finalY + 10, { align: 'center' });
 
