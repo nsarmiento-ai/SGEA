@@ -34,7 +34,7 @@ export const ResponsableModal: React.FC = () => {
   if (activeResponsable || authLoading) return null;
 
   return (
-    <div className="min-h-screen bg-black flex items-center justify-center p-4 bg-[url('https://res.cloudinary.com/divij23kk/image/upload/v1776131802/Fondo3_pvdvw3.png')] bg-center bg-no-repeat">
+    <div className="min-h-screen bg-black flex items-center justify-center p-4 bg-[url('https://res.cloudinary.com/divij23kk/image/upload/v1778076280/Gemini_Generated_Image_ioi8z5ioi8z5ioi8_ayoatx.png')] bg-center bg-cover bg-no-repeat">
       <motion.div 
         initial={{ scale: 0.9, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
