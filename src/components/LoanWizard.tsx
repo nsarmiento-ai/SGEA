@@ -67,6 +67,10 @@ export const LoanWizard: React.FC = () => {
     const resDocente = params.get('docente');
     const resEquipos = params.get('equipos');
     const resFin = params.get('fin');
+    const studentReqId = params.get('studentReqId');
+    const resAlumno = params.get('alumno');
+    const resDni = params.get('dni');
+    const resMateria = params.get('materia');
 
     if (preselectedId) {
       setSelectedIds([preselectedId]);
@@ -77,9 +81,24 @@ export const LoanWizard: React.FC = () => {
       setFormData(prev => ({
         ...prev,
         docente_responsable: resDocente || '',
+        alumno_nombre: resAlumno || '',
+        materia: resMateria || '',
         fechaDevolucion: resFin ? format(parseISO(resFin), "yyyy-MM-dd'T'HH:mm") : prev.fechaDevolucion
       }));
       setReservationId(resId);
+    }
+
+    if (studentReqId) {
+      setSelectedStudentRequestId(studentReqId);
+      if (resEquipos) setSelectedIds(resEquipos.split(','));
+      setFormData(prev => ({
+        ...prev,
+        alumno_nombre: resAlumno || '',
+        alumno_dni: resDni || '',
+        docente_responsable: resDocente || '',
+        materia: resMateria || '',
+        fechaDevolucion: resFin ? format(parseISO(resFin), "yyyy-MM-dd'T'HH:mm") : prev.fechaDevolucion
+      }));
     }
   }, []);
 

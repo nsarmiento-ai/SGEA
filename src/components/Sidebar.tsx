@@ -29,8 +29,8 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
     { icon: Calendar, label: 'Calendario Global', path: '/calendario' },
     { icon: Calendar, label: 'Nueva Reserva', path: '/reservas' },
     { icon: CheckSquare, label: 'Gestión de Avales', path: '/autorizar-alumnos' },
-    { icon: ShieldCheck, label: 'Aprobación Dirección', path: '/autorizacion-direccion' },
-    { icon: Clock, label: 'Reservas Pendientes', path: '/reservas-pendientes' },
+    { icon: ShieldCheck, label: 'Panel Dirección', path: '/director' },
+    { icon: Clock, label: 'Reservas y Solicitudes', path: '/reservas-pendientes' },
     { icon: AlertTriangle, label: 'Panel de Mora', path: '/mora' },
     { icon: Clock, label: role === 'Docente' ? 'Mis Préstamos' : 'Devolución', path: '/activos' },
     { icon: PlusCircle, label: 'Despacho Directo', path: '/nuevo-prestamo' },
@@ -38,7 +38,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
   ].filter(item => {
     // If role is Director
     if (role === 'Director') {
-      return ['Calendario Global', 'Inventario', 'Panel de Mora', 'Aprobación Dirección'].includes(item.label);
+      return ['Calendario Global', 'Inventario', 'Panel de Mora', 'Panel Dirección'].includes(item.label);
     }
 
     // If role is Docente
@@ -48,7 +48,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
 
     // If role is Administración
     if (role === 'Administración') {
-      const excluded = ['Aprobación Dirección', 'Gestión de Avales']; 
+      const excluded = ['Panel Dirección', 'Gestión de Avales']; 
       return !excluded.includes(item.label);
     }
 

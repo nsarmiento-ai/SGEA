@@ -17,6 +17,7 @@ import { PendingReservations } from './components/PendingReservations';
 import { CalendarPage } from './components/CalendarPage';
 import { PublicView } from './components/PublicView';
 import { StudentRequestsManager } from './components/StudentRequestsManager';
+import { DirectorDashboard } from './components/DirectorDashboard';
 import { StudentRequestView } from './components/StudentRequestView';
 import { Loader2, Menu } from 'lucide-react';
 import { useEffect, useState } from 'react';
@@ -104,7 +105,7 @@ function AppContent() {
                     path="/" 
                     element={
                       role === 'Administración' ? <Navigate to="/catalogo" replace /> :
-                      role === 'Director' ? <Navigate to="/autorizacion-direccion" replace /> :
+                      role === 'Director' ? <Navigate to="/director" replace /> :
                       <Navigate to="/reservas" replace />
                     } 
                   />
@@ -130,10 +131,10 @@ function AppContent() {
                   {/* Rutas compartidas o específicas de Docente */}
                   <Route path="/autorizar-alumnos" element={<StudentRequestsManager />} />
                   <Route 
-                    path="/autorizacion-direccion" 
+                    path="/director" 
                     element={
-                      (role === 'Director' || (sessionStorage.getItem('selected_role') === 'Director'))
-                      ? <StudentRequestsManager filterDireccion /> 
+                      (role === 'Director')
+                      ? <DirectorDashboard /> 
                       : <Navigate to="/" replace />
                     } 
                   />
@@ -143,8 +144,9 @@ function AppContent() {
                   <Route path="/activos" element={<ActiveLoans />} />
 
                   {/* Aliases y Fallbacks */}
-                  <Route path="/admin" element={<Navigate to={role === 'Administración' ? "/catalogo" : role === 'Director' ? "/autorizacion-direccion" : "/reservas"} replace />} />
-                  <Route path="/configuracion" element={<Navigate to={role === 'Administración' ? "/catalogo" : role === 'Director' ? "/autorizacion-direccion" : "/reservas"} replace />} />
+                  <Route path="/admin" element={<Navigate to={role === 'Administración' ? "/catalogo" : role === 'Director' ? "/director" : "/reservas"} replace />} />
+                  <Route path="/configuracion" element={<Navigate to={role === 'Administración' ? "/catalogo" : role === 'Director' ? "/director" : "/reservas"} replace />} />
+                  <Route path="/autorizacion-direccion" element={<Navigate to="/director" replace />} />
                   <Route path="*" element={<Navigate to="/" replace />} />
                 </Routes>
               </main>
