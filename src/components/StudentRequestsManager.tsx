@@ -18,9 +18,12 @@ export const StudentRequestsManager: React.FC<{ filterDireccion?: boolean }> = (
   const docenteName = CONTACTS_DATA.find(c => c.email === activeResponsable)?.nombre;
 
   useEffect(() => {
+    if (role === 'Docente') {
+      console.log('Panel Docente: Buscando pedidos para:', userEmail);
+    }
     fetchRequests();
     fetchEquipment();
-  }, [filterDireccion, activeResponsable]);
+  }, [filterDireccion, activeResponsable, userEmail]);
 
   const fetchRequests = async () => {
     setLoading(true);
@@ -30,8 +33,8 @@ export const StudentRequestsManager: React.FC<{ filterDireccion?: boolean }> = (
       query = query.eq('estado', 'Pendiente de Dirección');
     } else {
       query = query.eq('estado', 'Pendiente de Aval Docente');
-      if (role === 'Docente' && activeResponsable) {
-        query = query.eq('docente_id', activeResponsable);
+      if (role === 'Docente' && userEmail) {
+        query = query.eq('docente_id', userEmail);
       }
     }
 
@@ -50,6 +53,10 @@ export const StudentRequestsManager: React.FC<{ filterDireccion?: boolean }> = (
   };
 
   const handleAuthorize = async (request: StudentRequest) => {
+    if (!userEmail) {
+      alert('Error: No se detectó una sesión activa para firmar la autorización.');
+      return;
+    }
     setProcessingId(request.id);
     let nextStatus: StudentRequest['estado'] = request.estado;
 
@@ -64,15 +71,17 @@ export const StudentRequestsManager: React.FC<{ filterDireccion?: boolean }> = (
       }
     }
 
+    console.log('Autorizando solicitud ID:', request.id, 'con email:', userEmail);
+
     try {
-      const updateData: Partial<StudentRequest> = { 
+      const updateData: any = { 
         estado: nextStatus
       };
 
       if (filterDireccion) {
-        updateData.autorizado_por_direccion = userEmail || activeResponsable!;
+        updateData.autorizado_por_direccion = userEmail;
       } else {
-        updateData.autorizado_por_docente = userEmail || activeResponsable!;
+        updateData.autorizado_por_docente = userEmail;
       }
 
       const { error } = await supabase
@@ -84,6 +93,7 @@ export const StudentRequestsManager: React.FC<{ filterDireccion?: boolean }> = (
       setRequests(prev => prev.filter(r => r.id !== request.id));
     } catch (err) {
       console.error('Error authorizing request:', err);
+      alert('Error en la autorización. Verifique la consola.');
     } finally {
       setProcessingId(null);
     }
@@ -119,10 +129,10 @@ export const StudentRequestsManager: React.FC<{ filterDireccion?: boolean }> = (
     <div className="p-8 max-w-6xl mx-auto">
       {/* Visual Identity Headers */}
       {isDireccion && filterDireccion && (
-        <div className="mb-6 bg-slate-900 text-white px-6 py-3 rounded-2xl flex items-center justify-between shadow-xl border-l-4 border-amber-500">
+        <div className="mb-6 bg-[#450a0a] text-white px-6 py-3 rounded-2xl flex items-center justify-between shadow-xl border-l-4 border-amber-500">
           <div className="flex items-center gap-3">
             <ShieldCheck className="w-5 h-5 text-amber-500" />
-            <span className="text-xs font-black uppercase tracking-[0.2em]">Panel de Dirección Principal</span>
+            <span className="text-xs font-black uppercase tracking-[0.2em]">Panel de Dirección</span>
           </div>
           <span className="text-[10px] font-bold opacity-60 uppercase">{userEmail}</span>
         </div>

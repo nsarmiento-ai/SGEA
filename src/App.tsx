@@ -61,46 +61,8 @@ function AppContent() {
       }
     };
 
-    const seedDocentesIfNeeded = async () => {
-      if (profile?.rol === 'Administración') {
-        try {
-          const { data: existing } = await supabase.from('responsables').select('nombre_completo, email');
-          const existingMap = new Map((existing || []).map(r => [r.nombre_completo, r.email]));
-          
-          const { CONTACTS_DATA } = await import('./lib/contactsData');
-          
-          // Identify new ones to insert
-          const toInsert = CONTACTS_DATA
-            .filter(c => !existingMap.has(c.nombre))
-            .map(c => ({ nombre_completo: c.nombre, email: c.email, activo: true }));
-
-          // Identify ones to update (missing email but name exists)
-          const toUpdate = CONTACTS_DATA
-            .filter(c => existingMap.has(c.nombre) && !existingMap.get(c.nombre))
-            .map(c => ({ nombre_completo: c.nombre, email: c.email }));
-
-          if (toInsert.length > 0) {
-            await supabase.from('responsables').insert(toInsert);
-            console.log(`Seeded ${toInsert.length} new docentes`);
-          }
-
-          if (toUpdate.length > 0) {
-            for (const item of toUpdate) {
-              await supabase.from('responsables')
-                .update({ email: item.email })
-                .eq('nombre_completo', item.nombre_completo);
-            }
-            console.log(`Updated ${toUpdate.length} docentes with emails`);
-          }
-        } catch (e) {
-          console.error('Failed to seed/update docentes:', e);
-        }
-      }
-    };
-
     refreshSchema();
     seedAulasIfNeeded();
-    seedDocentesIfNeeded();
   }, [profile?.rol]);
 
   if (loading) {

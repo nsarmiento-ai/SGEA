@@ -22,10 +22,10 @@ interface SidebarProps {
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
-  const { activeResponsable, profile } = useApp();
+  const { activeResponsable, profile, userEmail } = useApp();
   const role = profile?.rol;
 
-  const isDireccion = activeResponsable === 'n.sarmiento@cine.unt.edu.ar' || activeResponsable === 'jveiga@cine.unt.edu.ar';
+  const isDireccion = userEmail === 'n.sarmiento@cine.unt.edu.ar' || userEmail === 'jveiga@cine.unt.edu.ar';
 
   const menuItems = [
     { icon: LayoutDashboard, label: 'Catálogo General', path: '/catalogo' },

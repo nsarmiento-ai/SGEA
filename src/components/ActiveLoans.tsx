@@ -22,6 +22,8 @@ import { motion } from 'motion/react';
 import { cn, formatDate } from '../lib/utils';
 import { differenceInDays, isPast, format } from 'date-fns';
 
+import { CONTACTS_DATA } from '../lib/contactsData';
+
 export const ActiveLoans: React.FC<{ filterMora?: boolean }> = ({ filterMora = false }) => {
   const { activeResponsable, profile, role } = useApp();
   const [loans, setLoans] = useState<Loan[]>([]);
@@ -37,16 +39,23 @@ export const ActiveLoans: React.FC<{ filterMora?: boolean }> = ({ filterMora = f
 
   const fetchData = async () => {
     setLoading(true);
-    const [loansRes, docentesRes] = await Promise.all([
+    const [loansRes] = await Promise.all([
       supabase
         .from('prestamos')
         .select('*')
         .eq('estado', 'Activo')
-        .order('fecha_devolucion_estimada', { ascending: true }),
-      supabase.from('responsables').select('*')
+        .order('fecha_devolucion_estimada', { ascending: true })
     ]);
     
-    if (docentesRes.data) setDocentes(docentesRes.data);
+    // Use CONTACTS_DATA for consistency
+    const formattedDocentes = CONTACTS_DATA.map(c => ({
+      id: c.email,
+      nombre_completo: c.nombre,
+      email: c.email,
+      activo: true,
+      creado_at: new Date().toISOString()
+    })) as Responsable[];
+    setDocentes(formattedDocentes);
 
     let loansData = loansRes.data;
     let loansError = loansRes.error;

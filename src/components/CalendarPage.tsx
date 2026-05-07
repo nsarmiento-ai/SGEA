@@ -410,10 +410,10 @@ export const CalendarPage: React.FC = () => {
     <div className="p-4 md:p-8 max-w-7xl mx-auto pt-16 lg:pt-8">
       {/* Visual Identity Headers */}
       {isDireccion && (
-        <div className="mb-6 bg-slate-900 text-white px-6 py-3 rounded-2xl flex items-center justify-between shadow-xl border-l-4 border-amber-500">
+        <div className="mb-6 bg-[#450a0a] text-white px-6 py-3 rounded-2xl flex items-center justify-between shadow-xl border-l-4 border-amber-500">
           <div className="flex items-center gap-3">
             <span className="w-2 h-2 rounded-full bg-amber-500 animate-pulse"></span>
-            <span className="text-xs font-black uppercase tracking-[0.2em]">Panel de Dirección Principal</span>
+            <span className="text-xs font-black uppercase tracking-[0.2em]">Panel de Dirección</span>
           </div>
           <span className="text-[10px] font-bold opacity-60 uppercase">{userEmail}</span>
         </div>
