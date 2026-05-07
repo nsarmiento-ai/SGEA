@@ -31,8 +31,8 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
     { icon: LayoutDashboard, label: 'Catálogo General', path: '/catalogo' },
     { icon: Calendar, label: 'Calendario', path: '/calendario' },
     { icon: Calendar, label: 'Nueva Reserva', path: '/reservas' },
-    { icon: CheckSquare, label: 'Autorizar Pedidos', path: '/autorizar-alumnos' },
-    { icon: ShieldCheck, label: 'Autorización Dirección', path: '/autorizacion-direccion' },
+    { icon: CheckSquare, label: 'Gestión de Avales', path: '/autorizar-alumnos' },
+    { icon: ShieldCheck, label: 'Rodajes Externos', path: '/autorizacion-direccion' },
     { icon: Clock, label: 'Reservas Pendientes', path: '/reservas-pendientes' },
     { icon: AlertTriangle, label: 'Panel de Mora', path: '/mora' },
     { icon: Clock, label: role === 'Docente' ? 'Mis Préstamos' : 'Devolución', path: '/activos' },
@@ -45,19 +45,19 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
         'Calendario', 
         'Catálogo General', 
         'Panel de Mora', 
-        'Autorización Dirección',
-        'Autorizar Pedidos'
+        'Rodajes Externos',
+        'Gestión de Avales'
       ].includes(item.label);
     }
 
     // Logic for standard Docente
     if (role === 'Docente') {
-      return ['Calendario', 'Nueva Reserva', 'Panel de Mora', 'Mis Préstamos', 'Autorizar Pedidos'].includes(item.label);
+      return ['Calendario', 'Nueva Reserva', 'Panel de Mora', 'Mis Préstamos', 'Gestión de Avales'].includes(item.label);
     }
 
     // Logic for Pañolero (Administrador) - everything except Dirección specifics unless they are the specific emails
     if (role === 'Pañolero') {
-      const excluded = ['Autorización Dirección'];
+      const excluded = ['Rodajes Externos'];
       if (!isDireccion) {
         return !excluded.includes(item.label);
       }

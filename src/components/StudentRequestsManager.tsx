@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 import { StudentRequest, Equipment } from '../types';
 import { useApp } from '../context/AppContext';
+import { CONTACTS_DATA } from '../lib/contactsData';
 import { Loader2, CheckCircle, XCircle, Clock, AlertCircle, Package, User, Calendar, BookOpen, ExternalLink, ShieldCheck } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 
@@ -12,12 +13,12 @@ export const StudentRequestsManager: React.FC<{ filterDireccion?: boolean }> = (
   const [loading, setLoading] = useState(true);
   const [processingId, setProcessingId] = useState<string | null>(null);
 
-  const isAdmin = activeResponsable === 'n.sarmiento@cine.unt.edu.ar' || activeResponsable === 'jveiga@cine.unt.edu.ar';
+  const docenteName = CONTACTS_DATA.find(c => c.email === activeResponsable)?.nombre;
 
   useEffect(() => {
     fetchRequests();
     fetchEquipment();
-  }, [filterDireccion]);
+  }, [filterDireccion, activeResponsable]);
 
   const fetchRequests = async () => {
     setLoading(true);
@@ -27,6 +28,9 @@ export const StudentRequestsManager: React.FC<{ filterDireccion?: boolean }> = (
       query = query.eq('estado', 'Pendiente de Dirección');
     } else {
       query = query.eq('estado', 'Pendiente de Aval Docente');
+      if (role === 'Docente' && docenteName) {
+        query = query.eq('docente_nombre', docenteName);
+      }
     }
 
     const { data } = await query.order('created_at', { ascending: false });

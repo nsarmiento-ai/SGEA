@@ -682,10 +682,11 @@ export const LoanWizard: React.FC = () => {
                 <div className="bg-amber-50 border border-amber-200 p-4 rounded-xl text-amber-700 text-xs flex items-start gap-3 w-full animate-in fade-in slide-in-from-right-2">
                   <AlertCircle className="w-5 h-5 shrink-0" />
                   <div>
-                    <p className="font-black uppercase tracking-wider mb-1">Solicitud no autorizada para despacho</p>
+                    <p className="font-black uppercase tracking-wider mb-1">No se puede entregar</p>
                     <p className="font-medium">
-                      Esta solicitud requiere el aval de: 
-                      <span className="font-bold"> {currentStudentRequest?.estado === 'Pendiente de Aval Docente' ? 'Docente' : 'Dirección'}</span>.
+                      {currentStudentRequest?.estado === 'Pendiente de Aval Docente' 
+                        ? 'Pendiente de aprobación del docente' 
+                        : 'Pendiente de aprobación de Dirección'}
                     </p>
                   </div>
                 </div>
