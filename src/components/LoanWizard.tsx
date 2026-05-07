@@ -11,6 +11,7 @@ import {
   ChevronLeft, 
   ShoppingCart, 
   User, 
+  Users,
   Calendar, 
   FileText,
   Loader2,
@@ -46,6 +47,7 @@ export const LoanWizard: React.FC = () => {
   const [showDocenteSuggestions, setShowDocenteSuggestions] = useState(false);
   const [finishedLoan, setFinishedLoan] = useState<any>(null);
   const [selectedStudentRequestId, setSelectedStudentRequestId] = useState<string | null>(null);
+  const [authorizedEquipmentsIds, setAuthorizedEquipmentsIds] = useState<string[]>([]);
   const [syncConflict, setSyncConflict] = useState<{ nombre: string, estado: string, id: string }[] | null>(null);
   
   const [formData, setFormData] = useState({
@@ -124,6 +126,7 @@ export const LoanWizard: React.FC = () => {
   const selectStudentRequest = (req: StudentRequest) => {
     setSelectedStudentRequestId(req.id);
     setSelectedIds(req.equipos);
+    setAuthorizedEquipmentsIds(req.equipos);
     setFormData({
       alumno_nombre: req.responsable,
       alumno_dni: req.dni,
@@ -239,6 +242,11 @@ export const LoanWizard: React.FC = () => {
     setSubmitting(true);
 
     try {
+      // Logic for tracking added equipment
+      const equipos_autorizados = selectedIds.filter(id => authorizedEquipmentsIds.includes(id));
+      const equipos_añadidos_manualmente = selectedIds.filter(id => !authorizedEquipmentsIds.includes(id));
+      const hasAddedEquipment = equipos_añadidos_manualmente.length > 0;
+
       // Final availability check before creating loan
       const { data: latestStatus } = await supabase
         .from('equipamiento')
@@ -248,7 +256,7 @@ export const LoanWizard: React.FC = () => {
       const unavailable = latestStatus?.filter(eq => {
         const estado = String(eq.estado || '').toLowerCase();
         if (estado === 'disponible') return false; // Is available
-        if (estado === 'reservado' && selectedStudentRequestId && currentStudentRequest?.equipos.includes(eq.id)) {
+        if (estado === 'reservado' && selectedStudentRequestId && authorizedEquipmentsIds.includes(eq.id)) {
           return false; // Valid because it was reserved for this exact student request
         }
         return true; // Not available
@@ -265,7 +273,7 @@ export const LoanWizard: React.FC = () => {
 
       try {
         // 1. Create Loan
-        const loanData: Partial<Loan> = {
+        const loanData: any = {
           alumno_nombre: formData.alumno_nombre,
           alumno_dni: formData.alumno_dni,
           materia: formData.materia,
@@ -275,7 +283,9 @@ export const LoanWizard: React.FC = () => {
           fecha_devolucion_estimada: new Date(formData.fechaDevolucion).toISOString(),
           estado: 'Activo',
           equipos_ids: selectedIds,
-          comentarios: formData.comentarios
+          comentarios: formData.comentarios,
+          equipos_autorizados: equipos_autorizados,
+          equipos_añadidos_manualmente: equipos_añadidos_manualmente
         };
 
         const { data: loan, error: loanError } = await supabase
@@ -310,9 +320,13 @@ export const LoanWizard: React.FC = () => {
 
         // 2.5b Update Student Request if exists
         if (selectedStudentRequestId) {
+          const newState = hasAddedEquipment ? 'Entregado (Modificado)' : 'Entregado';
           const { error: reqErr } = await supabase
             .from('solicitudes_alumnos')
-            .update({ estado: 'Entregado' })
+            .update({ 
+              estado: newState,
+              observaciones: `${formData.comentarios}${hasAddedEquipment ? '\nModificado en Despacho: Se agregaron equipos extra.' : ''}`.trim()
+            } as any)
             .eq('id', selectedStudentRequestId);
           if (reqErr) throw reqErr;
         }
@@ -347,10 +361,10 @@ export const LoanWizard: React.FC = () => {
         // 4. Generate PDF
         const selectedEquipments = (equipments || []).filter(e => (selectedIds || []).includes(e.id));
         const targetDocente = docentes.find(d => d.nombre_completo === formData.docente_responsable);
-        generateLoanPDF(loan as Loan, selectedEquipments, targetDocente?.email);
+        generateLoanPDF(loan as Loan, selectedEquipments, targetDocente?.email, authorizedEquipmentsIds);
 
         // 5. Success State
-        setFinishedLoan({ loan, equipments: selectedEquipments, docenteEmail: targetDocente?.email });
+        setFinishedLoan({ loan, equipments: selectedEquipments, docenteEmail: targetDocente?.email, authorizedIds: authorizedEquipmentsIds });
 
       } catch (innerError) {
         // Rollback block
@@ -430,7 +444,7 @@ export const LoanWizard: React.FC = () => {
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 w-full">
             <button
-              onClick={() => generateLoanPDF(finishedLoan.loan, finishedLoan.equipments, finishedLoan.docenteEmail)}
+              onClick={() => generateLoanPDF(finishedLoan.loan, finishedLoan.equipments, finishedLoan.docenteEmail, finishedLoan.authorizedIds)}
               className="flex items-center justify-center gap-2 px-6 py-4 border border-slate-200 text-slate-700 rounded-2xl font-bold hover:bg-slate-50 transition-all text-sm"
             >
               <Download className="w-5 h-5" />
@@ -531,31 +545,54 @@ export const LoanWizard: React.FC = () => {
                 </h3>
               </div>
               <div className="p-3 max-h-48 overflow-y-auto space-y-2">
-                {studentRequests.map(req => (
-                  <button
-                    key={req.id}
-                    onClick={() => selectStudentRequest(req)}
-                    className={cn(
-                      "w-full flex items-center justify-between p-3 rounded-xl border transition-all text-left",
-                      selectedStudentRequestId === req.id 
-                        ? "border-indigo-500 bg-indigo-50 ring-1 ring-indigo-500" 
-                        : "border-slate-100 bg-slate-50 hover:border-slate-200"
-                    )}
-                  >
-                    <div className="min-w-0">
-                      <p className="text-sm font-bold text-slate-900 truncate">{req.responsable}</p>
-                      <p className="text-[10px] text-slate-400 font-bold uppercase tracking-tight">{req.materia}</p>
+                  {studentRequests.map(req => (
+                    <div key={req.id}>
+                      <button
+                        onClick={() => selectStudentRequest(req)}
+                        className={cn(
+                          "w-full flex items-center justify-between p-3 rounded-xl border transition-all text-left mb-2",
+                          selectedStudentRequestId === req.id 
+                            ? "border-indigo-500 bg-indigo-50 ring-1 ring-indigo-500" 
+                            : "border-slate-100 bg-slate-50 hover:border-slate-200"
+                        )}
+                      >
+                        <div className="min-w-0">
+                          <p className="text-sm font-bold text-slate-900 truncate">{req.responsable}</p>
+                          <p className="text-[10px] text-slate-400 font-bold uppercase tracking-tight">{req.materia}</p>
+                        </div>
+                        <div className={cn(
+                          "text-[9px] font-black uppercase tracking-wider px-2 py-1 rounded-lg border",
+                          req.estado === 'Autorizado para Despacho' 
+                            ? "bg-green-50 text-green-600 border-green-200" 
+                            : "bg-amber-50 text-amber-600 border-amber-200"
+                        )}>
+                          {req.estado === 'Autorizado para Despacho' ? 'Autorizado' : 'Pendiente'}
+                        </div>
+                      </button>
+
+                      {selectedStudentRequestId === req.id && (
+                        <div className="mx-2 mb-4 p-3 bg-white rounded-xl border border-indigo-100 space-y-2 animate-in slide-in-from-top-1">
+                          <div className="flex items-center gap-2 text-[9px] font-black uppercase tracking-widest text-slate-400">
+                            <Users className="w-3 h-3 text-indigo-500" />
+                            Integrantes del Grupo
+                          </div>
+                          <p className="text-xs font-medium text-slate-600 leading-tight">
+                            {req.integrantes || 'No especificados'}
+                          </p>
+                          <div className="grid grid-cols-2 gap-2 pt-1">
+                            <div>
+                              <div className="text-[8px] font-black uppercase text-slate-400">Docente a Cargo</div>
+                              <div className="text-[10px] font-bold text-slate-700">{req.docente_nombre}</div>
+                            </div>
+                            <div>
+                              <div className="text-[8px] font-black uppercase text-slate-400">Materia</div>
+                              <div className="text-[10px] font-bold text-slate-700">{req.materia}</div>
+                            </div>
+                          </div>
+                        </div>
+                      )}
                     </div>
-                    <div className={cn(
-                      "text-[9px] font-black uppercase tracking-wider px-2 py-1 rounded-lg border",
-                      req.estado === 'Autorizado para Despacho' 
-                        ? "bg-green-50 text-green-600 border-green-200" 
-                        : "bg-amber-50 text-amber-600 border-amber-200"
-                    )}>
-                      {req.estado === 'Autorizado para Despacho' ? 'Autorizado' : 'Pendiente'}
-                    </div>
-                  </button>
-                ))}
+                  ))}
               </div>
             </div>
           )}

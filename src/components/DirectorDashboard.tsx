@@ -13,11 +13,28 @@ import {
   ArrowRight,
   CheckCircle,
   XCircle,
-  History
+  History,
+  ChevronDown,
+  ChevronUp,
+  BarChart3,
+  PieChart as PieChartIcon
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { StudentRequestsManager } from './StudentRequestsManager';
 import { cn } from '../lib/utils';
+import { 
+  BarChart, 
+  Bar, 
+  XAxis, 
+  YAxis, 
+  CartesianGrid, 
+  Tooltip, 
+  ResponsiveContainer, 
+  PieChart, 
+  Pie, 
+  Cell,
+  Legend
+} from 'recharts';
 
 export const DirectorDashboard: React.FC = () => {
   const { userEmail } = useApp();
@@ -25,9 +42,12 @@ export const DirectorDashboard: React.FC = () => {
     activeLoans: 0,
     pendingDirection: 0,
     moraCount: 0,
-    totalEquipments: 0
+    totalEquipments: 0,
+    topEquipment: [] as { name: string, count: number }[],
+    usageType: [] as { name: string, value: number }[]
   });
   const [loading, setLoading] = useState(true);
+  const [showStats, setShowStats] = useState(false);
 
   useEffect(() => {
     fetchStats();
@@ -36,17 +56,42 @@ export const DirectorDashboard: React.FC = () => {
   const fetchStats = async () => {
     setLoading(true);
     try {
-      const [loans, pendingReqs, equipments] = await Promise.all([
-        supabase.from('prestamos').select('id, estado'),
+      const [loans, pendingReqs, equipments, allReqs] = await Promise.all([
+        supabase.from('prestamos').select('id, estado, equipos_ids'),
         supabase.from('solicitudes_alumnos').select('id').eq('estado', 'Pendiente de Dirección'),
-        supabase.from('equipamiento').select('id, estado')
+        supabase.from('equipamiento').select('id, nombre, estado'),
+        supabase.from('solicitudes_alumnos').select('tipo_uso')
       ]);
+
+      // Calculate Top Equipment
+      const eqCounts: Record<string, number> = {};
+      loans.data?.forEach(l => {
+        l.equipos_ids?.forEach((id: string) => {
+          eqCounts[id] = (eqCounts[id] || 0) + 1;
+        });
+      });
+
+      const topEq = Object.entries(eqCounts)
+        .sort(([, a], [, b]) => b - a)
+        .slice(0, 5)
+        .map(([id, count]) => ({
+          name: equipments.data?.find(e => e.id === id)?.nombre || 'Equipo Desconocido',
+          count
+        }));
+
+      // Usage Type Data
+      const usageCounts = {
+        'Uso en Escuela': allReqs.data?.filter(r => r.tipo_uso === 'Uso en Escuela').length || 0,
+        'Uso Externo': allReqs.data?.filter(r => r.tipo_uso === 'Uso Externo').length || 0
+      };
 
       setStats({
         activeLoans: loans.data?.filter(l => l.estado === 'Activo').length || 0,
         pendingDirection: pendingReqs.data?.length || 0,
         moraCount: loans.data?.filter(l => l.estado === 'En Mora').length || 0,
-        totalEquipments: equipments.data?.length || 0
+        totalEquipments: equipments.data?.length || 0,
+        topEquipment: topEq,
+        usageType: Object.entries(usageCounts).map(([name, value]) => ({ name, value }))
       });
     } catch (err) {
       console.error('Error fetching director stats:', err);
@@ -54,6 +99,8 @@ export const DirectorDashboard: React.FC = () => {
       setLoading(false);
     }
   };
+
+  const COLORS = ['#f59e0b', '#450a0a', '#ef4444', '#10b981'];
 
   if (loading) {
     return (
@@ -118,7 +165,7 @@ export const DirectorDashboard: React.FC = () => {
         />
       </div>
 
-      <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
+      <div className="grid grid-cols-1 xl:grid-cols-3 gap-8 mb-10">
         {/* Main Approval Area */}
         <div className="xl:col-span-2">
           <div className="bg-white rounded-3xl shadow-sm border border-slate-200 overflow-hidden">
@@ -134,23 +181,29 @@ export const DirectorDashboard: React.FC = () => {
           </div>
         </div>
 
-        {/* Sidebar Info */}
+        {/* Sidebar Info & Mini Charts */}
         <div className="space-y-6">
           <div className="bg-slate-900 text-white p-8 rounded-3xl shadow-xl relative overflow-hidden">
             <History className="absolute -right-4 -bottom-4 w-32 h-32 text-white/5 rotate-12" />
-            <h3 className="text-lg font-black uppercase tracking-widest mb-4">Resumen Semanal</h3>
+            <h3 className="text-lg font-black uppercase tracking-widest mb-4">Resumen de Control</h3>
             <div className="space-y-4 relative z-10">
               <div className="flex justify-between items-end border-b border-white/10 pb-2">
                 <span className="text-xs font-bold text-slate-400 mt-2">Nivel de Ocupación</span>
-                <span className="text-xl font-black text-amber-400">74%</span>
+                <span className="text-xl font-black text-amber-400">
+                  {Math.round((stats.activeLoans / (stats.totalEquipments || 1)) * 100)}%
+                </span>
               </div>
               <div className="flex justify-between items-end border-b border-white/10 pb-2">
                 <span className="text-xs font-bold text-slate-400 mt-2">Nuevos Pedidos</span>
                 <span className="text-xl font-black text-amber-400">{stats.pendingDirection}</span>
               </div>
             </div>
-            <button className="mt-8 w-full bg-white/10 hover:bg-white/20 transition-all border border-white/10 rounded-2xl py-3 text-xs font-black uppercase tracking-widest">
-              Ver Gráficos Detallados
+            <button 
+              onClick={() => setShowStats(!showStats)}
+              className="mt-8 w-full bg-white/10 hover:bg-white/20 transition-all border border-white/10 rounded-2xl py-3 text-xs font-black uppercase tracking-widest flex items-center justify-center gap-2"
+            >
+              {showStats ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+              {showStats ? 'Ocultar Estadísticas' : 'Ver Gráficos Detallados'}
             </button>
           </div>
 
@@ -164,6 +217,85 @@ export const DirectorDashboard: React.FC = () => {
           </div>
         </div>
       </div>
+
+      {/* Advanced Stats Section (Collapsible) */}
+      <AnimatePresence>
+        {showStats && (
+          <motion.div
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: 'auto', opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            className="overflow-hidden"
+          >
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-10">
+              {/* Top Equipment Bar Chart */}
+              <div className="bg-white p-8 rounded-3xl border border-slate-200 shadow-sm">
+                <h3 className="text-sm font-black uppercase tracking-widest text-slate-400 mb-6 flex items-center gap-2">
+                  <BarChart3 className="w-4 h-4 text-amber-500" />
+                  Equipos más solicitados (Top 5)
+                </h3>
+                <div className="h-72 w-full">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart data={stats.topEquipment} layout="vertical" margin={{ left: 40 }}>
+                      <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#f1f5f9" />
+                      <XAxis type="number" hide />
+                      <YAxis 
+                        dataKey="name" 
+                        type="category" 
+                        stroke="#64748b" 
+                        fontSize={10} 
+                        fontWeight="bold"
+                        width={100}
+                      />
+                      <Tooltip 
+                        contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)' }}
+                        cursor={{ fill: '#f8fafc' }}
+                      />
+                      <Bar dataKey="count" fill="#f59e0b" radius={[0, 4, 4, 0]} barSize={20} />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+              </div>
+
+              {/* Usage Type Pie Chart */}
+              <div className="bg-white p-8 rounded-3xl border border-slate-200 shadow-sm">
+                <h3 className="text-sm font-black uppercase tracking-widest text-slate-400 mb-6 flex items-center gap-2">
+                  <PieChartIcon className="w-4 h-4 text-amber-500" />
+                  Distribución de Pedidos (Interno vs Externo)
+                </h3>
+                <div className="h-72 w-full">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <PieChart>
+                      <Pie
+                        data={stats.usageType}
+                        cx="50%"
+                        cy="50%"
+                        innerRadius={60}
+                        outerRadius={80}
+                        paddingAngle={5}
+                        dataKey="value"
+                      >
+                        {stats.usageType.map((entry, index) => (
+                          <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                        ))}
+                      </Pie>
+                      <Tooltip 
+                        contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)' }}
+                      />
+                      <Legend 
+                        layout="vertical" 
+                        verticalAlign="middle" 
+                        align="right"
+                        wrapperStyle={{ fontSize: '10px', fontWeight: 'bold', textTransform: 'uppercase', letterSpacing: '0.05em' }}
+                      />
+                    </PieChart>
+                  </ResponsiveContainer>
+                </div>
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 };

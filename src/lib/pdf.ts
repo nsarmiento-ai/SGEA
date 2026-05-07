@@ -3,9 +3,16 @@ import autoTable from 'jspdf-autotable';
 import { Equipment, Loan } from '../types';
 import { formatDate } from './utils';
 
-export const generateLoanPDF = (loan: Loan, equipments: Equipment[], docenteEmail?: string) => {
+export const generateLoanPDF = (
+  loan: Loan, 
+  equipments: Equipment[], 
+  docenteEmail?: string,
+  authorizedIds: string[] = []
+) => {
   const doc = new jsPDF();
   const pageWidth = doc.internal.pageSize.getWidth();
+
+  const addedManuallyIds = loan.equipos_ids.filter(id => !authorizedIds.includes(id));
 
   // Header Icon/Logo (Simple Circle for logo)
   doc.setFillColor(245, 158, 11);
@@ -39,10 +46,11 @@ export const generateLoanPDF = (loan: Loan, equipments: Equipment[], docenteEmai
   let counter = 1;
 
   equipments.forEach(eq => {
+    const isAdded = addedManuallyIds.includes(eq.id);
     // Main equipment row
     tableData.push([
       counter++,
-      eq.nombre,
+      isAdded ? `${eq.nombre} (*)` : eq.nombre,
       eq.modelo,
       eq.numero_serie,
       eq.categoria
@@ -75,9 +83,19 @@ export const generateLoanPDF = (loan: Loan, equipments: Equipment[], docenteEmai
     }
   });
 
+  const tableFinalY = (doc as any).lastAutoTable.finalY || 105;
+
+  // Disclaimer for additional items
+  if (addedManuallyIds.length > 0) {
+    doc.setFontSize(8);
+    doc.setTextColor(150, 0, 0);
+    doc.text('(*) Equipo no autorizado originalmente - Responsabilidad compartida: Administración/Alumno/Docente', 20, tableFinalY + 10);
+  }
+
   // Footer / Signatures
-  const finalY = (doc as any).lastAutoTable.finalY + 30;
+  const finalY = tableFinalY + 40;
   
+  doc.setTextColor(0);
   doc.line(20, finalY, 80, finalY);
   doc.text('Firma Responsable', 35, finalY + 5);
 
