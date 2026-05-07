@@ -16,6 +16,8 @@ import { Reservations } from './components/Reservations';
 import { PendingReservations } from './components/PendingReservations';
 import { CalendarPage } from './components/CalendarPage';
 import { PublicView } from './components/PublicView';
+import { StudentRequestsManager } from './components/StudentRequestsManager';
+import { StudentRequestView } from './components/StudentRequestView';
 import { Loader2, Menu } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { supabase } from './lib/supabase';
@@ -113,6 +115,7 @@ function AppContent() {
   return (
     <Routes>
       <Route path="/catalogo-publico" element={<PublicView />} />
+      <Route path="/solicitud" element={<StudentRequestView />} />
       <Route 
         path="*" 
         element={
@@ -159,6 +162,15 @@ function AppContent() {
                   />
 
                   {/* Rutas compartidas o específicas de Docente */}
+                  <Route path="/autorizar-alumnos" element={<StudentRequestsManager />} />
+                  <Route 
+                    path="/autorizacion-direccion" 
+                    element={
+                      (activeResponsable === 'n.sarmiento@cine.unt.edu.ar' || activeResponsable === 'jveiga@cine.unt.edu.ar') 
+                      ? <StudentRequestsManager filterDireccion /> 
+                      : <Navigate to="/" replace />
+                    } 
+                  />
                   <Route path="/reservas" element={<Reservations />} />
                   <Route path="/calendario" element={<CalendarPage />} />
                   <Route path="/mora" element={<ActiveLoans filterMora />} />

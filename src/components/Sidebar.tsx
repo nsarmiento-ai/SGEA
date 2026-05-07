@@ -8,7 +8,9 @@ import {
   History, 
   LogOut,
   Camera,
-  Calendar
+  Calendar,
+  ShieldCheck,
+  CheckSquare
 } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import { cn } from '../lib/utils';
@@ -23,20 +25,46 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
   const { activeResponsable, profile } = useApp();
   const role = profile?.rol;
 
+  const isDireccion = activeResponsable === 'n.sarmiento@cine.unt.edu.ar' || activeResponsable === 'jveiga@cine.unt.edu.ar';
+
   const menuItems = [
-    { icon: LayoutDashboard, label: 'Catálogo General', path: '/catalogo', adminOnly: true },
+    { icon: LayoutDashboard, label: 'Catálogo General', path: '/catalogo' },
     { icon: Calendar, label: 'Calendario', path: '/calendario' },
     { icon: Calendar, label: 'Nueva Reserva', path: '/reservas' },
-    { icon: Clock, label: 'Reservas Pendientes', path: '/reservas-pendientes', adminOnly: true },
+    { icon: CheckSquare, label: 'Autorizar Pedidos', path: '/autorizar-alumnos' },
+    { icon: ShieldCheck, label: 'Autorización Dirección', path: '/autorizacion-direccion' },
+    { icon: Clock, label: 'Reservas Pendientes', path: '/reservas-pendientes' },
     { icon: AlertTriangle, label: 'Panel de Mora', path: '/mora' },
     { icon: Clock, label: role === 'Docente' ? 'Mis Préstamos' : 'Devolución', path: '/activos' },
-    { icon: PlusCircle, label: 'Nuevo Préstamo', path: '/nuevo-prestamo', adminOnly: true },
-    { icon: History, label: 'Historial Global', path: '/historial', adminOnly: true },
+    { icon: PlusCircle, label: 'Nuevo Préstamo', path: '/nuevo-prestamo' },
+    { icon: History, label: 'Historial Global', path: '/historial' },
   ].filter(item => {
-    if (role === 'Docente') {
-      return ['Calendario', 'Nueva Reserva', 'Panel de Mora', 'Mis Préstamos'].includes(item.label);
+    // Logic for Dirección (Sarmiento/Veiga)
+    if (isDireccion) {
+      return [
+        'Calendario', 
+        'Catálogo General', 
+        'Panel de Mora', 
+        'Autorización Dirección',
+        'Autorizar Pedidos'
+      ].includes(item.label);
     }
-    return true;
+
+    // Logic for standard Docente
+    if (role === 'Docente') {
+      return ['Calendario', 'Nueva Reserva', 'Panel de Mora', 'Mis Préstamos', 'Autorizar Pedidos'].includes(item.label);
+    }
+
+    // Logic for Pañolero (Administrador) - everything except Dirección specifics unless they are the specific emails
+    if (role === 'Pañolero') {
+      const excluded = ['Autorización Dirección'];
+      if (!isDireccion) {
+        return !excluded.includes(item.label);
+      }
+      return true;
+    }
+
+    return false;
   });
 
   return (

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { supabase, logAction } from '../lib/supabase';
-import { Equipment, Loan, Reservation, Responsable } from '../types';
+import { Equipment, Loan, Reservation, Responsable, StudentRequest } from '../types';
 import { useApp } from '../context/AppContext';
 import { generateLoanPDF } from '../lib/pdf';
 import { sendAssistedEmail } from '../lib/email';
@@ -19,7 +19,9 @@ import {
   BookOpen,
   Lock,
   Mail,
-  Download
+  Download,
+  Clock,
+  ExternalLink
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { cn } from '../lib/utils';
@@ -34,6 +36,7 @@ export const LoanWizard: React.FC = () => {
   const [step, setStep] = useState(1);
   const [equipments, setEquipments] = useState<Equipment[]>([]);
   const [reservations, setReservations] = useState<Reservation[]>([]);
+  const [studentRequests, setStudentRequests] = useState<StudentRequest[]>([]);
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
@@ -41,6 +44,7 @@ export const LoanWizard: React.FC = () => {
   const [docentes, setDocentes] = useState<Responsable[]>([]);
   const [showDocenteSuggestions, setShowDocenteSuggestions] = useState(false);
   const [finishedLoan, setFinishedLoan] = useState<any>(null);
+  const [selectedStudentRequestId, setSelectedStudentRequestId] = useState<string | null>(null);
   
   const [formData, setFormData] = useState({
     alumno_nombre: '',
@@ -54,6 +58,7 @@ export const LoanWizard: React.FC = () => {
   useEffect(() => {
     fetchAvailable();
     fetchDocentes();
+    fetchStudentRequests();
     
     const params = new URLSearchParams(window.location.search);
     const preselectedId = params.get('id');
@@ -73,12 +78,37 @@ export const LoanWizard: React.FC = () => {
         docente_responsable: resDocente || '',
         fechaDevolucion: resFin ? format(parseISO(resFin), "yyyy-MM-dd'T'HH:mm") : prev.fechaDevolucion
       }));
-      // Store resId in a ref or state if needed to update it later
       setReservationId(resId);
     }
   }, []);
 
   const [reservationId, setReservationId] = useState<string | null>(null);
+
+  const fetchStudentRequests = async () => {
+    const { data } = await supabase
+      .from('solicitudes_alumnos')
+      .select('*')
+      .neq('estado', 'Entregado')
+      .neq('estado', 'Rechazado')
+      .neq('estado', 'Cancelado');
+    if (data) setStudentRequests(data);
+  };
+
+  const selectStudentRequest = (req: StudentRequest) => {
+    setSelectedStudentRequestId(req.id);
+    setSelectedIds(req.equipos_ids);
+    setFormData({
+      alumno_nombre: req.alumno_nombre,
+      alumno_dni: req.alumno_dni,
+      materia: req.materia,
+      docente_responsable: req.docente_nombre,
+      fechaDevolucion: format(parseISO(req.fecha_fin), "yyyy-MM-dd'T'HH:mm"),
+      comentarios: req.observaciones || ''
+    });
+  };
+
+  const currentStudentRequest = studentRequests.find(r => r.id === selectedStudentRequestId);
+  const isAuthorized = !selectedStudentRequestId || currentStudentRequest?.estado === 'Autorizado para Despacho';
 
   const fetchDocentes = async () => {
     const { data } = await supabase.from('responsables').select('*').eq('activo', true);
@@ -150,6 +180,7 @@ export const LoanWizard: React.FC = () => {
       formData.docente_responsable &&
       selectedIds.length > 0 && 
       activeResponsable &&
+      isAuthorized &&
       Object.keys(conflicts).length === 0
     );
     return valid;
@@ -224,11 +255,18 @@ export const LoanWizard: React.FC = () => {
 
       // 2.5 Update Reservation if exists
       if (reservationId) {
-        const { error: resError } = await supabase
+        await supabase
           .from('reservas')
           .update({ estado: 'Entregada' })
           .eq('id', reservationId);
-        if (resError) console.error('Error updating reservation status:', resError);
+      }
+
+      // 2.5b Update Student Request if exists
+      if (selectedStudentRequestId) {
+        await supabase
+          .from('solicitudes_alumnos')
+          .update({ estado: 'Entregado' })
+          .eq('id', selectedStudentRequestId);
       }
 
       // 2.6 Log to Resource History (Hoja de Vida)
@@ -353,7 +391,45 @@ export const LoanWizard: React.FC = () => {
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 md:gap-8">
         {/* Left Column: Selection */}
-        <div className="lg:col-span-5 order-2 lg:order-1">
+        <div className="lg:col-span-5 order-2 lg:order-1 space-y-6">
+          {studentRequests.length > 0 && (
+            <div className="bg-white rounded-3xl shadow-sm border border-slate-200 overflow-hidden">
+              <div className="p-4 bg-indigo-50 border-b border-indigo-100 flex items-center justify-between">
+                <h3 className="text-xs font-black uppercase tracking-widest text-indigo-600 flex items-center gap-2">
+                  <ExternalLink className="w-4 h-4" />
+                  Solicitudes de Alumnos
+                </h3>
+              </div>
+              <div className="p-3 max-h-48 overflow-y-auto space-y-2">
+                {studentRequests.map(req => (
+                  <button
+                    key={req.id}
+                    onClick={() => selectStudentRequest(req)}
+                    className={cn(
+                      "w-full flex items-center justify-between p-3 rounded-xl border transition-all text-left",
+                      selectedStudentRequestId === req.id 
+                        ? "border-indigo-500 bg-indigo-50 ring-1 ring-indigo-500" 
+                        : "border-slate-100 bg-slate-50 hover:border-slate-200"
+                    )}
+                  >
+                    <div className="min-w-0">
+                      <p className="text-sm font-bold text-slate-900 truncate">{req.alumno_nombre}</p>
+                      <p className="text-[10px] text-slate-400 font-bold uppercase tracking-tight">{req.materia}</p>
+                    </div>
+                    <div className={cn(
+                      "text-[9px] font-black uppercase tracking-wider px-2 py-1 rounded-lg border",
+                      req.estado === 'Autorizado para Despacho' 
+                        ? "bg-green-50 text-green-600 border-green-200" 
+                        : "bg-amber-50 text-amber-600 border-amber-200"
+                    )}>
+                      {req.estado === 'Autorizado para Despacho' ? 'Autorizado' : 'Pendiente'}
+                    </div>
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
           <div className="bg-white rounded-2xl md:rounded-3xl shadow-sm border border-slate-200 overflow-hidden flex flex-col h-[450px] md:h-[600px]">
             <div className="p-4 border-b border-slate-100 bg-slate-50 space-y-4">
               <div className="flex items-center justify-between">
@@ -601,7 +677,19 @@ export const LoanWizard: React.FC = () => {
               />
             </div>
 
-            <div className="pt-4 border-t border-slate-100 flex justify-end">
+            <div className="pt-4 border-t border-slate-100 flex flex-col gap-4 items-end">
+              {!isAuthorized && selectedStudentRequestId && (
+                <div className="bg-amber-50 border border-amber-200 p-4 rounded-xl text-amber-700 text-xs flex items-start gap-3 w-full animate-in fade-in slide-in-from-right-2">
+                  <AlertCircle className="w-5 h-5 shrink-0" />
+                  <div>
+                    <p className="font-black uppercase tracking-wider mb-1">Solicitud no autorizada para despacho</p>
+                    <p className="font-medium">
+                      Esta solicitud requiere el aval de: 
+                      <span className="font-bold"> {currentStudentRequest?.estado === 'Pendiente de Aval Docente' ? 'Docente' : 'Dirección'}</span>.
+                    </p>
+                  </div>
+                </div>
+              )}
               <button
                 disabled={!isFormValid() || submitting}
                 onClick={handleFinish}

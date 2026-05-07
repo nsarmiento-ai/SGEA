@@ -29,7 +29,7 @@ import {
 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { useApp } from '../context/AppContext';
-import { Reservation, Equipment, Loan } from '../types';
+import { Reservation, Equipment, Loan, StudentRequest } from '../types';
 import { motion, AnimatePresence } from 'motion/react';
 import { cn } from '../lib/utils';
 
@@ -42,6 +42,7 @@ export const CalendarPage: React.FC = () => {
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [reservations, setReservations] = useState<Reservation[]>([]);
   const [loans, setLoans] = useState<Loan[]>([]);
+  const [studentRequests, setStudentRequests] = useState<StudentRequest[]>([]);
   const [equipments, setEquipments] = useState<Equipment[]>([]);
   const [loading, setLoading] = useState(true);
   const [showDetail, setShowDetail] = useState(false);
@@ -53,15 +54,17 @@ export const CalendarPage: React.FC = () => {
   const fetchData = async () => {
     setLoading(true);
     try {
-      const [resData, loanData, eqData] = await Promise.all([
+      const [resData, loanData, eqData, studentData] = await Promise.all([
         supabase.from('reservas').select('*').in('estado', ['Pendiente', 'Aprobada']),
         supabase.from('prestamos').select('*').eq('estado', 'Activo'),
-        supabase.from('equipamiento').select('*')
+        supabase.from('equipamiento').select('*'),
+        supabase.from('solicitudes_alumnos').select('*').not('estado', 'in', '("Rechazado","Cancelado","Entregado")')
       ]);
 
       if (resData.data) setReservations(resData.data);
       if (loanData.data) setLoans(loanData.data);
       if (eqData.data) setEquipments(eqData.data);
+      if (studentData.data) setStudentRequests(studentData.data);
     } catch (error) {
       console.error('Error fetching calendar data:', error);
     } finally {
@@ -144,7 +147,18 @@ export const CalendarPage: React.FC = () => {
           return isWithinInterval(cloneDay, { start, end });
         });
 
-        const totalEvents = [...dayReservations.map(r => ({ ...r, type: 'reservation' })), ...dayLoans.map(l => ({ ...l, type: 'loan' }))];
+        const dayRequests = (studentRequests || []).filter(req => {
+          if (!req.fecha_inicio || !req.fecha_fin) return false;
+          const start = startOfDay(parseISO(req.fecha_inicio));
+          const end = endOfDay(parseISO(req.fecha_fin));
+          return isWithinInterval(cloneDay, { start, end });
+        });
+
+        const totalEvents = [
+          ...dayReservations.map(r => ({ ...r, type: 'reservation' })), 
+          ...dayLoans.map(l => ({ ...l, type: 'loan' })),
+          ...dayRequests.map(r => ({ ...r, type: 'student_request' }))
+        ];
 
         days.push(
           <div
@@ -169,17 +183,29 @@ export const CalendarPage: React.FC = () => {
             <div className="space-y-1 overflow-hidden">
               {totalEvents.slice(0, 3).map((event: any) => {
                 const isLoan = event.type === 'loan';
-                const statusColor = isLoan ? 'bg-emerald-500' : (event.estado === 'Pendiente' ? 'bg-amber-400' : 'bg-blue-500');
-                const label = isLoan ? event.docente_responsable : event.docente_nombre;
+                const isStudent = event.type === 'student_request';
+                const isAuthorized = event.estado === 'Autorizado para Despacho' || isLoan;
+                
+                let statusColor = isLoan ? 'bg-emerald-500' : (event.estado === 'Pendiente' ? 'bg-amber-400' : 'bg-blue-500');
+                if (isStudent) {
+                  statusColor = isAuthorized ? 'bg-indigo-500' : 'bg-slate-300';
+                }
+
+                const label = isLoan ? event.docente_responsable : (isStudent ? event.alumno_nombre : event.docente_nombre);
                 
                 return (
                   <div 
                     key={`${event.type}-${event.id}`} 
                     className="flex md:block"
                   >
-                    <div className={cn("w-1.5 h-1.5 md:w-auto md:h-auto rounded-full md:rounded md:px-1.5 md:py-0.5 md:border md:truncate md:text-[10px] md:font-semibold", statusColor, "md:bg-opacity-10 md:border-opacity-20 md:text-slate-700")}>
+                    <div className={cn(
+                      "w-1.5 h-1.5 md:w-auto md:h-auto rounded-full md:rounded md:px-1.5 md:py-0.5 md:border md:truncate md:text-[10px] md:font-semibold", 
+                      statusColor, 
+                      "md:bg-opacity-10 md:border-opacity-20 md:text-slate-700",
+                      isStudent && !isAuthorized && "md:border-dashed md:border-slate-400"
+                    )}>
                       <span className="hidden md:inline">
-                         {isPañolero ? `${label.split(' ')[0]}: ` : ''}
+                         {isPañolero ? `${label?.split(' ')[0]}: ` : ''}
                          {(event.equipos_ids || []).map((id: string) => (equipments || []).find(e => e.id === id)?.nombre).filter(Boolean).slice(0, 2).join(', ')}
                          {(event.equipos_ids || []).length > 2 && '...'}
                       </span>
@@ -216,13 +242,17 @@ export const CalendarPage: React.FC = () => {
       return isWithinInterval(selectedDate, { start, end });
     });
 
-    const dayLoans = (loans || []).filter(loan => {
-      const start = startOfDay(parseISO(loan.fecha_salida));
-      const end = endOfDay(parseISO(loan.fecha_devolucion_estimada));
+    const dayRequests = (studentRequests || []).filter(req => {
+      const start = startOfDay(parseISO(req.fecha_inicio));
+      const end = endOfDay(parseISO(req.fecha_fin));
       return isWithinInterval(selectedDate, { start, end });
     });
 
-    const totalEvents = [...dayReservations.map(r => ({ ...r, type: 'reservation' })), ...dayLoans.map(l => ({ ...l, type: 'loan' }))];
+    const totalEvents = [
+      ...dayReservations.map(r => ({ ...r, type: 'reservation' })), 
+      ...dayLoans.map(l => ({ ...l, type: 'loan' })),
+      ...dayRequests.map(r => ({ ...r, type: 'student_request' }))
+    ];
 
     return (
       <AnimatePresence>
@@ -267,17 +297,22 @@ export const CalendarPage: React.FC = () => {
                   <div className="space-y-4">
                     {totalEvents.map((event: any) => {
                       const isLoan = event.type === 'loan';
+                      const isStudent = event.type === 'student_request';
                       const start = isLoan ? event.fecha_salida : event.fecha_inicio;
                       const end = isLoan ? event.fecha_devolucion_estimada : event.fecha_fin;
-                      const label = isLoan ? event.docente_responsable : event.docente_nombre;
-                      const subLabel = isLoan ? 'Préstamo Activo' : `Reserva ${event.estado}`;
+                      
+                      const label = isLoan ? event.docente_responsable : (isStudent ? event.alumno_nombre : event.docente_nombre);
+                      let subLabel = isLoan ? 'Préstamo Activo' : (isStudent ? 'Solicitud Alumno' : `Reserva ${event.estado}`);
+                      if (isStudent) {
+                        subLabel = `Solicitud: ${event.estado}`;
+                      }
                       
                       return (
                         <div key={`${event.type}-${event.id}`} className="bg-white rounded-2xl p-4 md:p-5 border border-slate-200 shadow-sm">
                           <div className="flex items-center justify-between mb-4">
                             <span className={cn(
                               "px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider border",
-                              isLoan ? "bg-emerald-50 text-emerald-600 border-emerald-200" : (event.estado === 'Pendiente' ? "bg-amber-50 text-amber-600 border-amber-200" : "bg-blue-50 text-blue-600 border-blue-200")
+                              isLoan ? "bg-emerald-50 text-emerald-600 border-emerald-200" : (isStudent ? "bg-indigo-50 text-indigo-600 border-indigo-200" : (event.estado === 'Pendiente' ? "bg-amber-50 text-amber-600 border-amber-200" : "bg-blue-50 text-blue-600 border-blue-200"))
                             )}>
                               {subLabel}
                             </span>
@@ -287,12 +322,17 @@ export const CalendarPage: React.FC = () => {
                             </div>
                           </div>
 
-                          <div className="flex items-center gap-3 mb-4 p-3 bg-slate-50 rounded-xl border border-slate-100">
+                          <div className={cn(
+                            "flex items-center gap-3 mb-4 p-3 bg-slate-50 rounded-xl border border-slate-100",
+                            isStudent && event.estado !== 'Autorizado para Despacho' && "border-dashed border-slate-300"
+                          )}>
                              <div className="w-8 h-8 rounded-full bg-slate-200 flex items-center justify-center shrink-0">
                                <User className="w-4 h-4 text-slate-500" />
                              </div>
                              <div className="min-w-0">
-                               <p className="text-[10px] text-slate-400 font-black uppercase tracking-tight">Docente / Responsable</p>
+                               <p className="text-[10px] text-slate-400 font-black uppercase tracking-tight">
+                                 {isStudent ? 'Responsable Alumno' : 'Docente / Responsable'}
+                               </p>
                                <p className="text-sm font-bold text-slate-900 truncate">{label}</p>
                              </div>
                           </div>

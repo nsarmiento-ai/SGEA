@@ -74,6 +74,32 @@ export interface Reservation {
   created_at?: string;
 }
 
+export type StudentRequestStatus = 
+  | 'Pendiente de Aval Docente' 
+  | 'Pendiente de Dirección' 
+  | 'Autorizado para Despacho' 
+  | 'Rechazado'
+  | 'Entregado'
+  | 'Cancelado';
+
+export interface StudentRequest {
+  id: string;
+  alumno_nombre: string;
+  alumno_dni: string;
+  integrantes?: string; // JSON or text list of names/DNIs
+  materia: string;
+  docente_nombre: string; // The one who must approve
+  tipo_uso: 'Uso en Escuela' | 'Uso Externo';
+  equipos_ids: string[];
+  fecha_inicio: string;
+  fecha_fin: string;
+  estado: StudentRequestStatus;
+  observaciones?: string;
+  created_at?: string;
+  autorizado_por_docente?: string; // Email/UID of teacher who approved
+  autorizado_por_direccion?: string; // Email/UID of director who approved
+}
+
 export interface Profile {
   id: string;
   email: string;

@@ -437,29 +437,33 @@ export const Catalog: React.FC = () => {
                       >
                         <History className="w-4 h-4" />
                       </button>
-                      <button 
-                        onClick={() => { setEditingItem(eq); setIsModalOpen(true); }}
-                        className="p-1.5 hover:bg-slate-100 rounded-lg text-slate-600"
-                        title="Editar"
-                      >
-                        <Edit2 className="w-4 h-4" />
-                      </button>
-                      {eq.estado === 'Archivado' ? (
-                        <button 
-                          onClick={() => handleRestore(eq.id, eq.nombre)}
-                          className="p-1.5 hover:bg-green-50 rounded-lg text-green-600"
-                          title="Restaurar"
-                        >
-                          <CheckCircle2 className="w-4 h-4" />
-                        </button>
-                      ) : (
-                        <button 
-                          onClick={() => handleDelete(eq.id, eq.nombre)}
-                          className="p-1.5 hover:bg-red-50 rounded-lg text-red-500"
-                          title="Archivar"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
+                      {role === 'Pañolero' && (
+                        <>
+                          <button 
+                            onClick={() => { setEditingItem(eq); setIsModalOpen(true); }}
+                            className="p-1.5 hover:bg-slate-100 rounded-lg text-slate-600"
+                            title="Editar"
+                          >
+                            <Edit2 className="w-4 h-4" />
+                          </button>
+                          {eq.estado === 'Archivado' ? (
+                            <button 
+                              onClick={() => handleRestore(eq.id, eq.nombre)}
+                              className="p-1.5 hover:bg-green-50 rounded-lg text-green-600"
+                              title="Restaurar"
+                            >
+                              <CheckCircle2 className="w-4 h-4" />
+                            </button>
+                          ) : (
+                            <button 
+                              onClick={() => handleDelete(eq.id, eq.nombre)}
+                              className="p-1.5 hover:bg-red-50 rounded-lg text-red-500"
+                              title="Archivar"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          )}
+                        </>
                       )}
                     </div>
                   </div>
@@ -627,17 +631,21 @@ export const Catalog: React.FC = () => {
                         <button onClick={() => toggleFavorite(eq.id)} className={cn("p-1.5 rounded-lg transition-all", (profile?.favoritos || []).includes(eq.id) ? "text-amber-500" : "text-slate-300 hover:text-slate-400")} title="Favorito">
                           <Star className={cn("w-4 h-4", (profile?.favoritos || []).includes(eq.id) && "fill-current")} />
                         </button>
-                        <button onClick={() => { setEditingItem(eq); setIsModalOpen(true); }} className="p-1.5 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-lg" title="Editar">
-                          <Edit2 className="w-4 h-4" />
-                        </button>
-                        {eq.estado === 'Archivado' ? (
-                          <button onClick={() => handleRestore(eq.id, eq.nombre)} className="p-1.5 text-green-400 hover:text-green-600 hover:bg-green-50 rounded-lg" title="Restaurar">
-                            <CheckCircle2 className="w-4 h-4" />
-                          </button>
-                        ) : (
-                          <button onClick={() => handleDelete(eq.id, eq.nombre)} className="p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg" title="Archivar">
-                            <Trash2 className="w-4 h-4" />
-                          </button>
+                        {role === 'Pañolero' && (
+                          <>
+                            <button onClick={() => { setEditingItem(eq); setIsModalOpen(true); }} className="p-1.5 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-lg" title="Editar">
+                              <Edit2 className="w-4 h-4" />
+                            </button>
+                            {eq.estado === 'Archivado' ? (
+                              <button onClick={() => handleRestore(eq.id, eq.nombre)} className="p-1.5 text-green-400 hover:text-green-600 hover:bg-green-50 rounded-lg" title="Restaurar">
+                                <CheckCircle2 className="w-4 h-4" />
+                              </button>
+                            ) : (
+                              <button onClick={() => handleDelete(eq.id, eq.nombre)} className="p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg" title="Archivar">
+                                <Trash2 className="w-4 h-4" />
+                              </button>
+                            )}
+                          </>
                         )}
                       </div>
                     </td>
