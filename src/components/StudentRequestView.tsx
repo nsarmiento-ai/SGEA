@@ -2,7 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 import { Equipment, StudentRequest } from '../types';
 import { CONTACTS_DATA } from '../lib/contactsData';
-import { Loader2, Package, Search, Users, BookOpen, Calendar, CheckCircle, AlertCircle, ArrowLeft } from 'lucide-react';
+import { MATERIAS_CATEGORIES } from '../constants';
+import { Loader2, Package, Search, Users, BookOpen, Calendar, CheckCircle, AlertCircle, ArrowLeft, Filter, Info } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { useNavigate } from 'react-router-dom';
 
@@ -218,14 +219,21 @@ export const StudentRequestView: React.FC = () => {
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="space-y-2">
                       <label className="text-xs font-black uppercase text-slate-500 ml-1">Materia / Cátedra</label>
-                      <input 
+                      <select 
                         required
-                        type="text"
                         value={formData.materia}
                         onChange={(e) => setFormData({...formData, materia: e.target.value})}
-                        className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 focus:ring-2 focus:ring-amber-500 outline-none transition-all"
-                        placeholder="Ej: Iluminación 1"
-                      />
+                        className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 focus:ring-2 focus:ring-amber-500 outline-none transition-all appearance-none"
+                      >
+                        <option value="">Seleccione una Materia...</option>
+                        {Object.entries(MATERIAS_CATEGORIES).map(([cat, materias]) => (
+                          <optgroup key={cat} label={cat}>
+                            {materias.map(m => (
+                              <option key={m} value={m}>{m}</option>
+                            ))}
+                          </optgroup>
+                        ))}
+                      </select>
                     </div>
                     <div className="space-y-2">
                       <label className="text-xs font-black uppercase text-slate-500 ml-1">Docente que Avala</label>
@@ -283,7 +291,7 @@ export const StudentRequestView: React.FC = () => {
                     </div>
                   </div>
 
-                  <div className="relative">
+                  <div className="relative mb-4">
                     <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
                     <input 
                       type="text"
@@ -294,29 +302,73 @@ export const StudentRequestView: React.FC = () => {
                     />
                   </div>
 
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-h-[400px] overflow-y-auto p-2 scrollbar-thin">
-                    {filteredEquipment.map(item => (
-                      <button
-                        key={item.id}
-                        type="button"
-                        onClick={() => toggleEquipment(item.id)}
-                        className={`flex items-center gap-4 p-4 rounded-2xl border transition-all text-left group ${
-                          selectedIds.includes(item.id) 
-                          ? 'border-amber-500 bg-amber-50 shadow-md' 
-                          : 'border-slate-100 hover:border-slate-300 bg-white'
-                        }`}
-                      >
-                        <div className={`w-12 h-12 rounded-xl flex items-center justify-center transition-colors ${
-                          selectedIds.includes(item.id) ? 'bg-amber-500 text-white' : 'bg-slate-100 text-slate-400'
-                        }`}>
-                          <Package className="w-6 h-6" />
-                        </div>
-                        <div className="min-w-0">
-                          <p className="font-bold text-slate-900 truncate leading-tight">{item.nombre}</p>
-                          <p className="text-[10px] uppercase font-black tracking-widest text-slate-400 mt-1">{item.modelo}</p>
-                        </div>
-                      </button>
-                    ))}
+                  <div className="border border-slate-200 rounded-2xl overflow-hidden bg-white">
+                    <div className="max-h-[500px] overflow-y-auto scrollbar-thin">
+                      <table className="w-full text-left border-collapse">
+                        <thead className="sticky top-0 bg-slate-50 border-b border-slate-200 z-10">
+                          <tr>
+                            <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-slate-400">Equipo</th>
+                            <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-slate-400">Estado</th>
+                            <th className="px-6 py-4 text-right"></th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-slate-100">
+                          {filteredEquipment.length > 0 ? (
+                            filteredEquipment.map(item => (
+                              <tr 
+                                key={item.id} 
+                                className={cn(
+                                  "hover:bg-slate-50/80 transition-colors cursor-pointer",
+                                  selectedIds.includes(item.id) && "bg-amber-50/50"
+                                )}
+                                onClick={() => toggleEquipment(item.id)}
+                              >
+                                <td className="px-6 py-4">
+                                  <div className="flex items-center gap-4">
+                                    <div className={cn(
+                                      "w-10 h-10 rounded-xl flex items-center justify-center shrink-0",
+                                      selectedIds.includes(item.id) ? "bg-amber-500 text-white" : "bg-slate-100 text-slate-400"
+                                    )}>
+                                      <Package className="w-5 h-5" />
+                                    </div>
+                                    <div className="min-w-0">
+                                      <p className="font-bold text-slate-900 truncate tracking-tight">{item.nombre}</p>
+                                      <p className="text-[10px] font-bold text-slate-400 uppercase tracking-tight">{item.modelo}</p>
+                                    </div>
+                                  </div>
+                                </td>
+                                <td className="px-6 py-4 whitespace-nowrap">
+                                  <span className={cn(
+                                    "px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-wider border",
+                                    item.estado === 'Disponible' 
+                                      ? "bg-green-50 text-green-600 border-green-200" 
+                                      : "bg-red-50 text-red-600 border-red-200"
+                                  )}>
+                                    {item.estado}
+                                  </span>
+                                </td>
+                                <td className="px-6 py-4 text-right">
+                                  <div className={cn(
+                                    "w-6 h-6 rounded-lg border-2 flex items-center justify-center transition-all ml-auto",
+                                    selectedIds.includes(item.id)
+                                      ? "bg-amber-500 border-amber-500 text-white"
+                                      : "border-slate-200 text-transparent"
+                                  )}>
+                                    <CheckCircle className="w-4 h-4" />
+                                  </div>
+                                </td>
+                              </tr>
+                            ))
+                          ) : (
+                            <tr>
+                              <td colSpan={3} className="px-6 py-12 text-center text-slate-400 font-bold text-sm">
+                                No se encontraron equipos con ese nombre.
+                              </td>
+                            </tr>
+                          )}
+                        </tbody>
+                      </table>
+                    </div>
                   </div>
                 </div>
 

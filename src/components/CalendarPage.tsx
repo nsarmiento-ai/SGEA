@@ -66,9 +66,10 @@ export const CalendarPage: React.FC = () => {
 
       try {
         const studentRes = await supabase.from('solicitudes_alumnos').select('*').not('estado', 'in', '("Rechazado","Cancelado","Entregado")');
+        if (studentRes.error) throw studentRes.error;
         if (studentRes.data) setStudentRequests(studentRes.data);
       } catch (e) {
-        console.warn('Tabla solicitudes_alumnos no disponible aún:', e);
+        console.warn('Error al cargar solicitudes_alumnos (puede que la tabla no exista o no tenga permisos aún):', e);
         setStudentRequests([]);
       }
     } catch (error) {
@@ -211,9 +212,9 @@ export const CalendarPage: React.FC = () => {
                       isStudent && !isAuthorized && "md:border-dashed md:border-slate-400"
                     )}>
                       <span className="hidden md:inline">
-                         {isAdministracion ? `${label?.split(' ')[0]}: ` : ''}
-                         {(event.equipos_ids || []).map((id: string) => (equipments || []).find(e => e.id === id)?.nombre).filter(Boolean).slice(0, 2).join(', ')}
-                         {(event.equipos_ids || []).length > 2 && '...'}
+                        {isAdministracion ? `${label?.split(' ')[0]}: ` : ''}
+                        {(isStudent ? event.equipos : (event.equipos_ids || [])).map((id: string) => (equipments || []).find(e => e.id === id)?.nombre).filter(Boolean).slice(0, 2).join(', ')}
+                        {(isStudent ? event.equipos : (event.equipos_ids || [])).length > 2 && '...'}
                       </span>
                     </div>
                   </div>
@@ -355,7 +356,7 @@ export const CalendarPage: React.FC = () => {
                           <div className="space-y-2">
                             <p className="text-[10px] text-slate-400 font-black uppercase tracking-tight mb-2">Equipamiento Asociado</p>
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                              {(event.equipos_ids || []).map((id: string) => {
+                              {(isStudent ? event.equipos : (event.equipos_ids || [])).map((id: string) => {
                                 const eq = (equipments || []).find(e => e.id === id);
                                 return (
                                   <div key={id} className="flex items-center gap-2 p-2 bg-slate-50/50 rounded-xl border border-slate-100">

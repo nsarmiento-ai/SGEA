@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { supabase, logAction } from '../lib/supabase';
 import { Reservation, Equipment, EquipmentStatus, Responsable } from '../types';
 import { useApp } from '../context/AppContext';
+import { CONTACTS_DATA } from '../lib/contactsData';
 import { Link } from 'react-router-dom';
 import { 
   Calendar, 
@@ -107,13 +108,20 @@ export const Reservations: React.FC = () => {
     setError(null);
     try {
       console.log('Iniciando fetch de equipos (tabla equipamiento) y reservas (tabla reservas)...');
-      const [eqData, resData, docRes] = await Promise.all([
+      const [eqData, resData] = await Promise.all([
         supabase.from('equipamiento').select('*').order('nombre', { ascending: true }),
-        supabase.from('reservas').select('*').order('fecha_inicio', { ascending: true }),
-        supabase.from('responsables').select('*').eq('activo', true)
+        supabase.from('reservas').select('*').order('fecha_inicio', { ascending: true })
       ]);
 
-      if (docRes.data) setDocentes(docRes.data);
+      // We use CONTACTS_DATA now for consistency
+      const formattedDocentes = CONTACTS_DATA.map(c => ({
+        id: c.email,
+        nombre_completo: c.nombre,
+        email: c.email,
+        activo: true,
+        creado_at: new Date().toISOString()
+      })) as Responsable[];
+      setDocentes(formattedDocentes);
 
       console.log('Respuesta cruda de Supabase (equipamiento):', eqData);
       console.log('Respuesta cruda de Supabase (reservas):', resData);
