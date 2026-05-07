@@ -81,12 +81,19 @@ export const StudentRequestView: React.FC = () => {
       created_at: new Date().toISOString()
     };
 
+    console.log('Enviando solicitud:', {
+      ...newRequest,
+      equipos_count: selectedIds.length
+    });
+
     try {
-      const { error: insertError } = await supabase
+      const { data, error: insertError } = await supabase
         .from('solicitudes_alumnos')
-        .insert([newRequest]);
+        .insert([newRequest])
+        .select();
 
       if (insertError) throw insertError;
+      console.log('Solicitud enviada con éxito:', data);
       setSubmitted(true);
     } catch (err: any) {
       console.error('Error submitting request:', err);

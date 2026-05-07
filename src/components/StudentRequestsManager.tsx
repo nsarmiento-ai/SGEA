@@ -15,7 +15,7 @@ export const StudentRequestsManager: React.FC<{ filterDireccion?: boolean }> = (
 
   const isDireccion = userEmail === 'jveiga@cine.unt.edu.ar' || userEmail === 'n.sarmiento@cine.unt.edu.ar';
 
-  const docenteName = CONTACTS_DATA.find(c => c.email === activeResponsable)?.nombre;
+  const docenteName = CONTACTS_DATA.find(c => c.email === userEmail)?.nombre;
 
   useEffect(() => {
     if (role === 'Docente') {
