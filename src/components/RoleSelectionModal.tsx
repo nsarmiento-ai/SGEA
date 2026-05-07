@@ -1,9 +1,9 @@
 import React from 'react';
 import { useApp } from '../context/AppContext';
-import { User, Shield, ShieldCheck, Box } from 'lucide-react';
+import { User, Shield, ShieldCheck, Box, LogOut } from 'lucide-react';
 
 export const RoleSelectionModal: React.FC = () => {
-  const { setRole, userEmail, isSuperAdmin } = useApp();
+  const { setRole, userEmail, isSuperAdmin, signOut } = useApp();
 
   const isCine = userEmail?.endsWith('@cine.unt.edu.ar');
 
@@ -65,9 +65,19 @@ export const RoleSelectionModal: React.FC = () => {
           )}
         </div>
 
-        <p className="text-center mt-8 text-[10px] font-bold text-slate-400 uppercase tracking-widest">
-          SGEA - Sistema de Gestión de Equipamiento Audiovisual
-        </p>
+        <div className="mt-8 pt-6 border-t border-slate-100 flex flex-col gap-4">
+          <button
+            onClick={signOut}
+            className="w-full flex items-center justify-center gap-2 text-red-500 font-bold text-xs uppercase tracking-widest hover:text-red-700 transition-colors"
+          >
+            <LogOut className="w-4 h-4" />
+            Cerrar Sesión (Google)
+          </button>
+          
+          <p className="text-center text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+            SGEA - Sistema de Gestión de Equipamiento Audiovisual
+          </p>
+        </div>
       </div>
     </div>
   );

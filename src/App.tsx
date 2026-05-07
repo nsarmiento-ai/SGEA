@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { AppProvider, useApp } from './context/AppContext';
 import { Sidebar } from './components/Sidebar';
 import { ResponsableModal } from './components/ResponsableModal';
@@ -98,16 +98,16 @@ function AppContent() {
 function ProtectedRoute() {
   const { role, isSuperAdmin } = useApp();
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const location = useLocation();
 
-  // If super admin hasn't picked a role yet, force role selection
-  if (isSuperAdmin && !role) {
-    return <RoleSelectionModal />;
+  // If super admin hasn't picked a role yet, force role selection via route
+  if (isSuperAdmin && !role && location.pathname !== '/select-role') {
+    return <Navigate to="/select-role" replace />;
   }
 
-  // If regular user has no role (shouldn't happen with current AppContext), 
-  // we could also show RoleSelection or a "Not Authorized" screen.
-  if (!role) {
-    return <RoleSelectionModal />;
+  // Fallback for regular users or if they are already on select-role
+  if (!role && location.pathname !== '/select-role') {
+    return <Navigate to="/select-role" replace />;
   }
 
   return (

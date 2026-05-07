@@ -90,9 +90,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
       setProfile(profile);
       
-      // If super admin, we let them pick. We might want to persist their last choice in session storage
+      // If super admin, we let them pick. We might want to persist their last choice in local storage
       if (isSpecial) {
-        const savedRole = sessionStorage.getItem('selected_role') as AppRole;
+        const savedRole = localStorage.getItem('selected_role') as AppRole;
         if (savedRole) {
           setRole(savedRole);
         } else {
@@ -115,9 +115,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     
     if (isSuperAdmin) {
       if (newRole) {
-        sessionStorage.setItem('selected_role', newRole);
+        localStorage.setItem('selected_role', newRole);
       } else {
-        sessionStorage.removeItem('selected_role');
+        localStorage.removeItem('selected_role');
       }
       setRole(newRole);
       return;
@@ -158,7 +158,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   const signOut = async () => {
-    sessionStorage.removeItem('selected_role');
+    localStorage.removeItem('selected_role');
     await supabase.auth.signOut();
   };
 

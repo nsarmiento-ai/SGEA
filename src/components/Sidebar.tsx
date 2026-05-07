@@ -22,7 +22,7 @@ interface SidebarProps {
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
-  const { activeResponsable, profile, userEmail, isSuperAdmin, role, setRole } = useApp();
+  const { activeResponsable, profile, userEmail, isSuperAdmin, role, setRole, signOut } = useApp();
 
   const menuItems = [
     { icon: LayoutDashboard, label: 'Inventario', path: '/catalogo' },
