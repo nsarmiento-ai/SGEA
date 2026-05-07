@@ -113,10 +113,10 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
           {isSuperAdmin && (
             <button
               onClick={() => setRole(null)}
-              className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-amber-400 hover:bg-amber-500/10 transition-colors font-medium text-sm"
+              className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-amber-400 hover:bg-amber-500/10 transition-colors font-black text-xs uppercase tracking-widest"
             >
               <ShieldCheck className="w-5 h-5" />
-              Cambiar de Rol
+              🔄 Cambiar Rol
             </button>
           )}
 
@@ -126,7 +126,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
           </div>
           
           <button
-            onClick={() => supabase.auth.signOut()}
+            onClick={signOut}
             className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-red-400 hover:bg-red-500/10 transition-colors font-medium"
           >
             <LogOut className="w-5 h-5" />

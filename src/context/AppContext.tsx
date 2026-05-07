@@ -14,6 +14,7 @@ interface AppContextType {
   setRole: (role: AppRole | null) => void;
   toggleFavorite: (equipmentId: string) => Promise<void>;
   isSuperAdmin: boolean;
+  signOut: () => Promise<void>;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -110,10 +111,14 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   const setRoleAndSave = async (newRole: AppRole | null) => {
-    if (!profile) return;
+    if (!profile && !isSuperAdmin) return;
     
-    if (isSuperAdmin && newRole) {
-      sessionStorage.setItem('selected_role', newRole);
+    if (isSuperAdmin) {
+      if (newRole) {
+        sessionStorage.setItem('selected_role', newRole);
+      } else {
+        sessionStorage.removeItem('selected_role');
+      }
       setRole(newRole);
       return;
     }
@@ -123,11 +128,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const { error } = await supabase
       .from('profiles')
       .update({ rol: newRole })
-      .eq('id', profile.id);
+      .eq('id', profile?.id);
     
     if (!error) {
       setRole(newRole);
-      setProfile({ ...profile, rol: newRole });
+      if (profile) setProfile({ ...profile, rol: newRole });
     }
   };
 
@@ -152,8 +157,24 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setActiveResponsableState(name);
   };
 
+  const signOut = async () => {
+    sessionStorage.removeItem('selected_role');
+    await supabase.auth.signOut();
+  };
+
   return (
-    <AppContext.Provider value={{ activeResponsable, setActiveResponsable, loading, role, userEmail, profile, setRole: setRoleAndSave, toggleFavorite }}>
+    <AppContext.Provider value={{ 
+      activeResponsable, 
+      setActiveResponsable, 
+      loading, 
+      role, 
+      userEmail, 
+      profile, 
+      setRole: setRoleAndSave, 
+      toggleFavorite,
+      isSuperAdmin,
+      signOut
+    }}>
       {children}
     </AppContext.Provider>
   );

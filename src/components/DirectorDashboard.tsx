@@ -17,6 +17,7 @@ import {
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { StudentRequestsManager } from './StudentRequestsManager';
+import { cn } from '../lib/utils';
 
 export const DirectorDashboard: React.FC = () => {
   const { userEmail } = useApp();

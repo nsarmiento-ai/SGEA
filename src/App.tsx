@@ -79,82 +79,98 @@ function AppContent() {
     <Routes>
       <Route path="/catalogo-publico" element={<PublicView />} />
       <Route path="/solicitud" element={<StudentRequestView />} />
+      
+      {/* Protected routes below */}
       <Route 
         path="*" 
         element={
           !activeResponsable ? (
             <ResponsableModal />
-          ) : role === null ? (
-            <RoleSelectionModal />
           ) : (
-            <div className="flex min-h-screen relative">
-              <Sidebar isOpen={isSidebarOpen} onClose={() => setIsSidebarOpen(false)} />
-              
-              {/* Mobile Toggle Button */}
-              <button 
-                onClick={() => setIsSidebarOpen(true)}
-                className="fixed top-4 left-4 z-30 p-2 bg-slate-900 text-white rounded-lg lg:hidden shadow-lg"
-              >
-                <Menu className="w-6 h-6" />
-              </button>
-
-              <main className="flex-1 w-full overflow-x-hidden">
-                <Routes>
-                  {/* Redirección inicial basada en el rol */}
-                  <Route 
-                    path="/" 
-                    element={
-                      role === 'Administración' ? <Navigate to="/catalogo" replace /> :
-                      role === 'Director' ? <Navigate to="/director" replace /> :
-                      <Navigate to="/reservas" replace />
-                    } 
-                  />
-
-                  {/* Rutas de Administración */}
-                  <Route 
-                    path="/catalogo" 
-                    element={role === 'Administración' ? <Catalog /> : <Navigate to="/reservas" replace />} 
-                  />
-                  <Route 
-                    path="/reservas-pendientes" 
-                    element={role === 'Administración' ? <PendingReservations /> : <Navigate to="/reservas" replace />} 
-                  />
-                  <Route 
-                    path="/nuevo-prestamo" 
-                    element={role === 'Administración' ? <LoanWizard /> : <Navigate to="/reservas" replace />} 
-                  />
-                  <Route 
-                    path="/historial" 
-                    element={role === 'Administración' ? <AuditLogs /> : <Navigate to="/reservas" replace />} 
-                  />
-
-                  {/* Rutas compartidas o específicas de Docente */}
-                  <Route path="/autorizar-alumnos" element={<StudentRequestsManager />} />
-                  <Route 
-                    path="/director" 
-                    element={
-                      (role === 'Director')
-                      ? <DirectorDashboard /> 
-                      : <Navigate to="/" replace />
-                    } 
-                  />
-                  <Route path="/reservas" element={<Reservations />} />
-                  <Route path="/calendario" element={<CalendarPage />} />
-                  <Route path="/mora" element={<ActiveLoans filterMora />} />
-                  <Route path="/activos" element={<ActiveLoans />} />
-
-                  {/* Aliases y Fallbacks */}
-                  <Route path="/admin" element={<Navigate to={role === 'Administración' ? "/catalogo" : role === 'Director' ? "/director" : "/reservas"} replace />} />
-                  <Route path="/configuracion" element={<Navigate to={role === 'Administración' ? "/catalogo" : role === 'Director' ? "/director" : "/reservas"} replace />} />
-                  <Route path="/autorizacion-direccion" element={<Navigate to="/director" replace />} />
-                  <Route path="*" element={<Navigate to="/" replace />} />
-                </Routes>
-              </main>
-            </div>
+            <ProtectedRoute />
           )
         } 
       />
     </Routes>
+  );
+}
+
+function ProtectedRoute() {
+  const { role, isSuperAdmin } = useApp();
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+
+  // If super admin hasn't picked a role yet, force role selection
+  if (isSuperAdmin && !role) {
+    return <RoleSelectionModal />;
+  }
+
+  // If regular user has no role (shouldn't happen with current AppContext), 
+  // we could also show RoleSelection or a "Not Authorized" screen.
+  if (!role) {
+    return <RoleSelectionModal />;
+  }
+
+  return (
+    <div className="flex min-h-screen relative">
+      <Sidebar isOpen={isSidebarOpen} onClose={() => setIsSidebarOpen(false)} />
+      
+      {/* Mobile Toggle Button */}
+      <button 
+        onClick={() => setIsSidebarOpen(true)}
+        className="fixed top-4 left-4 z-30 p-2 bg-slate-900 text-white rounded-lg lg:hidden shadow-lg"
+      >
+        <Menu className="w-6 h-6" />
+      </button>
+
+      <main className="flex-1 w-full overflow-x-hidden">
+        <Routes>
+          {/* Redirección inicial basada en el rol */}
+          <Route 
+            path="/" 
+            element={
+              role === 'Administración' ? <Navigate to="/catalogo" replace /> :
+              role === 'Director' ? <Navigate to="/director" replace /> :
+              <Navigate to="/reservas" replace />
+            } 
+          />
+
+          {/* Rutas de Administración */}
+          <Route 
+            path="/catalogo" 
+            element={role === 'Administración' ? <Catalog /> : <Navigate to="/" replace />} 
+          />
+          <Route 
+            path="/reservas-pendientes" 
+            element={role === 'Administración' ? <PendingReservations /> : <Navigate to="/" replace />} 
+          />
+          <Route 
+            path="/nuevo-prestamo" 
+            element={role === 'Administración' ? <LoanWizard /> : <Navigate to="/" replace />} 
+          />
+          <Route 
+            path="/historial" 
+            element={role === 'Administración' ? <AuditLogs /> : <Navigate to="/" replace />} 
+          />
+
+          {/* Rutas compartidas o específicas de Docente */}
+          <Route path="/autorizar-alumnos" element={<StudentRequestsManager />} />
+          <Route 
+            path="/director" 
+            element={role === 'Director' ? <DirectorDashboard /> : <Navigate to="/" replace />} 
+          />
+          <Route path="/reservas" element={<Reservations />} />
+          <Route path="/calendario" element={<CalendarPage />} />
+          <Route path="/mora" element={<ActiveLoans filterMora />} />
+          <Route path="/activos" element={<ActiveLoans />} />
+
+          {/* Aliases y Fallbacks */}
+          <Route path="/admin" element={<Navigate to="/" replace />} />
+          <Route path="/configuracion" element={<Navigate to="/" replace />} />
+          <Route path="/select-role" element={<RoleSelectionModal />} />
+          <Route path="*" element={<Navigate to="/" replace />} />
+        </Routes>
+      </main>
+    </div>
   );
 }
 
