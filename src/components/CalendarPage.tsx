@@ -54,17 +54,23 @@ export const CalendarPage: React.FC = () => {
   const fetchData = async () => {
     setLoading(true);
     try {
-      const [resData, loanData, eqData, studentData] = await Promise.all([
-        supabase.from('reservas').select('*').in('estado', ['Pendiente', 'Aprobada']),
-        supabase.from('prestamos').select('*').eq('estado', 'Activo'),
-        supabase.from('equipamiento').select('*'),
-        supabase.from('solicitudes_alumnos').select('*').not('estado', 'in', '("Rechazado","Cancelado","Entregado")')
-      ]);
+      // Usamos consultas individuales para que si una falla (ej: tabla no existe) las demás sigan funcionando
+      const res = await supabase.from('reservas').select('*').in('estado', ['Pendiente', 'Aprobada']);
+      if (res.data) setReservations(res.data);
 
-      if (resData.data) setReservations(resData.data);
-      if (loanData.data) setLoans(loanData.data);
-      if (eqData.data) setEquipments(eqData.data);
-      if (studentData.data) setStudentRequests(studentData.data);
+      const loansRes = await supabase.from('prestamos').select('*').eq('estado', 'Activo');
+      if (loansRes.data) setLoans(loansRes.data);
+
+      const eqRes = await supabase.from('equipamiento').select('*');
+      if (eqRes.data) setEquipments(eqRes.data);
+
+      try {
+        const studentRes = await supabase.from('solicitudes_alumnos').select('*').not('estado', 'in', '("Rechazado","Cancelado","Entregado")');
+        if (studentRes.data) setStudentRequests(studentRes.data);
+      } catch (e) {
+        console.warn('Tabla solicitudes_alumnos no disponible aún:', e);
+        setStudentRequests([]);
+      }
     } catch (error) {
       console.error('Error fetching calendar data:', error);
     } finally {
@@ -237,12 +243,21 @@ export const CalendarPage: React.FC = () => {
     if (!selectedDate) return null;
 
     const dayReservations = (reservations || []).filter(res => {
+      if (!res.fecha_inicio || !res.fecha_fin) return false;
       const start = startOfDay(parseISO(res.fecha_inicio));
       const end = endOfDay(parseISO(res.fecha_fin));
       return isWithinInterval(selectedDate, { start, end });
     });
 
+    const dayLoans = (loans || []).filter(loan => {
+      if (!loan.fecha_salida || !loan.fecha_devolucion_estimada) return false;
+      const start = startOfDay(parseISO(loan.fecha_salida));
+      const end = endOfDay(parseISO(loan.fecha_devolucion_estimada));
+      return isWithinInterval(selectedDate, { start, end });
+    });
+
     const dayRequests = (studentRequests || []).filter(req => {
+      if (!req.fecha_inicio || !req.fecha_fin) return false;
       const start = startOfDay(parseISO(req.fecha_inicio));
       const end = endOfDay(parseISO(req.fecha_fin));
       return isWithinInterval(selectedDate, { start, end });
