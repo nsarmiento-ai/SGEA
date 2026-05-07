@@ -86,13 +86,19 @@ export const LoanWizard: React.FC = () => {
   const [reservationId, setReservationId] = useState<string | null>(null);
 
   const fetchStudentRequests = async () => {
-    const { data } = await supabase
-      .from('solicitudes_alumnos')
-      .select('*')
-      .neq('estado', 'Entregado')
-      .neq('estado', 'Rechazado')
-      .neq('estado', 'Cancelado');
-    if (data) setStudentRequests(data);
+    try {
+      const { data, error } = await supabase
+        .from('solicitudes_alumnos')
+        .select('*')
+        .neq('estado', 'Entregado')
+        .neq('estado', 'Rechazado')
+        .neq('estado', 'Cancelado');
+      if (error) throw error;
+      if (data) setStudentRequests(data);
+    } catch (e) {
+      console.warn('Error fetching solicitudes_alumnos:', e);
+      setStudentRequests([]);
+    }
   };
 
   const selectStudentRequest = (req: StudentRequest) => {
@@ -462,80 +468,80 @@ export const LoanWizard: React.FC = () => {
             </div>
 
             <div className="bg-slate-50 border-b border-slate-100 px-4 py-2 flex items-center gap-4">
-              <span className="w-10 md:w-12"></span>
-              <span className="flex-1 text-[10px] font-black uppercase tracking-widest text-slate-400">Equipo / Modelo</span>
-              <span className="w-6"></span>
+              <span className="w-10"></span>
+              <span className="flex-1 text-[10px] font-black uppercase tracking-widest text-slate-400">Equipo</span>
+              <span className="w-16 text-center text-[10px] font-black uppercase tracking-widest text-slate-400">Estado</span>
+              <span className="w-8"></span>
             </div>
 
-            <div className="flex-1 overflow-y-auto p-3 md:p-4 space-y-1 custom-scrollbar">
+            <div className="flex-1 overflow-y-auto custom-scrollbar">
               {loading ? (
                 <div className="py-10 flex justify-center"><Loader2 className="animate-spin text-amber-500" /></div>
               ) : filtered.length === 0 ? (
                 <div className="py-10 text-center text-slate-400 text-sm italic">Sin resultados.</div>
-              ) : filtered.map(eq => {
-                const isReservedNow = (reservations || []).some(r => 
-                  (r.equipos_ids || []).includes(eq.id) &&
-                  (r.estado === 'Pendiente' || r.estado === 'Activa') &&
-                  isWithinInterval(new Date(), {
-                    start: parseISO(r.fecha_inicio),
-                    end: parseISO(r.fecha_fin)
-                  })
-                );
-                const nextRes = (reservations || [])
-                  .filter(r => (r.equipos_ids || []).includes(eq.id) && (r.estado === 'Pendiente' || r.estado === 'Activa') && isAfter(parseISO(r.fecha_inicio), new Date()))
-                  .sort((a, b) => parseISO(a.fecha_inicio).getTime() - parseISO(b.fecha_inicio).getTime())[0];
+              ) : (
+                <div className="divide-y divide-slate-100">
+                  {filtered.map(eq => {
+                    const isReservedNow = (reservations || []).some(r => 
+                      (r.equipos_ids || []).includes(eq.id) &&
+                      (r.estado === 'Pendiente' || r.estado === 'Activa') &&
+                      isWithinInterval(new Date(), {
+                        start: parseISO(r.fecha_inicio),
+                        end: parseISO(r.fecha_fin)
+                      })
+                    );
+                    const nextRes = (reservations || [])
+                      .filter(r => (r.equipos_ids || []).includes(eq.id) && (r.estado === 'Pendiente' || r.estado === 'Activa') && isAfter(parseISO(r.fecha_inicio), new Date()))
+                      .sort((a, b) => parseISO(a.fecha_inicio).getTime() - parseISO(b.fecha_inicio).getTime())[0];
 
-                const isNoHabilitado = eq.permiso_uso === 'No habilitado';
-                const isDisabled = isReservedNow || isNoHabilitado;
+                    const isNoHabilitado = eq.permiso_uso === 'No habilitado';
+                    const isDisabled = isReservedNow || isNoHabilitado;
 
-                return (
-                  <button
-                    key={eq.id}
-                    disabled={isDisabled}
-                    onClick={() => toggleSelect(eq.id)}
-                    className={cn(
-                      "w-full flex items-center gap-3 p-2.5 md:p-2 rounded-2xl border transition-all text-left",
-                      selectedIds.includes(eq.id) 
-                        ? "border-amber-500 bg-amber-50 ring-1 ring-amber-500" 
-                        : isDisabled
-                          ? "border-slate-100 bg-slate-50 opacity-60 cursor-not-allowed"
-                          : "border-slate-100 hover:border-slate-200 bg-white"
-                    )}
-                  >
-                    <div className="w-10 h-10 md:w-12 md:h-12 rounded-xl bg-slate-100 overflow-hidden flex-shrink-0">
-                      <img src={eq.foto_url || 'https://picsum.photos/seed/gear/100/100'} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-1.5">
-                        <p className="font-bold text-slate-900 truncate text-xs md:text-sm">{eq.nombre}</p>
-                        {eq.permiso_uso === 'Restringido' && <Lock className="w-2.5 h-2.5 text-blue-500" title="Restringido" />}
+                    return (
+                      <div
+                        key={eq.id}
+                        className={cn(
+                          "flex items-center gap-4 px-4 py-3 transition-colors cursor-pointer group",
+                          selectedIds.includes(eq.id) ? "bg-amber-50/50" : "hover:bg-slate-50",
+                          isDisabled && "opacity-50 grayscale bg-slate-50/50"
+                        )}
+                        onClick={() => !isDisabled && toggleSelect(eq.id)}
+                      >
+                        <div className="w-10 h-10 rounded-xl bg-slate-100 overflow-hidden flex-shrink-0 border border-slate-200">
+                          <img src={eq.foto_url || 'https://picsum.photos/seed/gear/100/100'} className="w-full h-full object-cover" referrerPolicy="no-referrer" alt={eq.nombre} />
+                        </div>
+                        
+                        <div className="flex-1 min-w-0">
+                          <p className="font-bold text-slate-900 truncate text-[11px] md:text-xs leading-tight">{eq.nombre}</p>
+                          <p className="text-[9px] font-bold text-slate-400 uppercase truncate mt-0.5">{eq.categoria}</p>
+                        </div>
+
+                        <div className="w-16 flex flex-col items-center">
+                          <span className={cn(
+                            "px-2 py-0.5 rounded text-[8px] font-black uppercase tracking-wider border",
+                            eq.estado === 'Disponible' && !isDisabled 
+                              ? "bg-green-50 text-green-600 border-green-200" 
+                              : "bg-red-50 text-red-600 border-red-200"
+                          )}>
+                            {isReservedNow ? 'Res' : isNoHabilitado ? 'Bloq' : eq.estado.slice(0, 4)}
+                          </span>
+                        </div>
+
+                        <div className="w-8 flex justify-center">
+                          <div className={cn(
+                            "w-5 h-5 rounded-lg border-2 flex items-center justify-center transition-all",
+                            selectedIds.includes(eq.id)
+                              ? "bg-amber-500 border-amber-500 text-white"
+                              : "border-slate-200 text-transparent group-hover:border-slate-300"
+                          )}>
+                            <Check className="w-3.5 h-3.5" strokeWidth={3} />
+                          </div>
+                        </div>
                       </div>
-                      <p className="text-[10px] md:text-xs text-slate-500 truncate">
-                        {isReservedNow ? (
-                          <span className="text-amber-600 font-bold flex items-center gap-1">
-                            <AlertCircle className="w-3 h-3" />
-                            Reservado
-                          </span>
-                        ) : isNoHabilitado ? (
-                          <span className="text-red-600 font-bold flex items-center gap-1">
-                            <AlertCircle className="w-3 h-3" />
-                            Bloqueado
-                          </span>
-                        ) : nextRes ? (
-                          <span className="text-slate-400 font-medium font-mono">
-                            Prox: {format(parseISO(nextRes.fecha_inicio), 'dd/MM HH:mm')}
-                          </span>
-                        ) : eq.modelo}
-                      </p>
-                    </div>
-                    {selectedIds.includes(eq.id) && (
-                      <div className="bg-amber-500 rounded-full p-1 shadow-md shadow-amber-200">
-                        <Check className="w-3 h-3 text-white" />
-                      </div>
-                    )}
-                  </button>
-                );
-              })}
+                    );
+                  })}
+                </div>
+              )}
             </div>
           </div>
         </div>
@@ -617,48 +623,17 @@ export const LoanWizard: React.FC = () => {
                     <User className="w-3.5 h-3.5 text-amber-500" />
                     Docente Responsable
                   </label>
-                  <div className="relative">
-                    <input
-                      required
-                      type="text"
-                      value={formData.docente_responsable || ''}
-                      onChange={e => setFormData({...formData, docente_responsable: e.target.value})}
-                      onFocus={() => setShowDocenteSuggestions(true)}
-                      className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-amber-500 transition-all text-sm"
-                      placeholder="Buscar docente..."
-                    />
-                    {showDocenteSuggestions && (
-                      <div className="absolute z-50 w-full mt-1 bg-white border border-slate-200 rounded-2xl shadow-xl max-h-52 overflow-y-auto custom-scrollbar">
-                        <div className="p-3 border-b border-slate-50 text-[9px] font-black text-slate-400 uppercase tracking-widest bg-slate-50/50">
-                          Sugerencias
-                        </div>
-                        {(docentes || [])
-                          .filter(d => d.nombre_completo.toLowerCase().includes((formData.docente_responsable || '').toLowerCase()))
-                          .sort((a, b) => a.nombre_completo.localeCompare(b.nombre_completo))
-                          .map(d => (
-                            <button
-                              key={d.id}
-                              type="button"
-                              onClick={() => {
-                                setFormData({...formData, docente_responsable: d.nombre_completo});
-                                setShowDocenteSuggestions(false);
-                              }}
-                              className="w-full text-left px-4 py-3 hover:bg-amber-50 transition-colors border-b border-slate-50 last:border-0"
-                            >
-                              <p className="text-xs font-bold text-slate-700">{d.nombre_completo}</p>
-                              <p className="text-[10px] text-slate-400 font-medium">{d.email}</p>
-                            </button>
-                          ))}
-                        <button
-                          type="button"
-                          onClick={() => setShowDocenteSuggestions(false)}
-                          className="w-full text-center px-4 py-2 text-[9px] font-black text-slate-400 hover:text-red-500 uppercase tracking-widest bg-slate-50"
-                        >
-                          Cerrar
-                        </button>
-                      </div>
-                    )}
-                  </div>
+                  <select
+                    required
+                    value={formData.docente_responsable || ''}
+                    onChange={e => setFormData({...formData, docente_responsable: e.target.value})}
+                    className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-amber-500 transition-all appearance-none text-sm"
+                  >
+                    <option value="">Seleccionar Docente...</option>
+                    {CONTACTS_DATA.sort((a, b) => a.nombre.localeCompare(b)).map(docente => (
+                      <option key={docente.email} value={docente.nombre}>{docente.nombre}</option>
+                    ))}
+                  </select>
                 </div>
               </div>
             </div>

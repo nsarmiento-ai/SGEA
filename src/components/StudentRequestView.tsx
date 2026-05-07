@@ -6,6 +6,7 @@ import { MATERIAS_CATEGORIES } from '../constants';
 import { Loader2, Package, Search, Users, BookOpen, Calendar, CheckCircle, AlertCircle, ArrowLeft, Filter, Info } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { useNavigate } from 'react-router-dom';
+import { cn } from '../lib/utils';
 
 export const StudentRequestView: React.FC = () => {
   const navigate = useNavigate();
@@ -338,14 +339,17 @@ export const StudentRequestView: React.FC = () => {
                                   </div>
                                 </td>
                                 <td className="px-6 py-4 whitespace-nowrap">
-                                  <span className={cn(
-                                    "px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-wider border",
-                                    item.estado === 'Disponible' 
-                                      ? "bg-green-50 text-green-600 border-green-200" 
-                                      : "bg-red-50 text-red-600 border-red-200"
-                                  )}>
-                                    {item.estado}
-                                  </span>
+                                  <div className="flex flex-col gap-1">
+                                    <span className={cn(
+                                      "px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-wider border text-center",
+                                      item.estado === 'Disponible' 
+                                        ? "bg-green-50 text-green-600 border-green-200" 
+                                        : "bg-red-50 text-red-600 border-red-200"
+                                    )}>
+                                      {item.estado}
+                                    </span>
+                                    <span className="text-[8px] font-black uppercase text-slate-300 text-center">{item.categoria}</span>
+                                  </div>
                                 </td>
                                 <td className="px-6 py-4 text-right">
                                   <div className={cn(
