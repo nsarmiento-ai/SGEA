@@ -102,7 +102,11 @@ function AppContent() {
                   {/* Redirección inicial basada en el rol */}
                   <Route 
                     path="/" 
-                    element={role === 'Administración' ? <Navigate to="/catalogo" replace /> : <Navigate to="/reservas" replace />} 
+                    element={
+                      role === 'Administración' ? <Navigate to="/catalogo" replace /> :
+                      role === 'Director' ? <Navigate to="/autorizacion-direccion" replace /> :
+                      <Navigate to="/reservas" replace />
+                    } 
                   />
 
                   {/* Rutas de Administración */}
@@ -128,7 +132,7 @@ function AppContent() {
                   <Route 
                     path="/autorizacion-direccion" 
                     element={
-                      (activeResponsable === 'n.sarmiento@cine.unt.edu.ar' || activeResponsable === 'jveiga@cine.unt.edu.ar') 
+                      (role === 'Director' || (sessionStorage.getItem('selected_role') === 'Director'))
                       ? <StudentRequestsManager filterDireccion /> 
                       : <Navigate to="/" replace />
                     } 
@@ -139,8 +143,8 @@ function AppContent() {
                   <Route path="/activos" element={<ActiveLoans />} />
 
                   {/* Aliases y Fallbacks */}
-                  <Route path="/admin" element={<Navigate to={role === 'Administración' ? "/catalogo" : "/reservas"} replace />} />
-                  <Route path="/configuracion" element={<Navigate to={role === 'Administración' ? "/catalogo" : "/reservas"} replace />} />
+                  <Route path="/admin" element={<Navigate to={role === 'Administración' ? "/catalogo" : role === 'Director' ? "/autorizacion-direccion" : "/reservas"} replace />} />
+                  <Route path="/configuracion" element={<Navigate to={role === 'Administración' ? "/catalogo" : role === 'Director' ? "/autorizacion-direccion" : "/reservas"} replace />} />
                   <Route path="*" element={<Navigate to="/" replace />} />
                 </Routes>
               </main>

@@ -128,7 +128,7 @@ export const StudentRequestsManager: React.FC<{ filterDireccion?: boolean }> = (
   return (
     <div className="p-8 max-w-6xl mx-auto">
       {/* Visual Identity Headers */}
-      {isDireccion && filterDireccion && (
+      {role === 'Director' && filterDireccion && (
         <div className="mb-6 bg-[#450a0a] text-white px-6 py-3 rounded-2xl flex items-center justify-between shadow-xl border-l-4 border-amber-500">
           <div className="flex items-center gap-3">
             <ShieldCheck className="w-5 h-5 text-amber-500" />

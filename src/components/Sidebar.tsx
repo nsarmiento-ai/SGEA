@@ -22,46 +22,34 @@ interface SidebarProps {
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
-  const { activeResponsable, profile, userEmail } = useApp();
-  const role = profile?.rol;
-
-  const isDireccion = userEmail === 'n.sarmiento@cine.unt.edu.ar' || userEmail === 'jveiga@cine.unt.edu.ar';
+  const { activeResponsable, profile, userEmail, isSuperAdmin, role, setRole } = useApp();
 
   const menuItems = [
-    { icon: LayoutDashboard, label: 'Catálogo General', path: '/catalogo' },
-    { icon: Calendar, label: 'Calendario', path: '/calendario' },
+    { icon: LayoutDashboard, label: 'Inventario', path: '/catalogo' },
+    { icon: Calendar, label: 'Calendario Global', path: '/calendario' },
     { icon: Calendar, label: 'Nueva Reserva', path: '/reservas' },
     { icon: CheckSquare, label: 'Gestión de Avales', path: '/autorizar-alumnos' },
-    { icon: ShieldCheck, label: 'Rodajes Externos', path: '/autorizacion-direccion' },
+    { icon: ShieldCheck, label: 'Aprobación Dirección', path: '/autorizacion-direccion' },
     { icon: Clock, label: 'Reservas Pendientes', path: '/reservas-pendientes' },
     { icon: AlertTriangle, label: 'Panel de Mora', path: '/mora' },
     { icon: Clock, label: role === 'Docente' ? 'Mis Préstamos' : 'Devolución', path: '/activos' },
-    { icon: PlusCircle, label: 'Nuevo Préstamo', path: '/nuevo-prestamo' },
-    { icon: History, label: 'Historial Global', path: '/historial' },
+    { icon: PlusCircle, label: 'Despacho Directo', path: '/nuevo-prestamo' },
+    { icon: History, label: 'Historial de Uso', path: '/historial' },
   ].filter(item => {
-    // Logic for Dirección (Sarmiento/Veiga)
-    if (isDireccion) {
-      return [
-        'Calendario', 
-        'Catálogo General', 
-        'Panel de Mora', 
-        'Rodajes Externos',
-        'Gestión de Avales'
-      ].includes(item.label);
+    // If role is Director
+    if (role === 'Director') {
+      return ['Calendario Global', 'Inventario', 'Panel de Mora', 'Aprobación Dirección'].includes(item.label);
     }
 
-    // Logic for standard Docente
+    // If role is Docente
     if (role === 'Docente') {
-      return ['Calendario', 'Nueva Reserva', 'Panel de Mora', 'Mis Préstamos', 'Gestión de Avales'].includes(item.label);
+      return ['Calendario Global', 'Nueva Reserva', 'Mis Préstamos', 'Gestión de Avales'].includes(item.label);
     }
 
-    // Logic for Administración - everything except Dirección specifics unless they are the specific emails
+    // If role is Administración
     if (role === 'Administración') {
-      const excluded = ['Rodajes Externos'];
-      if (!isDireccion) {
-        return !excluded.includes(item.label);
-      }
-      return true;
+      const excluded = ['Aprobación Dirección', 'Gestión de Avales']; 
+      return !excluded.includes(item.label);
     }
 
     return false;
@@ -93,7 +81,9 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
             </div>
             <div>
               <h1 className="font-display font-bold text-white text-xl leading-none">SGEA</h1>
-              <span className="text-[10px] uppercase tracking-widest text-slate-500 font-bold">Administración Abierta</span>
+              <span className="text-[10px] uppercase tracking-widest text-slate-500 font-bold">
+                {role === 'Director' ? 'Dirección' : role === 'Docente' ? 'Docente' : 'Pañol'}
+              </span>
             </div>
           </div>
         </div>
@@ -119,11 +109,22 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
           ))}
         </nav>
 
-        <div className="p-4 border-t border-slate-800">
-          <div className="bg-slate-800/50 rounded-xl p-4 mb-4">
-            <p className="text-[10px] uppercase font-bold text-slate-500 mb-1">Responsable de Turno</p>
+        <div className="p-4 border-t border-slate-800 space-y-2">
+          {isSuperAdmin && (
+            <button
+              onClick={() => setRole(null)}
+              className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-amber-400 hover:bg-amber-500/10 transition-colors font-medium text-sm"
+            >
+              <ShieldCheck className="w-5 h-5" />
+              Cambiar de Rol
+            </button>
+          )}
+
+          <div className="bg-slate-800/50 rounded-xl p-4">
+            <p className="text-[10px] uppercase font-bold text-slate-500 mb-1">Responsable</p>
             <p className="text-sm font-semibold text-white truncate">{activeResponsable}</p>
           </div>
+          
           <button
             onClick={() => supabase.auth.signOut()}
             className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-red-400 hover:bg-red-500/10 transition-colors font-medium"

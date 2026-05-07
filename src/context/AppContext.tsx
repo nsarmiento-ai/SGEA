@@ -2,25 +2,29 @@ import React, { createContext, useContext, useState, useEffect, useRef } from 'r
 import { supabase } from '../lib/supabase';
 import { Responsable, Profile } from '../types';
 
+export type AppRole = 'Administración' | 'Docente' | 'Director';
+
 interface AppContextType {
   activeResponsable: string | null;
   setActiveResponsable: (name: string | null) => void;
   loading: boolean;
-  role: 'Administración' | 'Docente' | null;
+  role: AppRole | null;
   userEmail: string | null;
   profile: Profile | null;
-  setRole: (role: 'Administración' | 'Docente') => void;
+  setRole: (role: AppRole | null) => void;
   toggleFavorite: (equipmentId: string) => Promise<void>;
+  isSuperAdmin: boolean;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
 
 export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [activeResponsable, setActiveResponsableState] = useState<string | null>(null);
-  const [role, setRole] = useState<'Administración' | 'Docente' | null>(null);
+  const [role, setRole] = useState<AppRole | null>(null);
   const [userEmail, setUserEmail] = useState<string | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
+  const [isSuperAdmin, setIsSuperAdmin] = useState(false);
   const lastSessionId = useRef<string | null>(null);
 
   useEffect(() => {
@@ -44,6 +48,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       setUserEmail(null);
       setProfile(null);
       setLoading(false);
+      setIsSuperAdmin(false);
       lastSessionId.current = null;
       return;
     }
@@ -59,6 +64,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const fullName = session.user.user_metadata.full_name || session.user.email;
     setUserEmail(email);
 
+    const superAdmins = ['n.sarmiento@cine.unt.edu.ar', 'jveiga@cine.unt.edu.ar'];
+    const isSpecial = superAdmins.includes(email);
+    setIsSuperAdmin(isSpecial);
+
     try {
       let { data: profile, error: profileError } = await supabase
         .from('profiles')
@@ -67,7 +76,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         .maybeSingle();
 
       if (!profile) {
-        const newRole = email?.endsWith('@cine.unt.edu.ar') ? null : 'Docente';
+        const newRole = email?.endsWith('@cine.unt.edu.ar') ? 'Administración' : 'Docente';
         const { data: newProfile, error: insertError } = await supabase
           .from('profiles')
           .insert([{ id: session.user.id, email, rol: newRole, favoritos: [] }])
@@ -79,8 +88,19 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       }
 
       setProfile(profile);
-      const isSpecialUser = email === 'n.sarmiento@cine.unt.edu.ar';
-      setRole(isSpecialUser ? null : (profile?.rol || null));
+      
+      // If super admin, we let them pick. We might want to persist their last choice in session storage
+      if (isSpecial) {
+        const savedRole = sessionStorage.getItem('selected_role') as AppRole;
+        if (savedRole) {
+          setRole(savedRole);
+        } else {
+          setRole(null); // Force selection screen
+        }
+      } else {
+        setRole(profile?.rol as AppRole || null);
+      }
+      
       setActiveResponsableState(fullName);
     } catch (error) {
       console.error('Error syncing user:', error);
@@ -89,16 +109,16 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
   };
 
-  const setRoleAndSave = async (newRole: 'Administración' | 'Docente') => {
+  const setRoleAndSave = async (newRole: AppRole | null) => {
     if (!profile) return;
     
-    const isSpecialUser = userEmail === 'n.sarmiento@cine.unt.edu.ar';
-    
-    if (isSpecialUser) {
+    if (isSuperAdmin && newRole) {
+      sessionStorage.setItem('selected_role', newRole);
       setRole(newRole);
-      setProfile({ ...profile, rol: newRole });
       return;
     }
+
+    if (!newRole) return;
 
     const { error } = await supabase
       .from('profiles')

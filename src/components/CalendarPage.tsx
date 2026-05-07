@@ -34,10 +34,10 @@ import { motion, AnimatePresence } from 'motion/react';
 import { cn } from '../lib/utils';
 
 export const CalendarPage: React.FC = () => {
-  const { profile, userEmail } = useApp();
-  const role = profile?.rol;
-  const isAdministracion = role === 'Administración';
-  const isDireccion = userEmail === 'jveiga@cine.unt.edu.ar' || userEmail === 'n.sarmiento@cine.unt.edu.ar';
+  const { profile, userEmail, role: activeRole, isSuperAdmin } = useApp();
+  const isAdministracion = activeRole === 'Administración';
+  const isDocente = activeRole === 'Docente';
+  const isDirector = activeRole === 'Director';
 
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
@@ -409,7 +409,7 @@ export const CalendarPage: React.FC = () => {
   return (
     <div className="p-4 md:p-8 max-w-7xl mx-auto pt-16 lg:pt-8">
       {/* Visual Identity Headers */}
-      {isDireccion && (
+      {isDirector && (
         <div className="mb-6 bg-[#450a0a] text-white px-6 py-3 rounded-2xl flex items-center justify-between shadow-xl border-l-4 border-amber-500">
           <div className="flex items-center gap-3">
             <span className="w-2 h-2 rounded-full bg-amber-500 animate-pulse"></span>
@@ -419,7 +419,7 @@ export const CalendarPage: React.FC = () => {
         </div>
       )}
 
-      {role === 'Docente' && (
+      {isDocente && (
         <div className="mb-6 bg-amber-50 text-amber-900 px-6 py-3 rounded-2xl flex items-center justify-between border border-amber-100">
           <div className="flex items-center gap-3">
             <User className="w-5 h-5 text-amber-500" />

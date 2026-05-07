@@ -1,44 +1,73 @@
 import React from 'react';
 import { useApp } from '../context/AppContext';
-import { User, Shield } from 'lucide-react';
+import { User, Shield, ShieldCheck, Box } from 'lucide-react';
 
 export const RoleSelectionModal: React.FC = () => {
-  const { setRole, userEmail } = useApp();
+  const { setRole, userEmail, isSuperAdmin } = useApp();
 
   const isCine = userEmail?.endsWith('@cine.unt.edu.ar');
 
   return (
-    <div className="fixed inset-0 bg-black/80 flex items-center justify-center p-4 z-50">
-      <div className="bg-white rounded-2xl p-8 max-w-md w-full shadow-2xl">
-        <h2 className="text-2xl font-bold text-slate-900 mb-6 text-center">Selecciona tu Rol</h2>
-        <p className="text-slate-600 mb-8 text-center">
-          Para configurar tu acceso, por favor selecciona cómo utilizarás el sistema.
-        </p>
+    <div className="fixed inset-0 bg-black/90 flex items-center justify-center p-4 z-50 backdrop-blur-sm">
+      <div className="bg-white rounded-3xl p-8 max-w-lg w-full shadow-2xl border border-slate-100">
+        <div className="text-center mb-8">
+          <div className="w-16 h-16 bg-amber-500 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg shadow-amber-200">
+            <ShieldCheck className="w-8 h-8 text-white" />
+          </div>
+          <h2 className="text-3xl font-black text-slate-900 tracking-tight">Selecciona tu Rol</h2>
+          <p className="text-slate-500 mt-2 font-medium">
+            Personaliza tu experiencia de trabajo para hoy.
+          </p>
+        </div>
         
-        <div className="space-y-4">
-          {isCine && (
+        <div className="grid gap-4">
+          {(isCine || isSuperAdmin) && (
             <button
               onClick={() => setRole('Administración')}
-              className="w-full flex items-center gap-4 p-4 rounded-xl border border-slate-200 hover:border-amber-500 hover:bg-amber-50 transition-all"
+              className="group w-full flex items-center gap-5 p-5 rounded-2xl border-2 border-slate-100 hover:border-amber-500 hover:bg-amber-50 transition-all text-left"
             >
-              <Shield className="w-8 h-8 text-amber-500" />
-              <div className="text-left">
-                <p className="font-bold text-slate-900">Administrador</p>
-                <p className="text-sm text-slate-500">Gestión total de Administración</p>
+              <div className="w-14 h-14 rounded-xl bg-slate-50 group-hover:bg-white flex items-center justify-center transition-colors">
+                <Box className="w-7 h-7 text-slate-400 group-hover:text-amber-500" />
+              </div>
+              <div className="flex-1">
+                <p className="font-black text-slate-900 uppercase tracking-wider text-sm">Modo Administrador</p>
+                <p className="text-xs text-slate-500 font-bold mt-0.5 leading-relaxed">Gestión de stock, despacho directo y control de devoluciones (Pañol).</p>
               </div>
             </button>
           )}
+
           <button
             onClick={() => setRole('Docente')}
-            className="w-full flex items-center gap-4 p-4 rounded-xl border border-slate-200 hover:border-amber-500 hover:bg-amber-50 transition-all"
+            className="group w-full flex items-center gap-5 p-5 rounded-2xl border-2 border-slate-100 hover:border-amber-500 hover:bg-amber-50 transition-all text-left"
           >
-            <User className="w-8 h-8 text-slate-500" />
-            <div className="text-left">
-              <p className="font-bold text-slate-900">Docente</p>
-              <p className="text-sm text-slate-500">Acceso a reservas y préstamos</p>
+            <div className="w-14 h-14 rounded-xl bg-slate-50 group-hover:bg-white flex items-center justify-center transition-colors">
+              <User className="w-7 h-7 text-slate-400 group-hover:text-amber-500" />
+            </div>
+            <div className="flex-1">
+              <p className="font-black text-slate-900 uppercase tracking-wider text-sm">Modo Docente</p>
+              <p className="text-xs text-slate-500 font-bold mt-0.5 leading-relaxed">Gestión de avales académicos para sus alumnos y reservas propias.</p>
             </div>
           </button>
+
+          {isSuperAdmin && (
+            <button
+              onClick={() => setRole('Director')}
+              className="group w-full flex items-center gap-5 p-5 rounded-2xl border-2 border-slate-100 hover:border-[#450a0a] hover:bg-red-50 transition-all text-left"
+            >
+              <div className="w-14 h-14 rounded-xl bg-slate-50 group-hover:bg-white flex items-center justify-center transition-colors">
+                <Shield className="w-7 h-7 text-slate-400 group-hover:text-[#450a0a]" />
+              </div>
+              <div className="flex-1">
+                <p className="font-black text-[#450a0a] uppercase tracking-wider text-sm">Modo Director</p>
+                <p className="text-xs text-slate-500 font-bold mt-0.5 leading-relaxed">Autorización de rodajes externos y supervisión global del sistema.</p>
+              </div>
+            </button>
+          )}
         </div>
+
+        <p className="text-center mt-8 text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+          SGEA - Sistema de Gestión de Equipamiento Audiovisual
+        </p>
       </div>
     </div>
   );
