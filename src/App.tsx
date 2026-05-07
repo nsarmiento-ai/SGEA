@@ -41,7 +41,7 @@ function AppContent() {
     };
 
     const seedAulasIfNeeded = async () => {
-      if (profile?.rol === 'Pañolero') {
+      if (profile?.rol === 'Administración') {
         try {
           const { data: existing } = await supabase.from('equipamiento').select('nombre').eq('categoria', 'Espacio');
           const existingNames = (existing || []).map(e => e.nombre);
@@ -62,7 +62,7 @@ function AppContent() {
     };
 
     const seedDocentesIfNeeded = async () => {
-      if (profile?.rol === 'Pañolero') {
+      if (profile?.rol === 'Administración') {
         try {
           const { data: existing } = await supabase.from('responsables').select('nombre_completo, email');
           const existingMap = new Map((existing || []).map(r => [r.nombre_completo, r.email]));
@@ -140,25 +140,25 @@ function AppContent() {
                   {/* Redirección inicial basada en el rol */}
                   <Route 
                     path="/" 
-                    element={role === 'Pañolero' ? <Navigate to="/catalogo" replace /> : <Navigate to="/reservas" replace />} 
+                    element={role === 'Administración' ? <Navigate to="/catalogo" replace /> : <Navigate to="/reservas" replace />} 
                   />
 
-                  {/* Rutas de Pañolero (Admin) */}
+                  {/* Rutas de Administración */}
                   <Route 
                     path="/catalogo" 
-                    element={role === 'Pañolero' ? <Catalog /> : <Navigate to="/reservas" replace />} 
+                    element={role === 'Administración' ? <Catalog /> : <Navigate to="/reservas" replace />} 
                   />
                   <Route 
                     path="/reservas-pendientes" 
-                    element={role === 'Pañolero' ? <PendingReservations /> : <Navigate to="/reservas" replace />} 
+                    element={role === 'Administración' ? <PendingReservations /> : <Navigate to="/reservas" replace />} 
                   />
                   <Route 
                     path="/nuevo-prestamo" 
-                    element={role === 'Pañolero' ? <LoanWizard /> : <Navigate to="/reservas" replace />} 
+                    element={role === 'Administración' ? <LoanWizard /> : <Navigate to="/reservas" replace />} 
                   />
                   <Route 
                     path="/historial" 
-                    element={role === 'Pañolero' ? <AuditLogs /> : <Navigate to="/reservas" replace />} 
+                    element={role === 'Administración' ? <AuditLogs /> : <Navigate to="/reservas" replace />} 
                   />
 
                   {/* Rutas compartidas o específicas de Docente */}
@@ -177,8 +177,8 @@ function AppContent() {
                   <Route path="/activos" element={<ActiveLoans />} />
 
                   {/* Aliases y Fallbacks */}
-                  <Route path="/admin" element={<Navigate to={role === 'Pañolero' ? "/catalogo" : "/reservas"} replace />} />
-                  <Route path="/configuracion" element={<Navigate to={role === 'Pañolero' ? "/catalogo" : "/reservas"} replace />} />
+                  <Route path="/admin" element={<Navigate to={role === 'Administración' ? "/catalogo" : "/reservas"} replace />} />
+                  <Route path="/configuracion" element={<Navigate to={role === 'Administración' ? "/catalogo" : "/reservas"} replace />} />
                   <Route path="*" element={<Navigate to="/" replace />} />
                 </Routes>
               </main>

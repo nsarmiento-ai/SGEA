@@ -246,7 +246,7 @@ export const Catalog: React.FC = () => {
             <span className="hidden sm:inline">{showFavorites ? 'Viendo Habituales' : 'Ver Habituales'}</span>
             <span className="sm:hidden">Habituales</span>
           </button>
-          {role === 'Pañolero' && (
+          {role === 'Administración' && (
             <button 
               onClick={() => setShowArchived(!showArchived)}
               className={cn(
@@ -261,7 +261,7 @@ export const Catalog: React.FC = () => {
               <span className="sm:hidden">{showArchived ? 'Activos' : 'Archivo'}</span>
             </button>
           )}
-          {role === 'Pañolero' && (
+          {role === 'Administración' && (
             <button 
               onClick={() => { setEditingItem(null); setIsModalOpen(true); }}
               className="btn-primary flex items-center gap-2 px-3 py-2 md:px-4 md:py-2 text-xs md:text-sm"
@@ -437,7 +437,7 @@ export const Catalog: React.FC = () => {
                       >
                         <History className="w-4 h-4" />
                       </button>
-                      {role === 'Pañolero' && (
+                      {role === 'Administración' && (
                         <>
                           <button 
                             onClick={() => { setEditingItem(eq); setIsModalOpen(true); }}
@@ -631,7 +631,7 @@ export const Catalog: React.FC = () => {
                         <button onClick={() => toggleFavorite(eq.id)} className={cn("p-1.5 rounded-lg transition-all", (profile?.favoritos || []).includes(eq.id) ? "text-amber-500" : "text-slate-300 hover:text-slate-400")} title="Favorito">
                           <Star className={cn("w-4 h-4", (profile?.favoritos || []).includes(eq.id) && "fill-current")} />
                         </button>
-                        {role === 'Pañolero' && (
+                        {role === 'Administración' && (
                           <>
                             <button onClick={() => { setEditingItem(eq); setIsModalOpen(true); }} className="p-1.5 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-lg" title="Editar">
                               <Edit2 className="w-4 h-4" />

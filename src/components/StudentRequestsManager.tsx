@@ -28,8 +28,8 @@ export const StudentRequestsManager: React.FC<{ filterDireccion?: boolean }> = (
       query = query.eq('estado', 'Pendiente de Dirección');
     } else {
       query = query.eq('estado', 'Pendiente de Aval Docente');
-      if (role === 'Docente' && docenteName) {
-        query = query.eq('docente_nombre', docenteName);
+      if (role === 'Docente' && activeResponsable) {
+        query = query.eq('docente_id', activeResponsable);
       }
     }
 
@@ -166,8 +166,8 @@ export const StudentRequestsManager: React.FC<{ filterDireccion?: boolean }> = (
 
                     <h3 className="text-xl font-black text-slate-900 mb-6 flex items-center gap-3">
                       <User className="w-5 h-5 text-amber-500" />
-                      {req.alumno_nombre} 
-                      <span className="text-slate-400 text-sm font-bold">DNI: {req.alumno_dni}</span>
+                      {req.responsable} 
+                      <span className="text-slate-400 text-sm font-bold">DNI: {req.dni}</span>
                     </h3>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
@@ -196,7 +196,7 @@ export const StudentRequestsManager: React.FC<{ filterDireccion?: boolean }> = (
                     <div>
                       <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2">Equipamiento Solicitado</p>
                       <div className="flex flex-wrap gap-2">
-                        {req.equipos_ids.map(id => (
+                        {req.equipos.map(id => (
                           <div key={id} className="bg-white border border-slate-200 px-3 py-1.5 rounded-lg flex items-center gap-2">
                             <Package className="w-3 h-3 text-slate-400" />
                             <span className="text-xs font-bold text-slate-700">{equipment[id]?.nombre || 'Equipo no encontrado'}</span>

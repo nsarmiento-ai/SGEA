@@ -96,10 +96,10 @@ export const LoanWizard: React.FC = () => {
 
   const selectStudentRequest = (req: StudentRequest) => {
     setSelectedStudentRequestId(req.id);
-    setSelectedIds(req.equipos_ids);
+    setSelectedIds(req.equipos);
     setFormData({
-      alumno_nombre: req.alumno_nombre,
-      alumno_dni: req.alumno_dni,
+      alumno_nombre: req.responsable,
+      alumno_dni: req.dni,
       materia: req.materia,
       docente_responsable: req.docente_nombre,
       fechaDevolucion: format(parseISO(req.fecha_fin), "yyyy-MM-dd'T'HH:mm"),
@@ -413,7 +413,7 @@ export const LoanWizard: React.FC = () => {
                     )}
                   >
                     <div className="min-w-0">
-                      <p className="text-sm font-bold text-slate-900 truncate">{req.alumno_nombre}</p>
+                      <p className="text-sm font-bold text-slate-900 truncate">{req.responsable}</p>
                       <p className="text-[10px] text-slate-400 font-bold uppercase tracking-tight">{req.materia}</p>
                     </div>
                     <div className={cn(

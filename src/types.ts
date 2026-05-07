@@ -84,26 +84,27 @@ export type StudentRequestStatus =
 
 export interface StudentRequest {
   id: string;
-  alumno_nombre: string;
-  alumno_dni: string;
-  integrantes?: string; // JSON or text list of names/DNIs
+  responsable: string; // matches alumno_nombre
+  dni: string; // matches alumno_dni
+  integrantes?: string; 
   materia: string;
-  docente_nombre: string; // The one who must approve
+  docente_id: string; // Email or identifier of the teacher
+  docente_nombre: string; // Name for display
   tipo_uso: 'Uso en Escuela' | 'Uso Externo';
-  equipos_ids: string[];
+  equipos: string[]; // jsonb array of equipment IDs
   fecha_inicio: string;
   fecha_fin: string;
   estado: StudentRequestStatus;
   observaciones?: string;
   created_at?: string;
-  autorizado_por_docente?: string; // Email/UID of teacher who approved
-  autorizado_por_direccion?: string; // Email/UID of director who approved
+  autorizado_por_docente?: string;
+  autorizado_por_direccion?: string;
 }
 
 export interface Profile {
   id: string;
   email: string;
-  rol: 'Pañolero' | 'Docente' | null;
+  rol: 'Administración' | 'Docente' | null;
   favoritos: string[];
   created_at?: string;
 }

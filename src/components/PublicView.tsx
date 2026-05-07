@@ -51,6 +51,7 @@ export const PublicView: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [category, setCategory] = useState('Todas');
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
   
   // Calendar State
   const [currentMonth, setCurrentMonth] = useState(new Date());
@@ -87,6 +88,12 @@ export const PublicView: React.FC = () => {
       console.error('Error fetching public data:', error);
     }
     setLoading(false);
+  };
+
+  const toggleSelection = (id: string) => {
+    setSelectedIds(prev => 
+      prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]
+    );
   };
 
   const categories = ['Todas', ...Array.from(new Set(equipments.map(e => e.categoria || 'Otros')))];
@@ -246,6 +253,23 @@ export const PublicView: React.FC = () => {
                               </div>
                             </div>
                           )}
+
+                          <div className="mt-auto pt-5">
+                            <button
+                              onClick={() => toggleSelection(eq.id)}
+                              disabled={eq.estado !== 'Disponible'}
+                              className={cn(
+                                "w-full py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all border",
+                                selectedIds.includes(eq.id)
+                                  ? "bg-slate-900 text-white border-slate-900 shadow-lg shadow-slate-900/20"
+                                  : eq.estado === 'Disponible'
+                                    ? "bg-white text-slate-600 border-slate-200 hover:border-slate-900 hover:text-slate-900"
+                                    : "bg-slate-50 text-slate-300 border-slate-100 cursor-not-allowed"
+                              )}
+                            >
+                              {selectedIds.includes(eq.id) ? 'Seleccionado' : eq.estado === 'Disponible' ? 'Añadir a Pedido' : 'No Disponible'}
+                            </button>
+                          </div>
                         </div>
                       </motion.div>
                     );
@@ -298,6 +322,31 @@ export const PublicView: React.FC = () => {
           )}
         </AnimatePresence>
       </main>
+
+      {/* Floating Action Button for selection */}
+      <AnimatePresence>
+        {selectedIds.length > 0 && (
+          <motion.div
+            initial={{ y: 100, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            exit={{ y: 100, opacity: 0 }}
+            className="fixed bottom-8 left-1/2 -translate-x-1/2 z-40"
+          >
+            <button
+              onClick={() => navigate(`/solicitud?items=${selectedIds.join(',')}`)}
+              className="bg-slate-900 text-white px-8 py-4 rounded-full shadow-2xl flex items-center gap-4 hover:scale-105 transition-transform group"
+            >
+              <div className="flex flex-col items-start">
+                <span className="text-[10px] font-black uppercase tracking-widest opacity-60">Equipos Seleccionados</span>
+                <span className="text-sm font-bold">{selectedIds.length} {selectedIds.length === 1 ? 'Equipo' : 'Equipos'}</span>
+              </div>
+              <div className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center group-hover:bg-white/20 transition-colors border border-white/10">
+                <ChevronRight className="w-5 h-5" />
+              </div>
+            </button>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       <footer className="py-12 border-t border-slate-200 text-center">
         <p className="text-xs font-bold text-slate-300 uppercase tracking-[0.2em] mb-4">Escuela Universitaria de Cine, Video y Televisión - UNT</p>

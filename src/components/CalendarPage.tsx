@@ -36,7 +36,7 @@ import { cn } from '../lib/utils';
 export const CalendarPage: React.FC = () => {
   const { profile } = useApp();
   const role = profile?.rol;
-  const isPañolero = role === 'Pañolero';
+  const isAdministracion = role === 'Administración';
 
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
@@ -211,7 +211,7 @@ export const CalendarPage: React.FC = () => {
                       isStudent && !isAuthorized && "md:border-dashed md:border-slate-400"
                     )}>
                       <span className="hidden md:inline">
-                         {isPañolero ? `${label?.split(' ')[0]}: ` : ''}
+                         {isAdministracion ? `${label?.split(' ')[0]}: ` : ''}
                          {(event.equipos_ids || []).map((id: string) => (equipments || []).find(e => e.id === id)?.nombre).filter(Boolean).slice(0, 2).join(', ')}
                          {(event.equipos_ids || []).length > 2 && '...'}
                       </span>

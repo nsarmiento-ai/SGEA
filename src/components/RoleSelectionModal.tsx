@@ -18,7 +18,7 @@ export const RoleSelectionModal: React.FC = () => {
         <div className="space-y-4">
           {isCine && (
             <button
-              onClick={() => setRole('Pañolero')}
+              onClick={() => setRole('Administración')}
               className="w-full flex items-center gap-4 p-4 rounded-xl border border-slate-200 hover:border-amber-500 hover:bg-amber-50 transition-all"
             >
               <Shield className="w-8 h-8 text-amber-500" />

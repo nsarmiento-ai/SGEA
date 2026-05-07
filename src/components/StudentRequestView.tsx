@@ -15,10 +15,11 @@ export const StudentRequestView: React.FC = () => {
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   
   const [formData, setFormData] = useState({
-    alumno_nombre: '',
-    alumno_dni: '',
+    responsable: '',
+    dni: '',
     integrantes: '',
     materia: '',
+    docente_id: '',
     docente_nombre: '',
     tipo_uso: 'Uso en Escuela' as 'Uso en Escuela' | 'Uso Externo',
     fecha_inicio: '',
@@ -41,6 +42,13 @@ export const StudentRequestView: React.FC = () => {
       setLoading(false);
     };
     fetchEquipment();
+
+    // Check for pre-selected items in URL
+    const params = new URLSearchParams(window.location.search);
+    const items = params.get('items');
+    if (items) {
+      setSelectedIds(items.split(',').filter(id => id.length > 0));
+    }
   }, []);
 
   const filteredEquipment = equipment.filter(e => 
@@ -66,7 +74,7 @@ export const StudentRequestView: React.FC = () => {
 
     const newRequest: Partial<StudentRequest> = {
       ...formData,
-      equipos_ids: selectedIds,
+      equipos: selectedIds,
       estado: 'Pendiente de Aval Docente',
       created_at: new Date().toISOString()
     };
@@ -165,30 +173,30 @@ export const StudentRequestView: React.FC = () => {
                     Datos del Responsable e Integrantes
                   </h3>
                   
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <label className="text-xs font-black uppercase text-slate-500 ml-1">Nombre Completo del Responsable</label>
-                      <input 
-                        required
-                        type="text"
-                        value={formData.alumno_nombre}
-                        onChange={(e) => setFormData({...formData, alumno_nombre: e.target.value})}
-                        className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 focus:ring-2 focus:ring-amber-500 outline-none transition-all"
-                        placeholder="Ej: Juan Pérez"
-                      />
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <label className="text-xs font-black uppercase text-slate-500 ml-1">Nombre Completo del Responsable</label>
+                        <input 
+                          required
+                          type="text"
+                          value={formData.responsable}
+                          onChange={(e) => setFormData({...formData, responsable: e.target.value})}
+                          className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 focus:ring-2 focus:ring-amber-500 outline-none transition-all"
+                          placeholder="Ej: Juan Pérez"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <label className="text-xs font-black uppercase text-slate-500 ml-1">DNI del Responsable</label>
+                        <input 
+                          required
+                          type="text"
+                          value={formData.dni}
+                          onChange={(e) => setFormData({...formData, dni: e.target.value})}
+                          className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 focus:ring-2 focus:ring-amber-500 outline-none transition-all"
+                          placeholder="Ej: 12.345.678"
+                        />
+                      </div>
                     </div>
-                    <div className="space-y-2">
-                      <label className="text-xs font-black uppercase text-slate-500 ml-1">DNI del Responsable</label>
-                      <input 
-                        required
-                        type="text"
-                        value={formData.alumno_dni}
-                        onChange={(e) => setFormData({...formData, alumno_dni: e.target.value})}
-                        className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 focus:ring-2 focus:ring-amber-500 outline-none transition-all"
-                        placeholder="Ej: 12.345.678"
-                      />
-                    </div>
-                  </div>
 
                   <div className="space-y-2">
                     <label className="text-xs font-black uppercase text-slate-500 ml-1">Otros Integrantes (Opcional)</label>
@@ -223,13 +231,20 @@ export const StudentRequestView: React.FC = () => {
                       <label className="text-xs font-black uppercase text-slate-500 ml-1">Docente que Avala</label>
                       <select 
                         required
-                        value={formData.docente_nombre}
-                        onChange={(e) => setFormData({...formData, docente_nombre: e.target.value})}
+                        value={formData.docente_id}
+                        onChange={(e) => {
+                          const contact = CONTACTS_DATA.find(c => c.email === e.target.value);
+                          setFormData({
+                            ...formData, 
+                            docente_id: e.target.value,
+                            docente_nombre: contact?.nombre || ''
+                          });
+                        }}
                         className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 focus:ring-2 focus:ring-amber-500 outline-none transition-all appearance-none"
                       >
                         <option value="">Seleccione un Docente...</option>
                         {CONTACTS_DATA.sort((a,b) => a.nombre.localeCompare(b.nombre)).map(contact => (
-                          <option key={contact.nombre} value={contact.nombre}>{contact.nombre}</option>
+                          <option key={contact.email} value={contact.email}>{contact.nombre}</option>
                         ))}
                       </select>
                     </div>
@@ -240,7 +255,7 @@ export const StudentRequestView: React.FC = () => {
                   <button 
                     type="button"
                     onClick={() => setStep(2)}
-                    disabled={!formData.alumno_nombre || !formData.alumno_dni || !formData.materia || !formData.docente_nombre}
+                    disabled={!formData.responsable || !formData.dni || !formData.materia || !formData.docente_id}
                     className="bg-slate-900 text-white px-8 py-4 rounded-xl font-bold hover:bg-slate-800 transition-all disabled:opacity-50"
                   >
                     Siguiente: Selección de Equipos

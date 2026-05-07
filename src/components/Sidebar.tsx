@@ -55,8 +55,8 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
       return ['Calendario', 'Nueva Reserva', 'Panel de Mora', 'Mis Préstamos', 'Gestión de Avales'].includes(item.label);
     }
 
-    // Logic for Pañolero (Administrador) - everything except Dirección specifics unless they are the specific emails
-    if (role === 'Pañolero') {
+    // Logic for Administración - everything except Dirección specifics unless they are the specific emails
+    if (role === 'Administración') {
       const excluded = ['Rodajes Externos'];
       if (!isDireccion) {
         return !excluded.includes(item.label);

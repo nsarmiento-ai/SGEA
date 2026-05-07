@@ -261,7 +261,7 @@ export const ActiveLoans: React.FC<{ filterMora?: boolean }> = ({ filterMora = f
                   </div>
                 </div>
 
-                {role === 'Pañolero' && (
+                {role === 'Administración' && (
                   <div className="p-4 bg-slate-50 border-t border-slate-100 mt-auto">
                     <button
                       onClick={() => setSelectedLoan(loan)}

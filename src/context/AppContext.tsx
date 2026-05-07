@@ -6,10 +6,10 @@ interface AppContextType {
   activeResponsable: string | null;
   setActiveResponsable: (name: string | null) => void;
   loading: boolean;
-  role: 'Pañolero' | 'Docente' | null;
+  role: 'Administración' | 'Docente' | null;
   userEmail: string | null;
   profile: Profile | null;
-  setRole: (role: 'Pañolero' | 'Docente') => void;
+  setRole: (role: 'Administración' | 'Docente') => void;
   toggleFavorite: (equipmentId: string) => Promise<void>;
 }
 
@@ -17,7 +17,7 @@ const AppContext = createContext<AppContextType | undefined>(undefined);
 
 export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [activeResponsable, setActiveResponsableState] = useState<string | null>(null);
-  const [role, setRole] = useState<'Pañolero' | 'Docente' | null>(null);
+  const [role, setRole] = useState<'Administración' | 'Docente' | null>(null);
   const [userEmail, setUserEmail] = useState<string | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
@@ -89,7 +89,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
   };
 
-  const setRoleAndSave = async (newRole: 'Pañolero' | 'Docente') => {
+  const setRoleAndSave = async (newRole: 'Administración' | 'Docente') => {
     if (!profile) return;
     
     const isSpecialUser = userEmail === 'n.sarmiento@cine.unt.edu.ar';
