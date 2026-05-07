@@ -46,6 +46,7 @@ export const LoanWizard: React.FC = () => {
   const [showDocenteSuggestions, setShowDocenteSuggestions] = useState(false);
   const [finishedLoan, setFinishedLoan] = useState<any>(null);
   const [selectedStudentRequestId, setSelectedStudentRequestId] = useState<string | null>(null);
+  const [syncConflict, setSyncConflict] = useState<{ nombre: string, estado: string, id: string }[] | null>(null);
   
   const [formData, setFormData] = useState({
     alumno_nombre: '',
@@ -160,12 +161,8 @@ export const LoanWizard: React.FC = () => {
       if (eqRes.error) throw eqRes.error;
       
       if (eqRes.data) {
-        // Strict filter for 'Disponible' items
-        const available = eqRes.data.filter(e => 
-          String(e.estado || '').toLowerCase() === 'disponible' || e.estado === 'Disponible'
-        );
-        console.log(`LoanWizard: Found ${available.length} available items out of ${eqRes.data.length} total.`);
-        setEquipments(available);
+        console.log(`LoanWizard: Fetched ${eqRes.data.length} total items.`);
+        setEquipments(eqRes.data);
       }
       
       if (resRes.data) setReservations(resRes.data);
@@ -248,97 +245,130 @@ export const LoanWizard: React.FC = () => {
         .select('id, nombre, estado')
         .in('id', selectedIds);
       
-      const unavailable = latestStatus?.filter(eq => String(eq.estado || '').toLowerCase() !== 'disponible');
-      if (unavailable && unavailable.length > 0) {
-        throw new Error(`Los siguientes equipos ya no están disponibles: ${unavailable.map(u => u.nombre).join(', ')}`);
-      }
-
-      // 1. Create Loan
-      const loanData: Partial<Loan> = {
-        alumno_nombre: formData.alumno_nombre,
-        alumno_dni: formData.alumno_dni,
-        materia: formData.materia,
-        docente_responsable: formData.docente_responsable,
-        responsable_nombre: activeResponsable!,
-        fecha_salida: new Date().toISOString(),
-        fecha_devolucion_estimada: new Date(formData.fechaDevolucion).toISOString(),
-        estado: 'Activo',
-        equipos_ids: selectedIds,
-        comentarios: formData.comentarios
-      };
-
-      const { data: loan, error: loanError } = await supabase
-        .from('prestamos')
-        .insert([loanData])
-        .select()
-        .single();
-
-      if (loanError || !loan) {
-        throw new Error(loanError?.message || 'No se pudo crear el registro del préstamo.');
-      }
-
-      // 2. Update Equipments
-      console.log('Actualizando equipos a "Prestado". IDs:', selectedIds);
-      const { error: eqError } = await supabase
-        .from('equipamiento')
-        .update({ estado: 'Prestado' })
-        .in('id', selectedIds);
-
-      if (eqError) throw eqError;
-
-      // 2.5 Update Reservation if exists
-      if (reservationId) {
-        await supabase
-          .from('reservas')
-          .update({ estado: 'Entregada' })
-          .eq('id', reservationId);
-      }
-
-      // 2.5b Update Student Request if exists
-      if (selectedStudentRequestId) {
-        await supabase
-          .from('solicitudes_alumnos')
-          .update({ estado: 'Entregado' })
-          .eq('id', selectedStudentRequestId);
-      }
-
-      // 2.6 Log to Resource History (Hoja de Vida)
-      const historyEntries = selectedIds.map(id => ({
-        recurso_id: id,
-        docente_nombre: formData.docente_responsable,
-        alumno_nombre: formData.alumno_nombre,
-        materia: formData.materia,
-        pañolero_entrega: activeResponsable!,
-        fecha_salida: new Date().toISOString(),
-        estado_salida: 'Bueno', // Default or from equipment state
-        prestamo_id: loan.id,
-        tipo_accion: 'Salida'
-      }));
-
-      const { error: historyError } = await supabase
-        .from('historial_recursos')
-        .insert(historyEntries);
-      
-      if (historyError) console.error('Error logging resource history:', historyError);
-
-      // 3. Log Action
-      await logAction(activeResponsable!, 'NUEVO_PRESTAMO', { 
-        loanId: loan.id, 
-        alumno_nombre: formData.alumno_nombre,
-        alumno_dni: formData.alumno_dni,
-        equipos: selectedIds 
+      const unavailable = latestStatus?.filter(eq => {
+        const estado = String(eq.estado || '').toLowerCase();
+        if (estado === 'disponible') return false; // Is available
+        if (estado === 'reservado' && selectedStudentRequestId && currentStudentRequest?.equipos.includes(eq.id)) {
+          return false; // Valid because it was reserved for this exact student request
+        }
+        return true; // Not available
       });
+      
+      if (unavailable && unavailable.length > 0) {
+        setSyncConflict(unavailable.map(u => ({ nombre: u.nombre, estado: u.estado || 'Desconocido', id: u.id })));
+        setSubmitting(false);
+        return;
+      }
 
-      // 4. Generate PDF
-      const selectedEquipments = (equipments || []).filter(e => (selectedIds || []).includes(e.id));
-      const targetDocente = docentes.find(d => d.nombre_completo === formData.docente_responsable);
-      generateLoanPDF(loan as Loan, selectedEquipments, targetDocente?.email);
+      let createdLoanId: string | null = null;
+      let equipmentsUpdated = false;
 
-      // 5. Success State
-      setFinishedLoan({ loan, equipments: selectedEquipments, docenteEmail: targetDocente?.email });
-    } catch (error) {
+      try {
+        // 1. Create Loan
+        const loanData: Partial<Loan> = {
+          alumno_nombre: formData.alumno_nombre,
+          alumno_dni: formData.alumno_dni,
+          materia: formData.materia,
+          docente_responsable: formData.docente_responsable,
+          responsable_nombre: activeResponsable!,
+          fecha_salida: new Date().toISOString(),
+          fecha_devolucion_estimada: new Date(formData.fechaDevolucion).toISOString(),
+          estado: 'Activo',
+          equipos_ids: selectedIds,
+          comentarios: formData.comentarios
+        };
+
+        const { data: loan, error: loanError } = await supabase
+          .from('prestamos')
+          .insert([loanData])
+          .select()
+          .single();
+
+        if (loanError || !loan) {
+          throw new Error(loanError?.message || 'No se pudo crear el registro del préstamo.');
+        }
+        createdLoanId = loan.id;
+
+        // 2. Update Equipments
+        console.log('Actualizando equipos a "Prestado". IDs:', selectedIds);
+        const { error: eqError } = await supabase
+          .from('equipamiento')
+          .update({ estado: 'Prestado' })
+          .in('id', selectedIds);
+
+        if (eqError) throw eqError;
+        equipmentsUpdated = true;
+
+        // 2.5 Update Reservation if exists
+        if (reservationId) {
+          const { error: resErr } = await supabase
+            .from('reservas')
+            .update({ estado: 'Entregada' })
+            .eq('id', reservationId);
+          if (resErr) throw resErr;
+        }
+
+        // 2.5b Update Student Request if exists
+        if (selectedStudentRequestId) {
+          const { error: reqErr } = await supabase
+            .from('solicitudes_alumnos')
+            .update({ estado: 'Entregado' })
+            .eq('id', selectedStudentRequestId);
+          if (reqErr) throw reqErr;
+        }
+
+        // 2.6 Log to Resource History (Hoja de Vida)
+        const historyEntries = selectedIds.map(id => ({
+          recurso_id: id,
+          docente_nombre: formData.docente_responsable,
+          alumno_nombre: formData.alumno_nombre,
+          materia: formData.materia,
+          pañolero_entrega: activeResponsable!,
+          fecha_salida: new Date().toISOString(),
+          estado_salida: 'Bueno', // Default or from equipment state
+          prestamo_id: loan.id,
+          tipo_accion: 'Salida'
+        }));
+
+        const { error: historyError } = await supabase
+          .from('historial_recursos')
+          .insert(historyEntries);
+        
+        if (historyError) throw historyError;
+
+        // 3. Log Action
+        await logAction(activeResponsable!, 'NUEVO_PRESTAMO', { 
+          loanId: loan.id, 
+          alumno_nombre: formData.alumno_nombre,
+          alumno_dni: formData.alumno_dni,
+          equipos: selectedIds 
+        });
+
+        // 4. Generate PDF
+        const selectedEquipments = (equipments || []).filter(e => (selectedIds || []).includes(e.id));
+        const targetDocente = docentes.find(d => d.nombre_completo === formData.docente_responsable);
+        generateLoanPDF(loan as Loan, selectedEquipments, targetDocente?.email);
+
+        // 5. Success State
+        setFinishedLoan({ loan, equipments: selectedEquipments, docenteEmail: targetDocente?.email });
+
+      } catch (innerError) {
+        // Rollback block
+        console.error("Initiating rollback due to error:", innerError);
+        
+        if (equipmentsUpdated) {
+          await supabase.from('equipamiento').update({ estado: 'Disponible' }).in('id', selectedIds);
+        }
+        if (createdLoanId) {
+          await supabase.from('prestamos').delete().eq('id', createdLoanId);
+        }
+        
+        throw innerError;
+      }
+
+    } catch (error: any) {
       console.error('Error al registrar el préstamo:', error);
-      alert('Error al registrar el préstamo. Revisa la consola.');
+      alert(`Error al registrar el préstamo: ${error.message || 'Revisa la consola'}`);
     } finally {
       setSubmitting(false);
     }
@@ -359,6 +389,27 @@ export const LoanWizard: React.FC = () => {
       subject: `SGEA - Comprobante de Préstamo - Escuela de Cine`,
       body: `Hola,\n\nSe ha registrado un préstamo de equipamiento audiovisual.\n\nAlumno: ${loan.alumno_nombre}\nMateria: ${loan.materia}\nFecha de Salida: ${format(parseISO(loan.fecha_salida), 'dd/MM/yyyy HH:mm')}\nFecha de Devolución Estimada: ${format(parseISO(loan.fecha_devolucion_estimada), 'dd/MM/yyyy HH:mm')}\n\nEquipos:\n${equipments.map((e: any) => `- ${e.nombre} (${e.modelo})`).join('\n')}\n\nNota: Se adjunta el comprobante en PDF (Favor de adjuntar el archivo descargado manualmente).\n\nSaludos,\nSistema SGEA`
     });
+  };
+
+  const handleSyncAndRetry = async () => {
+    if (!syncConflict) return;
+    setSubmitting(true);
+    try {
+      const conflictIds = syncConflict.map(c => c.id);
+      const { error } = await supabase
+        .from('equipamiento')
+        .update({ estado: 'Disponible' })
+        .in('id', conflictIds);
+      
+      if (error) throw error;
+      
+      setSyncConflict(null);
+      await handleFinish(); // Retry
+    } catch (e) {
+      console.error("Error syncing equipment:", e);
+      alert("Error al sincronizar equipos. Inténtelo nuevamente.");
+      setSubmitting(false);
+    }
   };
 
   if (finishedLoan) {
@@ -422,7 +473,53 @@ export const LoanWizard: React.FC = () => {
         <p className="text-sm md:text-base text-slate-500">Complete la información del préstamo.</p>
       </header>
 
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 md:gap-8">
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 md:gap-8 relative">
+        <AnimatePresence>
+          {syncConflict && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm"
+            >
+              <div className="bg-white p-6 rounded-3xl max-w-md w-full shadow-2xl border border-slate-200">
+                <div className="flex items-center gap-3 mb-4 text-red-600">
+                  <AlertCircle className="w-8 h-8" />
+                  <h3 className="text-lg font-black uppercase tracking-wider">Conflicto de Inventario</h3>
+                </div>
+                <p className="text-sm font-medium text-slate-600 mb-6 leading-relaxed">
+                  Los siguientes equipos no figuran como "Disponible" en la base de datos debido a préstamos previos o errores de sincronización:
+                </p>
+                <div className="bg-slate-50 border border-slate-100 rounded-xl p-4 mb-6 space-y-2">
+                  {syncConflict.map(c => (
+                    <div key={c.id} className="flex justify-between items-center text-xs font-bold">
+                      <span className="text-slate-900">{c.nombre}</span>
+                      <span className="px-2 py-0.5 bg-red-100 text-red-700 rounded uppercase tracking-widest">{c.estado}</span>
+                    </div>
+                  ))}
+                </div>
+                <p className="text-xs text-slate-500 mb-6">
+                  Si el equipo está físicamente en el Pañol, presiona <strong>Sincronizar y Reintentar</strong> para corregir el estado e intentar el despacho nuevamente.
+                </p>
+                <div className="flex gap-3">
+                  <button
+                    onClick={() => setSyncConflict(null)}
+                    className="flex-1 px-4 py-3 border border-slate-200 text-slate-600 rounded-xl font-black text-xs uppercase tracking-widest hover:bg-slate-50"
+                  >
+                    Cancelar
+                  </button>
+                  <button
+                    onClick={handleSyncAndRetry}
+                    className="flex-[2] bg-amber-500 text-white px-4 py-3 rounded-xl font-black text-xs uppercase tracking-widest hover:bg-amber-600 shadow-lg shadow-amber-200"
+                  >
+                    {submitting ? <Loader2 className="w-4 h-4 animate-spin mx-auto" /> : 'Sincronizar y Reintentar'}
+                  </button>
+                </div>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
         {/* Left Column: Selection */}
         <div className="lg:col-span-5 order-2 lg:order-1 space-y-6">
           {studentRequests.length > 0 && (
@@ -514,7 +611,9 @@ export const LoanWizard: React.FC = () => {
                       .sort((a, b) => parseISO(a.fecha_inicio).getTime() - parseISO(b.fecha_inicio).getTime())[0];
 
                     const isNoHabilitado = eq.permiso_uso === 'No habilitado';
-                    const isDisabled = isReservedNow || isNoHabilitado;
+                    const isNotAvailable = String(eq.estado || '').toLowerCase() !== 'disponible';
+                    
+                    const isDisabled = (isReservedNow || isNoHabilitado || isNotAvailable) && !selectedIds.includes(eq.id);
 
                     return (
                       <div
@@ -649,7 +748,7 @@ export const LoanWizard: React.FC = () => {
                     className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-amber-500 transition-all appearance-none text-sm"
                   >
                     <option value="">Seleccionar Docente...</option>
-                    {CONTACTS_DATA.sort((a, b) => a.nombre.localeCompare(b)).map(docente => (
+                    {([...CONTACTS_DATA]).sort((a, b) => a.nombre.localeCompare(b.nombre)).map(docente => (
                       <option key={docente.email} value={docente.nombre}>{docente.nombre}</option>
                     ))}
                   </select>
