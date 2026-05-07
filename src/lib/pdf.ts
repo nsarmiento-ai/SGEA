@@ -4,7 +4,7 @@ import { Equipment, Loan } from '../types';
 import { formatDate } from './utils';
 
 export const generateLoanPDF = (
-  loan: Loan, 
+  loan: any, 
   equipments: Equipment[], 
   docenteEmail?: string,
   authorizedIds: string[] = []
@@ -12,7 +12,11 @@ export const generateLoanPDF = (
   const doc = new jsPDF();
   const pageWidth = doc.internal.pageSize.getWidth();
 
-  const addedManuallyIds = loan.equipos_ids.filter(id => !authorizedIds.includes(id));
+  // Use DB fields if available, otherwise fallback to authorizedIds passed
+  const dbAuthorized = loan.equipos_autorizados || authorizedIds;
+  const dbAdditional = loan.equipos_adicionales || loan.equipos_ids.filter((id: string) => !dbAuthorized.includes(id));
+  
+  const addedManuallyIds = dbAdditional;
 
   // Header Icon/Logo (Simple Circle for logo)
   doc.setFillColor(245, 158, 11);

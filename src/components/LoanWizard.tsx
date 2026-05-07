@@ -244,8 +244,8 @@ export const LoanWizard: React.FC = () => {
     try {
       // Logic for tracking added equipment
       const equipos_autorizados = selectedIds.filter(id => authorizedEquipmentsIds.includes(id));
-      const equipos_añadidos_manualmente = selectedIds.filter(id => !authorizedEquipmentsIds.includes(id));
-      const hasAddedEquipment = equipos_añadidos_manualmente.length > 0;
+      const equipos_adicionales = selectedIds.filter(id => !authorizedEquipmentsIds.includes(id));
+      const hasAddedEquipment = equipos_adicionales.length > 0;
 
       // Final availability check before creating loan
       const { data: latestStatus } = await supabase
@@ -285,7 +285,7 @@ export const LoanWizard: React.FC = () => {
           equipos_ids: selectedIds,
           comentarios: formData.comentarios,
           equipos_autorizados: equipos_autorizados,
-          equipos_añadidos_manualmente: equipos_añadidos_manualmente
+          equipos_adicionales: equipos_adicionales
         };
 
         const { data: loan, error: loanError } = await supabase
@@ -708,6 +708,27 @@ export const LoanWizard: React.FC = () => {
               <FileText className="w-5 h-5 text-amber-500" />
               Datos del Préstamo
             </h2>
+
+            {currentStudentRequest && (
+              <div className="bg-indigo-50/50 border border-indigo-100 p-5 rounded-2xl animate-in fade-in slide-in-from-right-4">
+                <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.2em] text-indigo-600 mb-4">
+                  <Users className="w-4 h-4" />
+                  Resumen de Solicitud Autorizada
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <span className="text-[9px] font-black uppercase text-slate-400 block mb-1">Integrantes</span>
+                    <p className="text-xs font-bold text-slate-700 leading-relaxed">
+                      {currentStudentRequest.integrantes || 'Sin integrantes especificados'}
+                    </p>
+                  </div>
+                  <div>
+                    <span className="text-[9px] font-black uppercase text-slate-400 block mb-1">Materia / Proyecto</span>
+                    <p className="text-xs font-bold text-slate-700">{currentStudentRequest.materia}</p>
+                  </div>
+                </div>
+              </div>
+            )}
 
             {(Object.entries(conflicts || {}) as [string, Reservation][]).map(([eqId, res]) => {
               const eq = (equipments || []).find(e => e.id === eqId);

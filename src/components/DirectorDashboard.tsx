@@ -44,7 +44,8 @@ export const DirectorDashboard: React.FC = () => {
     moraCount: 0,
     totalEquipments: 0,
     topEquipment: [] as { name: string, count: number }[],
-    usageType: [] as { name: string, value: number }[]
+    usageType: [] as { name: string, value: number }[],
+    stockStatus: [] as { name: string, value: number }[]
   });
   const [loading, setLoading] = useState(true);
   const [showStats, setShowStats] = useState(false);
@@ -85,13 +86,21 @@ export const DirectorDashboard: React.FC = () => {
         'Uso Externo': allReqs.data?.filter(r => r.tipo_uso === 'Uso Externo').length || 0
       };
 
+      // Stock Status Data
+      const stockCounts = {
+        'Disponible': equipments.data?.filter(e => e.estado === 'Disponible').length || 0,
+        'En Uso': equipments.data?.filter(e => e.estado === 'Prestado' || e.estado === 'Reservado').length || 0,
+        'Mantenimiento': equipments.data?.filter(e => e.estado === 'Mantenimiento' || e.estado === 'Baja').length || 0
+      };
+
       setStats({
         activeLoans: loans.data?.filter(l => l.estado === 'Activo').length || 0,
         pendingDirection: pendingReqs.data?.length || 0,
         moraCount: loans.data?.filter(l => l.estado === 'En Mora').length || 0,
         totalEquipments: equipments.data?.length || 0,
         topEquipment: topEq,
-        usageType: Object.entries(usageCounts).map(([name, value]) => ({ name, value }))
+        usageType: Object.entries(usageCounts).map(([name, value]) => ({ name, value })),
+        stockStatus: Object.entries(stockCounts).map(([name, value]) => ({ name, value }))
       });
     } catch (err) {
       console.error('Error fetching director stats:', err);
@@ -261,13 +270,13 @@ export const DirectorDashboard: React.FC = () => {
               <div className="bg-white p-8 rounded-3xl border border-slate-200 shadow-sm">
                 <h3 className="text-sm font-black uppercase tracking-widest text-slate-400 mb-6 flex items-center gap-2">
                   <PieChartIcon className="w-4 h-4 text-amber-500" />
-                  Distribución de Pedidos (Interno vs Externo)
+                  Estado de Stock (Disponibles vs Mantenimiento)
                 </h3>
                 <div className="h-72 w-full">
                   <ResponsiveContainer width="100%" height="100%">
                     <PieChart>
                       <Pie
-                        data={stats.usageType}
+                        data={stats.stockStatus}
                         cx="50%"
                         cy="50%"
                         innerRadius={60}
@@ -275,7 +284,7 @@ export const DirectorDashboard: React.FC = () => {
                         paddingAngle={5}
                         dataKey="value"
                       >
-                        {stats.usageType.map((entry, index) => (
+                        {stats.stockStatus.map((entry, index) => (
                           <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                         ))}
                       </Pie>
@@ -283,15 +292,43 @@ export const DirectorDashboard: React.FC = () => {
                         contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)' }}
                       />
                       <Legend 
-                        layout="vertical" 
-                        verticalAlign="middle" 
-                        align="right"
-                        wrapperStyle={{ fontSize: '10px', fontWeight: 'bold', textTransform: 'uppercase', letterSpacing: '0.05em' }}
+                        layout="horizontal" 
+                        verticalAlign="bottom" 
+                        align="center"
+                        wrapperStyle={{ fontSize: '10px', fontWeight: 'bold', textTransform: 'uppercase', letterSpacing: '0.05em', paddingTop: '20px' }}
                       />
                     </PieChart>
                   </ResponsiveContainer>
                 </div>
               </div>
+            </div>
+
+            <div className="bg-white p-8 rounded-3xl border border-slate-200 shadow-sm mb-10">
+                <h3 className="text-sm font-black uppercase tracking-widest text-slate-400 mb-6 flex items-center gap-2">
+                  <PieChartIcon className="w-4 h-4 text-amber-500" />
+                  Finalidad de los Pedidos
+                </h3>
+                <div className="h-64 w-full">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <PieChart>
+                      <Pie
+                        data={stats.usageType}
+                        cx="50%"
+                        cy="50%"
+                        innerRadius={40}
+                        outerRadius={60}
+                        paddingAngle={5}
+                        dataKey="value"
+                      >
+                        {stats.usageType.map((entry, index) => (
+                          <Cell key={`cell-${index}`} fill={index === 0 ? '#10b981' : '#f59e0b'} />
+                        ))}
+                      </Pie>
+                      <Tooltip />
+                      <Legend />
+                    </PieChart>
+                  </ResponsiveContainer>
+                </div>
             </div>
           </motion.div>
         )}
