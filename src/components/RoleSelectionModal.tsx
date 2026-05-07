@@ -1,9 +1,17 @@
 import React from 'react';
 import { useApp } from '../context/AppContext';
 import { User, Shield, ShieldCheck, Box, LogOut } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 
 export const RoleSelectionModal: React.FC = () => {
   const { setRole, userEmail, isSuperAdmin, signOut } = useApp();
+  const navigate = useNavigate();
+
+  const handleSelectRole = (role: any) => {
+    console.log('Cambiando a rol:', role);
+    setRole(role);
+    navigate('/');
+  };
 
   const isCine = userEmail?.endsWith('@cine.unt.edu.ar');
 
@@ -23,7 +31,7 @@ export const RoleSelectionModal: React.FC = () => {
         <div className="grid gap-4">
           {(isCine || isSuperAdmin) && (
             <button
-              onClick={() => setRole('Administración')}
+              onClick={() => handleSelectRole('Administración')}
               className="group w-full flex items-center gap-5 p-5 rounded-2xl border-2 border-slate-100 hover:border-amber-500 hover:bg-amber-50 transition-all text-left"
             >
               <div className="w-14 h-14 rounded-xl bg-slate-50 group-hover:bg-white flex items-center justify-center transition-colors">
@@ -37,7 +45,7 @@ export const RoleSelectionModal: React.FC = () => {
           )}
 
           <button
-            onClick={() => setRole('Docente')}
+            onClick={() => handleSelectRole('Docente')}
             className="group w-full flex items-center gap-5 p-5 rounded-2xl border-2 border-slate-100 hover:border-amber-500 hover:bg-amber-50 transition-all text-left"
           >
             <div className="w-14 h-14 rounded-xl bg-slate-50 group-hover:bg-white flex items-center justify-center transition-colors">
@@ -51,7 +59,7 @@ export const RoleSelectionModal: React.FC = () => {
 
           {isSuperAdmin && (
             <button
-              onClick={() => setRole('Director')}
+              onClick={() => handleSelectRole('Director')}
               className="group w-full flex items-center gap-5 p-5 rounded-2xl border-2 border-slate-100 hover:border-[#450a0a] hover:bg-red-50 transition-all text-left"
             >
               <div className="w-14 h-14 rounded-xl bg-slate-50 group-hover:bg-white flex items-center justify-center transition-colors">

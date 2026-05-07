@@ -20,14 +20,19 @@ import { StudentRequestsManager } from './components/StudentRequestsManager';
 import { DirectorDashboard } from './components/DirectorDashboard';
 import { StudentRequestView } from './components/StudentRequestView';
 import { Loader2, Menu } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { supabase } from './lib/supabase';
 
 function AppContent() {
   const { activeResponsable, loading, role, profile } = useApp();
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
+  const hasInitialized = useRef(false);
+
   useEffect(() => {
+    if (!profile || hasInitialized.current) return;
+    hasInitialized.current = true;
+
     // Force PostgREST schema refresh after DB updates
     const refreshSchema = async () => {
       try {
@@ -164,7 +169,8 @@ function ProtectedRoute() {
           <Route path="/activos" element={<ActiveLoans />} />
 
           {/* Aliases y Fallbacks */}
-          <Route path="/admin" element={<Navigate to="/" replace />} />
+          <Route path="/admin" element={<Navigate to="/catalogo" replace />} />
+          <Route path="/docente" element={<Navigate to="/reservas" replace />} />
           <Route path="/configuracion" element={<Navigate to="/" replace />} />
           <Route path="/select-role" element={<RoleSelectionModal />} />
           <Route path="*" element={<Navigate to="/" replace />} />

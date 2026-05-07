@@ -1,5 +1,5 @@
 import React from 'react';
-import { NavLink } from 'react-router-dom';
+import { NavLink, useNavigate } from 'react-router-dom';
 import { 
   LayoutDashboard, 
   PlusCircle, 
@@ -23,6 +23,12 @@ interface SidebarProps {
 
 export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
   const { activeResponsable, profile, userEmail, isSuperAdmin, role, setRole, signOut } = useApp();
+  const navigate = useNavigate();
+
+  const handleRoleChange = () => {
+    setRole(null);
+    navigate('/select-role');
+  };
 
   const menuItems = [
     { icon: LayoutDashboard, label: 'Inventario', path: '/catalogo' },
@@ -112,7 +118,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
         <div className="p-4 border-t border-slate-800 space-y-2">
           {isSuperAdmin && (
             <button
-              onClick={() => setRole(null)}
+              onClick={handleRoleChange}
               className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-amber-400 hover:bg-amber-500/10 transition-colors font-black text-xs uppercase tracking-widest"
             >
               <ShieldCheck className="w-5 h-5" />
