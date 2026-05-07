@@ -34,9 +34,10 @@ import { motion, AnimatePresence } from 'motion/react';
 import { cn } from '../lib/utils';
 
 export const CalendarPage: React.FC = () => {
-  const { profile } = useApp();
+  const { profile, userEmail } = useApp();
   const role = profile?.rol;
   const isAdministracion = role === 'Administración';
+  const isDireccion = userEmail === 'jveiga@cine.unt.edu.ar' || userEmail === 'n.sarmiento@cine.unt.edu.ar';
 
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
@@ -407,6 +408,35 @@ export const CalendarPage: React.FC = () => {
 
   return (
     <div className="p-4 md:p-8 max-w-7xl mx-auto pt-16 lg:pt-8">
+      {/* Visual Identity Headers */}
+      {isDireccion && (
+        <div className="mb-6 bg-slate-900 text-white px-6 py-3 rounded-2xl flex items-center justify-between shadow-xl border-l-4 border-amber-500">
+          <div className="flex items-center gap-3">
+            <span className="w-2 h-2 rounded-full bg-amber-500 animate-pulse"></span>
+            <span className="text-xs font-black uppercase tracking-[0.2em]">Panel de Dirección Principal</span>
+          </div>
+          <span className="text-[10px] font-bold opacity-60 uppercase">{userEmail}</span>
+        </div>
+      )}
+
+      {role === 'Docente' && (
+        <div className="mb-6 bg-amber-50 text-amber-900 px-6 py-3 rounded-2xl flex items-center justify-between border border-amber-100">
+          <div className="flex items-center gap-3">
+            <User className="w-5 h-5 text-amber-500" />
+            <span className="text-xs font-black uppercase tracking-widest">Panel Docente: Gestión de Avales</span>
+          </div>
+        </div>
+      )}
+
+      {isAdministracion && (
+        <div className="mb-6 bg-slate-100 text-slate-900 px-6 py-3 rounded-2xl flex items-center justify-between border border-slate-200">
+          <div className="flex items-center gap-3">
+            <Clock className="w-5 h-5 text-slate-500" />
+            <span className="text-xs font-black uppercase tracking-widest">Panel de Administración</span>
+          </div>
+        </div>
+      )}
+
       {renderHeader()}
       
       <div className="bg-white p-3 md:p-6 rounded-2xl md:rounded-3xl shadow-sm border border-slate-200">

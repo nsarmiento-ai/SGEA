@@ -7,11 +7,13 @@ import { Loader2, CheckCircle, XCircle, Clock, AlertCircle, Package, User, Calen
 import { motion, AnimatePresence } from 'motion/react';
 
 export const StudentRequestsManager: React.FC<{ filterDireccion?: boolean }> = ({ filterDireccion }) => {
-  const { activeResponsable, role } = useApp();
+  const { activeResponsable, role, userEmail } = useApp();
   const [requests, setRequests] = useState<StudentRequest[]>([]);
   const [equipment, setEquipment] = useState<Record<string, Equipment>>({});
   const [loading, setLoading] = useState(true);
   const [processingId, setProcessingId] = useState<string | null>(null);
+
+  const isDireccion = userEmail === 'jveiga@cine.unt.edu.ar' || userEmail === 'n.sarmiento@cine.unt.edu.ar';
 
   const docenteName = CONTACTS_DATA.find(c => c.email === activeResponsable)?.nombre;
 
@@ -64,14 +66,13 @@ export const StudentRequestsManager: React.FC<{ filterDireccion?: boolean }> = (
 
     try {
       const updateData: Partial<StudentRequest> = { 
-        estado: nextStatus,
-        updated_at: new Date().toISOString(),
+        estado: nextStatus
       };
 
       if (filterDireccion) {
-        updateData.autorizado_por_direccion = activeResponsable!;
+        updateData.autorizado_por_direccion = userEmail || activeResponsable!;
       } else {
-        updateData.autorizado_por_docente = activeResponsable!;
+        updateData.autorizado_por_docente = userEmail || activeResponsable!;
       }
 
       const { error } = await supabase
@@ -116,6 +117,35 @@ export const StudentRequestsManager: React.FC<{ filterDireccion?: boolean }> = (
 
   return (
     <div className="p-8 max-w-6xl mx-auto">
+      {/* Visual Identity Headers */}
+      {isDireccion && filterDireccion && (
+        <div className="mb-6 bg-slate-900 text-white px-6 py-3 rounded-2xl flex items-center justify-between shadow-xl border-l-4 border-amber-500">
+          <div className="flex items-center gap-3">
+            <ShieldCheck className="w-5 h-5 text-amber-500" />
+            <span className="text-xs font-black uppercase tracking-[0.2em]">Panel de Dirección Principal</span>
+          </div>
+          <span className="text-[10px] font-bold opacity-60 uppercase">{userEmail}</span>
+        </div>
+      )}
+
+      {role === 'Docente' && !filterDireccion && (
+        <div className="mb-6 bg-amber-50 text-amber-900 px-6 py-3 rounded-2xl flex items-center justify-between border border-amber-100">
+          <div className="flex items-center gap-3">
+            <User className="w-5 h-5" />
+            <span className="text-xs font-black uppercase tracking-widest">Panel Docente: Gestión de Avales</span>
+          </div>
+        </div>
+      )}
+
+      {role === 'Administración' && !filterDireccion && (
+        <div className="mb-6 bg-slate-100 text-slate-900 px-6 py-3 rounded-2xl flex items-center justify-between border border-slate-200">
+          <div className="flex items-center gap-3">
+            <Clock className="w-5 h-5" />
+            <span className="text-xs font-black uppercase tracking-widest">Panel de Administración</span>
+          </div>
+        </div>
+      )}
+
       <header className="mb-10">
         <div className="flex items-center gap-4 mb-2">
           <div className="w-12 h-12 bg-slate-900 rounded-2xl flex items-center justify-center text-white shadow-lg">
