@@ -142,7 +142,7 @@ function ProtectedRoute() {
           {/* Rutas de Administración */}
           <Route 
             path="/catalogo" 
-            element={role === 'Administración' ? <Catalog /> : <Navigate to="/" replace />} 
+            element={role === 'Administración' ? <Catalog /> : role === 'Director' ? <Navigate to="/director" replace /> : <Navigate to="/" replace />} 
           />
           <Route 
             path="/reservas-pendientes" 

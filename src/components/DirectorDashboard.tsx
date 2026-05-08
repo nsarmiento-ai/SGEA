@@ -45,7 +45,10 @@ export const DirectorDashboard: React.FC = () => {
     totalEquipments: 0,
     topEquipment: [] as { name: string, count: number }[],
     usageType: [] as { name: string, value: number }[],
-    stockStatus: [] as { name: string, value: number }[]
+    stockStatus: [] as { name: string, value: number }[],
+    availableCount: 0,
+    inUseCount: 0,
+    outOfService: [] as { id: string, nombre: string, estado: string }[]
   });
   const [loading, setLoading] = useState(true);
   const [showStats, setShowStats] = useState(false);
@@ -87,10 +90,14 @@ export const DirectorDashboard: React.FC = () => {
       };
 
       // Stock Status Data
+      const availableItems = equipments.data?.filter(e => e.estado === 'Disponible') || [];
+      const inUseItems = equipments.data?.filter(e => e.estado === 'Prestado' || e.estado === 'Reservado') || [];
+      const maintenanceItems = equipments.data?.filter(e => e.estado === 'Mantenimiento' || e.estado === 'Baja') || [];
+
       const stockCounts = {
-        'Disponible': equipments.data?.filter(e => e.estado === 'Disponible').length || 0,
-        'En Uso': equipments.data?.filter(e => e.estado === 'Prestado' || e.estado === 'Reservado').length || 0,
-        'Mantenimiento': equipments.data?.filter(e => e.estado === 'Mantenimiento' || e.estado === 'Baja').length || 0
+        'Disponible': availableItems.length,
+        'En Uso': inUseItems.length,
+        'Mantenimiento': maintenanceItems.length
       };
 
       setStats({
@@ -100,7 +107,10 @@ export const DirectorDashboard: React.FC = () => {
         totalEquipments: equipments.data?.length || 0,
         topEquipment: topEq,
         usageType: Object.entries(usageCounts).map(([name, value]) => ({ name, value })),
-        stockStatus: Object.entries(stockCounts).map(([name, value]) => ({ name, value }))
+        stockStatus: Object.entries(stockCounts).map(([name, value]) => ({ name, value })),
+        availableCount: availableItems.length,
+        inUseCount: inUseItems.length,
+        outOfService: maintenanceItems.map(m => ({ id: m.id, nombre: m.nombre, estado: m.estado || 'Mantenimiento' }))
       });
     } catch (err) {
       console.error('Error fetching director stats:', err);
@@ -150,27 +160,27 @@ export const DirectorDashboard: React.FC = () => {
         />
         <KpiCard 
           icon={Package} 
-          label="Préstamos Activos" 
-          value={stats.activeLoans} 
-          color="text-indigo-600" 
-          bgColor="bg-indigo-50"
-          desc="Equipos fuera de pañol"
-        />
-        <KpiCard 
-          icon={AlertTriangle} 
-          label="Panel de Mora" 
-          value={stats.moraCount} 
-          color="text-red-600" 
-          bgColor="bg-red-50"
-          desc="Devoluciones retrasadas"
+          label="Recursos Disponibles" 
+          value={stats.availableCount} 
+          color="text-green-600" 
+          bgColor="bg-green-50"
+          desc="Equipos listos en pañol"
         />
         <KpiCard 
           icon={TrendingUp} 
-          label="Inventario Total" 
-          value={stats.totalEquipments} 
-          color="text-green-600" 
-          bgColor="bg-green-50"
-          desc="Activos registrados"
+          label="Equipos en la Calle" 
+          value={stats.inUseCount} 
+          color="text-indigo-600" 
+          bgColor="bg-indigo-50"
+          desc="Actualmente prestados"
+        />
+        <KpiCard 
+          icon={AlertTriangle} 
+          label="Fuera de Servicio" 
+          value={stats.outOfService.length} 
+          color="text-red-600" 
+          bgColor="bg-red-50"
+          desc="Mantenimiento o Baja"
         />
       </div>
 
@@ -190,8 +200,27 @@ export const DirectorDashboard: React.FC = () => {
           </div>
         </div>
 
-        {/* Sidebar Info & Mini Charts */}
+        {/* Sidebar Info & Mini Alerts */}
         <div className="space-y-6">
+          {stats.outOfService.length > 0 && (
+            <div className="bg-red-50 p-6 rounded-3xl border border-red-100 animate-in fade-in slide-in-from-right-4">
+              <div className="flex items-center gap-2 text-red-600 mb-4">
+                <AlertTriangle className="w-5 h-5" />
+                <h3 className="text-xs font-black uppercase tracking-widest">Equipos en Alerta</h3>
+              </div>
+              <div className="space-y-2 max-h-48 overflow-y-auto pr-2 custom-scrollbar">
+                {stats.outOfService.map(item => (
+                  <div key={item.id} className="flex justify-between items-center bg-white p-2.5 rounded-xl border border-red-50 shadow-sm">
+                    <span className="text-[10px] font-bold text-slate-700 truncate mr-2">{item.nombre}</span>
+                    <span className="text-[8px] font-black uppercase px-1.5 py-0.5 bg-red-100 text-red-600 rounded">
+                      {item.estado}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
           <div className="bg-slate-900 text-white p-8 rounded-3xl shadow-xl relative overflow-hidden">
             <History className="absolute -right-4 -bottom-4 w-32 h-32 text-white/5 rotate-12" />
             <h3 className="text-lg font-black uppercase tracking-widest mb-4">Resumen de Control</h3>
@@ -199,7 +228,7 @@ export const DirectorDashboard: React.FC = () => {
               <div className="flex justify-between items-end border-b border-white/10 pb-2">
                 <span className="text-xs font-bold text-slate-400 mt-2">Nivel de Ocupación</span>
                 <span className="text-xl font-black text-amber-400">
-                  {Math.round((stats.activeLoans / (stats.totalEquipments || 1)) * 100)}%
+                  {Math.round((stats.inUseCount / (stats.totalEquipments || 1)) * 100)}%
                 </span>
               </div>
               <div className="flex justify-between items-end border-b border-white/10 pb-2">

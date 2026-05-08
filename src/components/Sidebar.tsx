@@ -44,7 +44,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
   ].filter(item => {
     // If role is Director
     if (role === 'Director') {
-      return ['Calendario Global', 'Inventario', 'Panel de Mora', 'Panel Dirección'].includes(item.label);
+      return ['Calendario Global', 'Panel de Mora', 'Panel Dirección'].includes(item.label);
     }
 
     // If role is Docente
