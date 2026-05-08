@@ -10,7 +10,6 @@ interface AppContextType {
   loading: boolean;
   role: AppRole | null;
   userEmail: string | null;
-  profile: Profile | null;
   setRole: (role: AppRole | null) => void;
   toggleFavorite: (equipmentId: string) => Promise<void>;
   isSuperAdmin: boolean;
@@ -23,7 +22,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [activeResponsable, setActiveResponsableState] = useState<string | null>(null);
   const [role, setRole] = useState<AppRole | null>(null);
   const [userEmail, setUserEmail] = useState<string | null>(null);
-  const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
   const [isSuperAdmin, setIsSuperAdmin] = useState(false);
   const lastSessionId = useRef<string | null>(null);
@@ -47,7 +45,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       setActiveResponsableState(null);
       setRole(null);
       setUserEmail(null);
-      setProfile(null);
       setLoading(false);
       setIsSuperAdmin(false);
       lastSessionId.current = null;
@@ -70,36 +67,18 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setIsSuperAdmin(isSpecial);
 
     try {
-      let { data: profile, error: profileError } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', session.user.id)
-        .maybeSingle();
-
-      if (!profile) {
-        const newRole = email?.endsWith('@cine.unt.edu.ar') ? 'Administración' : 'Docente';
-        const { data: newProfile, error: insertError } = await supabase
-          .from('profiles')
-          .insert([{ id: session.user.id, email, rol: newRole, favoritos: [] }])
-          .select()
-          .single();
-        
-        if (insertError) console.error('Error creating profile:', insertError);
-        profile = newProfile;
-      }
-
-      setProfile(profile);
+      const savedRole = localStorage.getItem('selected_role') as AppRole;
       
-      // If super admin, we let them pick. We might want to persist their last choice in local storage
       if (isSpecial) {
-        const savedRole = localStorage.getItem('selected_role') as AppRole;
         if (savedRole) {
           setRole(savedRole);
         } else {
           setRole(null); // Force selection screen
         }
       } else {
-        setRole(profile?.rol as AppRole || null);
+        // Simple domain-based auto-role for @cine users who aren't superadmins
+        const defaultRole = email?.endsWith('@cine.unt.edu.ar') ? 'Administración' : 'Docente';
+        setRole(savedRole || defaultRole);
       }
       
       setActiveResponsableState(fullName);
@@ -111,46 +90,17 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   const setRoleAndSave = async (newRole: AppRole | null) => {
-    if (!profile && !isSuperAdmin) return;
-    
-    if (isSuperAdmin) {
-      if (newRole) {
-        localStorage.setItem('selected_role', newRole);
-      } else {
-        localStorage.removeItem('selected_role');
-      }
-      setRole(newRole);
-      return;
+    if (newRole) {
+      localStorage.setItem('selected_role', newRole);
+    } else {
+      localStorage.removeItem('selected_role');
     }
-
-    if (!newRole) return;
-
-    const { error } = await supabase
-      .from('profiles')
-      .update({ rol: newRole })
-      .eq('id', profile?.id);
-    
-    if (!error) {
-      setRole(newRole);
-      if (profile) setProfile({ ...profile, rol: newRole });
-    }
+    setRole(newRole);
   };
 
   const toggleFavorite = async (equipmentId: string) => {
-    if (!profile) return;
-    const isFavorite = profile.favoritos?.includes(equipmentId);
-    const newFavorites = isFavorite 
-      ? profile.favoritos.filter(id => id !== equipmentId)
-      : [...(profile.favoritos || []), equipmentId];
-    
-    const { error } = await supabase
-      .from('profiles')
-      .update({ favoritos: newFavorites })
-      .eq('id', profile.id);
-    
-    if (!error) {
-      setProfile({ ...profile, favoritos: newFavorites });
-    }
+    // Favorites logic disabled as it required 'profiles' table
+    console.log('Favorites temporarily disabled (requires profiles table):', equipmentId);
   };
 
   const setActiveResponsable = (name: string | null) => {
@@ -169,7 +119,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       loading, 
       role, 
       userEmail, 
-      profile, 
       setRole: setRoleAndSave, 
       toggleFavorite,
       isSuperAdmin,
