@@ -354,7 +354,7 @@ export const Reservations: React.FC = () => {
             <Check className="w-10 h-10" />
           </div>
           <h2 className="text-2xl md:text-3xl font-display font-bold text-slate-900 mb-2">¡Reserva Solicitada!</h2>
-          <p className="text-sm md:text-base text-slate-500 mb-8 max-w-md mx-auto">
+          <p className="text-sm md:text-base text-slate-700 mb-8 max-w-md mx-auto">
             Tu reserva ha sido registrada y está pendiente de aprobación. El comprobante PDF se ha descargado automáticamente.
           </p>
 
@@ -398,7 +398,7 @@ export const Reservations: React.FC = () => {
     return (
       <div className="flex flex-col items-center justify-center py-20">
         <Loader2 className="w-10 h-10 animate-spin text-amber-500 mb-4" />
-        <p className="text-slate-500 font-medium">Verificando sesión...</p>
+        <p className="text-slate-700 font-medium">Verificando sesión...</p>
       </div>
     );
   }
@@ -662,12 +662,12 @@ export const Reservations: React.FC = () => {
 
                     <div className="relative h-56 bg-slate-100 overflow-hidden aspect-[4/3]">
                       <img
-                        src={optimizeCloudinaryUrl(eq.foto_url || 'https://picsum.photos/seed/camera/400/300')}
+                        src={optimizeCloudinaryUrl(eq.foto_url || 'https://picsum.photos/seed/camera/400/300', index === 0)}
                         alt={eq.nombre}
                         width={400}
                         height={300}
-                        loading={index < 3 ? "eager" : "lazy"}
-                        {...(index < 3 ? { fetchPriority: "high" } : {})}
+                        loading={index === 0 ? "eager" : "lazy"}
+                        {...(index === 0 ? { fetchPriority: "high" } : {})}
                         referrerPolicy="no-referrer"
                         className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
                       />
@@ -767,12 +767,12 @@ export const Reservations: React.FC = () => {
                         </button>
                         <div className="w-12 h-12 rounded-lg bg-slate-100 overflow-hidden shrink-0 aspect-square">
                           <img 
-                            src={optimizeCloudinaryUrl(eq.foto_url || 'https://picsum.photos/seed/gear/100/100')} 
+                            src={optimizeCloudinaryUrl(eq.foto_url || 'https://picsum.photos/seed/gear/100/100', index === 0)} 
                             alt={eq.nombre}
                             width={100}
                             height={100}
-                            loading={index < 3 ? "eager" : "lazy"}
-                            {...(index < 3 ? { fetchPriority: "high" } : {})}
+                            loading={index === 0 ? "eager" : "lazy"}
+                            {...(index === 0 ? { fetchPriority: "high" } : {})}
                             className="w-full h-full object-cover" 
                           />
                         </div>

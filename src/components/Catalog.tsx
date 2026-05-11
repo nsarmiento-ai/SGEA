@@ -394,12 +394,12 @@ export const Catalog: React.FC = () => {
 
                 <div className="relative h-48 bg-slate-100 overflow-hidden aspect-[4/3]">
                   <img
-                    src={optimizeCloudinaryUrl(eq.foto_url || 'https://picsum.photos/seed/camera/400/300')}
+                    src={optimizeCloudinaryUrl(eq.foto_url || 'https://picsum.photos/seed/camera/400/300', index === 0)}
                     alt={eq.nombre}
                     width={400}
                     height={300}
-                    loading={index < 3 ? "eager" : "lazy"}
-                    {...(index < 3 ? { fetchPriority: "high" } : {})}
+                    loading={index === 0 ? "eager" : "lazy"}
+                    {...(index === 0 ? { fetchPriority: "high" } : {})}
                     referrerPolicy="no-referrer"
                     className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
                   />
@@ -433,8 +433,8 @@ export const Catalog: React.FC = () => {
                     <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                       <button 
                         onClick={() => { setSelectedEquipment(eq); setIsHistoryOpen(true); }}
-                        aria-label="Ver hoja de vida"
-                        className="p-1.5 hover:bg-slate-100 rounded-lg text-slate-600"
+                        aria-label={`Ver hoja de vida de ${eq.nombre}`}
+                        className="p-1.5 hover:bg-slate-100 rounded-lg text-slate-700"
                         title="Hoja de Vida"
                       >
                         <History className="w-4 h-4" />
@@ -443,8 +443,8 @@ export const Catalog: React.FC = () => {
                         <>
                           <button 
                             onClick={() => { setEditingItem(eq); setIsModalOpen(true); }}
-                            aria-label="Editar equipo"
-                            className="p-1.5 hover:bg-slate-100 rounded-lg text-slate-600"
+                            aria-label={`Editar ${eq.nombre}`}
+                            className="p-1.5 hover:bg-slate-100 rounded-lg text-slate-700"
                             title="Editar"
                           >
                             <Edit2 className="w-4 h-4" />
@@ -452,7 +452,7 @@ export const Catalog: React.FC = () => {
                           {eq.estado === 'Archivado' ? (
                             <button 
                               onClick={() => handleRestore(eq.id, eq.nombre)}
-                              aria-label="Restaurar equipo"
+                              aria-label={`Restaurar ${eq.nombre}`}
                               className="p-1.5 hover:bg-green-50 rounded-lg text-green-600"
                               title="Restaurar"
                             >
@@ -461,8 +461,8 @@ export const Catalog: React.FC = () => {
                           ) : (
                             <button 
                               onClick={() => handleDelete(eq.id, eq.nombre)}
-                              aria-label="Archivar equipo"
-                              className="p-1.5 hover:bg-red-50 rounded-lg text-red-500"
+                              aria-label={`Archivar ${eq.nombre}`}
+                              className="p-1.5 hover:bg-red-50 rounded-lg text-red-600"
                               title="Archivar"
                             >
                               <Trash2 className="w-4 h-4" />
@@ -512,12 +512,12 @@ export const Catalog: React.FC = () => {
                   </button>
                   <div className="w-12 h-12 rounded-lg bg-slate-100 overflow-hidden shrink-0 aspect-square">
                     <img 
-                      src={optimizeCloudinaryUrl(eq.foto_url || 'https://picsum.photos/seed/gear/100/100')} 
+                      src={optimizeCloudinaryUrl(eq.foto_url || 'https://picsum.photos/seed/gear/100/100', index === 0)} 
                       alt={eq.nombre}
                       width={100}
                       height={100}
-                      loading={index < 3 ? "eager" : "lazy"}
-                      {...(index < 3 ? { fetchPriority: "high" } : {})}
+                      loading={index === 0 ? "eager" : "lazy"}
+                      {...(index === 0 ? { fetchPriority: "high" } : {})}
                       className="w-full h-full object-cover" 
                     />
                   </div>
@@ -550,34 +550,34 @@ export const Catalog: React.FC = () => {
                   <div className="flex gap-2">
                     <button 
                       onClick={() => { setSelectedEquipment(eq); setIsHistoryOpen(true); }}
-                      aria-label="Ver hoja de vida"
-                      className="p-2 text-slate-400 hover:text-amber-500 bg-slate-50 rounded-lg"
+                      aria-label={`Ver hoja de vida de ${eq.nombre}`}
+                      className="p-2 text-slate-700 hover:text-amber-500 bg-slate-50 rounded-lg"
                     >
                       <History className="w-5 h-5" />
                     </button>
                     <button disabled aria-label="Favorito (deshabilitado)" className="p-2 rounded-lg bg-slate-50 opacity-50 cursor-not-allowed">
-                      <Star className="w-5 h-5 text-slate-300" />
+                      <Star className="w-5 h-5 text-slate-400" />
                     </button>
                     <button 
                       onClick={() => { setEditingItem(eq); setIsModalOpen(true); }} 
-                      aria-label="Editar equipo"
-                      className="p-2 text-slate-400 bg-slate-50 rounded-lg"
+                      aria-label={`Editar ${eq.nombre}`}
+                      className="p-2 text-slate-700 bg-slate-50 rounded-lg"
                     >
                       <Edit2 className="w-5 h-5" />
                     </button>
                     {eq.estado === 'Archivado' ? (
                       <button 
                         onClick={() => handleRestore(eq.id, eq.nombre)} 
-                        aria-label="Restaurar equipo"
-                        className="p-2 text-green-400 bg-green-50 rounded-lg"
+                        aria-label={`Restaurar ${eq.nombre}`}
+                        className="p-2 text-green-600 bg-green-50 rounded-lg"
                       >
                         <CheckCircle2 className="w-5 h-5" />
                       </button>
                     ) : (
                       <button 
                         onClick={() => handleDelete(eq.id, eq.nombre)} 
-                        aria-label="Archivar equipo"
-                        className="p-2 text-red-400 bg-red-50 rounded-lg"
+                        aria-label={`Archivar ${eq.nombre}`}
+                        className="p-2 text-red-600 bg-red-50 rounded-lg"
                       >
                         <Trash2 className="w-5 h-5" />
                       </button>
@@ -625,12 +625,12 @@ export const Catalog: React.FC = () => {
                       <div className="flex items-center gap-3">
                         <div className="w-10 h-10 rounded-lg bg-slate-100 overflow-hidden shrink-0 aspect-square">
                           <img 
-                            src={optimizeCloudinaryUrl(eq.foto_url || 'https://picsum.photos/seed/gear/100/100')} 
+                            src={optimizeCloudinaryUrl(eq.foto_url || 'https://picsum.photos/seed/gear/100/100', index === 0)} 
                             alt={eq.nombre}
                             width={100}
                             height={100}
-                            loading={index < 5 ? "eager" : "lazy"}
-                            {...(index < 5 ? { fetchPriority: "high" } : {})}
+                            loading={index === 0 ? "eager" : "lazy"}
+                            {...(index === 0 ? { fetchPriority: "high" } : {})}
                             className="w-full h-full object-cover" 
                           />
                         </div>
@@ -669,21 +669,21 @@ export const Catalog: React.FC = () => {
                       <div className="flex justify-end gap-2">
                         <button 
                           onClick={() => { setSelectedEquipment(eq); setIsHistoryOpen(true); }}
-                          aria-label="Ver hoja de vida"
-                          className="p-1.5 text-slate-400 hover:text-amber-500 hover:bg-amber-50 rounded-lg"
+                          aria-label={`Ver hoja de vida de ${eq.nombre}`}
+                          className="p-1.5 text-slate-700 hover:text-amber-500 hover:bg-amber-50 rounded-lg"
                           title="Hoja de Vida"
                         >
                           <History className="w-4 h-4" />
                         </button>
                         <button disabled aria-label="Favorito (deshabilitado)" className="p-1.5 rounded-lg opacity-50 cursor-not-allowed" title="Favorito">
-                          <Star className="w-4 h-4 text-slate-300" />
+                          <Star className="w-4 h-4 text-slate-400" />
                         </button>
                         {role === 'Administración' && (
                           <>
                             <button 
                               onClick={() => { setEditingItem(eq); setIsModalOpen(true); }} 
-                              aria-label="Editar equipo"
-                              className="p-1.5 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-lg" 
+                              aria-label={`Editar ${eq.nombre}`}
+                              className="p-1.5 text-slate-700 hover:text-slate-900 hover:bg-slate-100 rounded-lg" 
                               title="Editar"
                             >
                               <Edit2 className="w-4 h-4" />
@@ -691,8 +691,8 @@ export const Catalog: React.FC = () => {
                             {eq.estado === 'Archivado' ? (
                               <button 
                                 onClick={() => handleRestore(eq.id, eq.nombre)} 
-                                aria-label="Restaurar equipo"
-                                className="p-1.5 text-green-400 hover:text-green-600 hover:bg-green-50 rounded-lg" 
+                                aria-label={`Restaurar ${eq.nombre}`}
+                                className="p-1.5 text-green-600 hover:text-green-800 hover:bg-green-50 rounded-lg" 
                                 title="Restaurar"
                               >
                                 <CheckCircle2 className="w-4 h-4" />
@@ -700,8 +700,8 @@ export const Catalog: React.FC = () => {
                             ) : (
                               <button 
                                 onClick={() => handleDelete(eq.id, eq.nombre)} 
-                                aria-label="Archivar equipo"
-                                className="p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg" 
+                                aria-label={`Archivar ${eq.nombre}`}
+                                className="p-1.5 text-slate-700 hover:text-red-700 hover:bg-red-50 rounded-lg" 
                                 title="Archivar"
                               >
                                 <Trash2 className="w-4 h-4" />

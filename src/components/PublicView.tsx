@@ -130,7 +130,7 @@ export const PublicView: React.FC = () => {
               onClick={() => setActiveTab('catalog')}
               className={cn(
                 "flex-1 md:flex-none px-4 py-2 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-2",
-                activeTab === 'catalog' ? "bg-white text-slate-900 shadow-sm" : "text-slate-500 hover:text-slate-700"
+                activeTab === 'catalog' ? "bg-white text-slate-900 shadow-sm" : "text-slate-700 hover:text-slate-900"
               )}
             >
               <LayoutGrid className="w-4 h-4" />
@@ -141,7 +141,7 @@ export const PublicView: React.FC = () => {
               onClick={() => setActiveTab('calendar')}
               className={cn(
                 "flex-1 md:flex-none px-4 py-2 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-2",
-                activeTab === 'calendar' ? "bg-white text-slate-900 shadow-sm" : "text-slate-500 hover:text-slate-700"
+                activeTab === 'calendar' ? "bg-white text-slate-900 shadow-sm" : "text-slate-700 hover:text-slate-900"
               )}
             >
               <CalendarIcon className="w-4 h-4" />
@@ -151,7 +151,7 @@ export const PublicView: React.FC = () => {
 
           <button 
             onClick={() => navigate('/login')}
-            className="text-xs font-bold text-slate-500 hover:text-slate-900 transition-colors hidden md:block"
+            className="text-xs font-bold text-slate-700 hover:text-slate-900 transition-colors hidden md:block"
           >
             Acceso Docentes →
           </button>
@@ -224,12 +224,12 @@ export const PublicView: React.FC = () => {
                         <div className="aspect-[4/3] relative overflow-hidden bg-slate-100 italic">
                           {eq.foto_url ? (
                             <img 
-                              src={optimizeCloudinaryUrl(eq.foto_url)} 
+                              src={optimizeCloudinaryUrl(eq.foto_url, index === 0)} 
                               alt={eq.nombre}
                               width={400}
                               height={300}
-                              loading={index < 3 ? "eager" : "lazy"}
-                              {...(index < 3 ? { fetchPriority: "high" } : {})}
+                              loading={index === 0 ? "eager" : "lazy"}
+                              {...(index === 0 ? { fetchPriority: "high" } : {})}
                               className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                               referrerPolicy="no-referrer"
                             />
@@ -256,7 +256,7 @@ export const PublicView: React.FC = () => {
                               <p className="text-[9px] font-black text-slate-300 uppercase tracking-wider mb-2">Incluye</p>
                               <div className="flex flex-wrap gap-1">
                                 {eq.piezas.map((p, i) => (
-                                  <span key={i} className="px-2 py-0.5 bg-slate-50 text-[9px] font-bold text-slate-500 rounded-md border border-slate-100">
+                                  <span key={i} className="px-2 py-0.5 bg-slate-50 text-[9px] font-bold text-slate-700 rounded-md border border-slate-100">
                                     {typeof p === 'string' ? p : (p as any).nombre}
                                   </span>
                                 ))}
