@@ -42,7 +42,7 @@ export const ActiveLoans: React.FC<{ filterMora?: boolean }> = ({ filterMora = f
     const [loansRes] = await Promise.all([
       supabase
         .from('prestamos')
-        .select('id, alumno_nombre, alumno_dni, materia, equipos_ids, fecha_salida, fecha_devolucion_estimada, estado, piezas_prestadas, pañolero_entrega')
+        .select('id, alumno_nombre, alumno_dni, materia, docente_responsable, responsable_nombre, fecha_salida, fecha_devolucion_estimada, estado, equipos_ids, piezas_prestadas, "pañolero_entrega"')
         .eq('estado', 'Activo')
         .order('fecha_devolucion_estimada', { ascending: true })
     ]);
@@ -71,7 +71,7 @@ export const ActiveLoans: React.FC<{ filterMora?: boolean }> = ({ filterMora = f
 
       const eqIds = Array.from(new Set((finalLoans || []).flatMap(l => l.equipos_ids || [])));
       if (eqIds.length > 0) {
-        const { data: eqData } = await supabase.from('equipamiento').select('id, nombre, foto_url, categoria').in('id', eqIds);
+        const { data: eqData } = await supabase.from('equipamiento').select('id, nombre, foto_url, categoria, piezas, estado, modelo').in('id', eqIds);
         if (eqData) {
           const eqMap = eqData.reduce((acc, eq) => {
             let parsedPiezas = eq.piezas;
@@ -179,7 +179,7 @@ export const ActiveLoans: React.FC<{ filterMora?: boolean }> = ({ filterMora = f
   return (
     <div className="p-4 md:p-8 max-w-7xl mx-auto pt-16 lg:pt-8">
       <header className="mb-8">
-        <h1 className="text-2xl md:text-3xl font-display font-bold text-slate-900">
+        <h1 className="text-2xl md:text-3xl font-display font-bold text-slate-900 min-h-[32px] md:min-h-[40px]">
           {filterMora ? 'Panel de Mora' : (role === 'Docente' ? 'Mis Préstamos' : 'Devolución de Equipos')}
         </h1>
         <p className="text-sm md:text-base text-slate-500">

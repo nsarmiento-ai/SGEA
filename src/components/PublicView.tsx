@@ -180,7 +180,7 @@ export const PublicView: React.FC = () => {
                     className="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-100 rounded-xl outline-none focus:ring-2 focus:ring-slate-900/5 transition-all text-sm"
                   />
                 </div>
-                <div className="flex items-center gap-2 overflow-x-auto pb-2 md:pb-0 scrollbar-hide">
+                <div className="flex items-center gap-2 overflow-x-auto pb-2 md:pb-0 scrollbar-hide min-h-[48px]">
                   <Filter className="w-4 h-4 text-slate-400 shrink-0" />
                   {categories.map(cat => (
                     <button

@@ -117,7 +117,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
           ))}
         </nav>
 
-        <div className="p-4 border-t border-slate-800 space-y-2">
+        <div className="flex-shrink-0 p-4 border-t border-slate-800 space-y-2 min-h-[120px]">
           {isSuperAdmin && (
             <button
               onClick={handleRoleChange}

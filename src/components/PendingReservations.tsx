@@ -42,12 +42,12 @@ export const PendingReservations: React.FC = () => {
     setLoading(true);
     try {
       const [resData, studentData, eqData] = await Promise.all([
-        supabase.from('reservas').select('id, docente_nombre, alumno_nombre, fecha_inicio, fecha_fin, equipos_ids, materia, aula, estado').eq('estado', 'Pendiente').order('fecha_inicio', { ascending: true }),
+        supabase.from('reservas').select('id, equipos_ids, usuario_id, docente_nombre, materia, aula, alumno_nombre, fecha_inicio, fecha_fin, estado, created_at').eq('estado', 'Pendiente').order('fecha_inicio', { ascending: true }),
         supabase.from('solicitudes_alumnos')
-          .select('id, responsable, dni, docente_nombre, materia, equipos, fecha_inicio, fecha_fin, estado, created_at')
+          .select('id, responsable, dni, integrantes, materia, docente_id, docente_nombre, tipo_uso, equipos, fecha_inicio, fecha_fin, estado, observaciones, created_at, autorizado_por_docente, autorizado_por_direccion')
           .in('estado', ['Pendiente de Aval Docente', 'Pendiente de Dirección', 'Autorizado para Despacho'])
           .order('created_at', { ascending: false }),
-        supabase.from('equipamiento').select('id, nombre, foto_url')
+        supabase.from('equipamiento').select('id, nombre, categoria, modelo, numero_serie, ubicacion, descripcion, foto_url, estado, permiso_uso, piezas, created_at, updated_at')
       ]);
 
       const unified: UnifiedRequest[] = [

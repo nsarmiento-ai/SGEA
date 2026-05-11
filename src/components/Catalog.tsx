@@ -225,7 +225,7 @@ export const Catalog: React.FC = () => {
     <div className="p-4 md:p-8 max-w-7xl mx-auto pt-16 lg:pt-8">
       <header className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 mb-8">
         <div>
-          <h1 className="text-2xl md:text-3xl font-display font-bold text-slate-900">
+          <h1 className="text-2xl md:text-3xl font-display font-bold text-slate-900 min-h-[32px] md:min-h-[40px]">
             {showArchived ? 'Archivo de Equipos (Bajas)' : 'Catálogo de Equipos'}
           </h1>
           <p className="text-sm md:text-base text-slate-500">
@@ -287,19 +287,21 @@ export const Catalog: React.FC = () => {
           <div className="bg-white border border-slate-200 rounded-xl p-1 flex shadow-sm">
             <button 
               onClick={() => setViewMode('grid')}
+              aria-label="Ver cuadrícula"
               className={cn("p-1.5 rounded-lg transition-all", viewMode === 'grid' ? "bg-slate-100 text-slate-900" : "text-slate-400 hover:text-slate-600")}
             >
               <LayoutGrid className="w-5 h-5" />
             </button>
             <button 
               onClick={() => setViewMode('list')}
+              aria-label="Ver lista"
               className={cn("p-1.5 rounded-lg transition-all", viewMode === 'list' ? "bg-slate-100 text-slate-900" : "text-slate-400 hover:text-slate-600")}
             >
               <List className="w-5 h-5" />
             </button>
           </div>
         </div>
-        <div className="flex gap-2 overflow-x-auto pb-4 lg:pb-0 no-scrollbar">
+        <div className="flex gap-2 overflow-x-auto pb-4 lg:pb-0 no-scrollbar min-h-[48px] items-center">
           {categories.map(cat => (
             <button
               key={cat}

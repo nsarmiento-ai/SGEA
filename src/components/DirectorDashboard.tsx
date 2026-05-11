@@ -162,7 +162,7 @@ export const DirectorDashboard: React.FC = () => {
           </div>
           <div>
             <span className="text-[10px] font-black uppercase tracking-[0.3em] text-amber-400/80">Dirección</span>
-            <h1 className="text-2xl font-black tracking-tight leading-none mt-1">Panel de Control Estratégico</h1>
+            <h1 className="text-2xl font-black tracking-tight leading-none mt-1 min-h-[32px]">Panel de Control Estratégico</h1>
           </div>
         </div>
         <div className="hidden md:block text-right">

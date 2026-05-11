@@ -27,7 +27,7 @@ export const StudentRequestsManager: React.FC<{ filterDireccion?: boolean }> = (
 
   const fetchRequests = async () => {
     setLoading(true);
-    let query = supabase.from('solicitudes_alumnos').select('id, responsable, dni, docente_nombre, materia, equipos, fecha_inicio, fecha_fin, estado, tipo_uso, created_at, integrantes, observaciones, autorizado_por_docente, autorizado_por_direccion');
+    let query = supabase.from('solicitudes_alumnos').select('id, responsable, dni, integrantes, materia, docente_id, docente_nombre, tipo_uso, equipos, fecha_inicio, fecha_fin, estado, observaciones, created_at, autorizado_por_docente, autorizado_por_direccion');
     
     if (filterDireccion) {
       query = query.eq('estado', 'Pendiente de Dirección');
@@ -44,7 +44,7 @@ export const StudentRequestsManager: React.FC<{ filterDireccion?: boolean }> = (
   };
 
   const fetchEquipment = async () => {
-    const { data } = await supabase.from('equipamiento').select('id, nombre');
+    const { data } = await supabase.from('equipamiento').select('id, nombre, categoria, modelo, numero_serie, ubicacion, descripcion, foto_url, estado, permiso_uso, piezas, created_at, updated_at');
     if (data) {
       const eMap: Record<string, Equipment> = {};
       data.forEach(e => eMap[e.id] = e);

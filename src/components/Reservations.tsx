@@ -428,7 +428,7 @@ export const Reservations: React.FC = () => {
     <div className="p-4 md:p-8 max-w-7xl mx-auto pt-16 lg:pt-8">
       <header className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 mb-8">
         <div>
-          <h1 className="text-2xl md:text-3xl font-display font-bold text-slate-900">Reservas</h1>
+          <h1 className="text-2xl md:text-3xl font-display font-bold text-slate-900 min-h-[32px] md:min-h-[40px]">Reservas</h1>
           <p className="text-sm md:text-base text-slate-500">Gestione sus reservas de equipamiento.</p>
         </div>
         <div className="flex flex-col sm:flex-row flex-wrap gap-3">
@@ -563,7 +563,7 @@ export const Reservations: React.FC = () => {
                 className="w-full pl-10 pr-4 py-3 bg-white border border-slate-200 rounded-2xl focus:ring-2 focus:ring-amber-500 outline-none shadow-sm"
               />
             </div>
-            <div className="flex gap-2 overflow-x-auto pb-4 lg:pb-0 no-scrollbar">
+            <div className="flex gap-2 overflow-x-auto pb-4 lg:pb-0 no-scrollbar min-h-[48px] items-center">
               {categories.map(cat => (
                 <button
                   key={cat}
