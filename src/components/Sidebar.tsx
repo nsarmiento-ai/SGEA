@@ -13,7 +13,7 @@ import {
   CheckSquare
 } from 'lucide-react';
 import { useApp } from '../context/AppContext';
-import { cn } from '../lib/utils';
+import { cn, optimizeCloudinaryUrl } from '../lib/utils';
 import { supabase } from '../lib/supabase';
 
 interface SidebarProps {
@@ -79,8 +79,10 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
           <div className="flex items-center gap-3">
             <div className="p-2 rounded-lg">
               <img 
-                src="https://res.cloudinary.com/divij23kk/image/upload/v1775522044/Logo-Escuela_clscco_1_pe7ao5.png" 
+                src={optimizeCloudinaryUrl("https://res.cloudinary.com/divij23kk/image/upload/v1775522044/Logo-Escuela_clscco_1_pe7ao5.png")} 
                 alt="Logo Escuela" 
+                width={40}
+                height={40}
                 className="w-10 h-10 object-contain"
                 referrerPolicy="no-referrer"
               />

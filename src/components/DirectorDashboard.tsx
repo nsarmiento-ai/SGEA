@@ -90,14 +90,37 @@ export const DirectorDashboard: React.FC = () => {
       };
 
       // Stock Status Data
-      const availableItems = equipments.data?.filter(e => e.estado === 'Disponible') || [];
-      const inUseItems = equipments.data?.filter(e => e.estado === 'Prestado' || e.estado === 'Reservado') || [];
-      const maintenanceItems = equipments.data?.filter(e => e.estado === 'Mantenimiento' || e.estado === 'Baja') || [];
+      const availableItems = equipments.data?.filter(e => {
+        const s = (e.estado || '').toLowerCase();
+        return s === 'disponible';
+      }) || [];
+
+      const inUseItems = equipments.data?.filter(e => {
+        const s = (e.estado || '').toLowerCase();
+        return s === 'prestado' || s === 'en mora' || s === 'mora';
+      }) || [];
+
+      const maintenanceItems = equipments.data?.filter(e => {
+        const s = (e.estado || '').toLowerCase();
+        return s === 'mantenimiento' || 
+               s === 'en mantenimiento' || 
+               s === 'roto' || 
+               s === 'en reparación' || 
+               s === 'fuera de servicio' || 
+               s === 'incompleto' ||
+               s === 'baja';
+      }) || [];
+
+      const reservedItems = equipments.data?.filter(e => {
+        const s = (e.estado || '').toLowerCase();
+        return s === 'reservado';
+      }) || [];
 
       const stockCounts = {
         'Disponible': availableItems.length,
-        'En Uso': inUseItems.length,
-        'Mantenimiento': maintenanceItems.length
+        'En Préstamo': inUseItems.length,
+        'Mantenimiento': maintenanceItems.length,
+        'Reservado': reservedItems.length
       };
 
       setStats({

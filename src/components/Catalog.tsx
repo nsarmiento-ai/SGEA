@@ -28,7 +28,7 @@ import {
   Lock
 } from 'lucide-react';
 import { motion } from 'motion/react';
-import { cn } from '../lib/utils';
+import { cn, optimizeCloudinaryUrl } from '../lib/utils';
 import { isWithinInterval, parseISO, isAfter } from 'date-fns';
 import { Reservation } from '../types';
 
@@ -379,6 +379,7 @@ export const Catalog: React.FC = () => {
               >
                 <button 
                   onClick={() => toggleSelect(eq.id)}
+                  aria-label={selectedIds.includes(eq.id) ? "Deseleccionar equipo" : "Seleccionar equipo"}
                   className={cn(
                     "absolute top-3 left-3 z-10 p-1.5 rounded-lg transition-all",
                     selectedIds.includes(eq.id) ? "bg-amber-500 text-white shadow-lg" : "bg-white/80 backdrop-blur-sm text-slate-400 hover:text-slate-600 opacity-0 group-hover:opacity-100"
@@ -387,15 +388,18 @@ export const Catalog: React.FC = () => {
                   {selectedIds.includes(eq.id) ? <CheckSquare className="w-5 h-5" /> : <Square className="w-5 h-5" />}
                 </button>
 
-                <div className="relative h-48 bg-slate-100 overflow-hidden">
+                <div className="relative h-48 bg-slate-100 overflow-hidden aspect-[4/3]">
                   <img
-                    src={eq.foto_url || 'https://picsum.photos/seed/camera/400/300'}
+                    src={optimizeCloudinaryUrl(eq.foto_url || 'https://picsum.photos/seed/camera/400/300')}
                     alt={eq.nombre}
+                    width={400}
+                    height={300}
                     referrerPolicy="no-referrer"
                     className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
                   />
                   <button 
                     disabled
+                    aria-label="Marcar como favorito (deshabilitado)"
                     className="absolute top-3 right-12 p-2 bg-white/50 backdrop-blur-sm rounded-full shadow-sm border border-slate-100 opacity-50 cursor-not-allowed"
                   >
                     <Star className="text-slate-300 w-4 h-4" />
@@ -423,6 +427,7 @@ export const Catalog: React.FC = () => {
                     <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                       <button 
                         onClick={() => { setSelectedEquipment(eq); setIsHistoryOpen(true); }}
+                        aria-label="Ver hoja de vida"
                         className="p-1.5 hover:bg-slate-100 rounded-lg text-slate-600"
                         title="Hoja de Vida"
                       >
@@ -432,6 +437,7 @@ export const Catalog: React.FC = () => {
                         <>
                           <button 
                             onClick={() => { setEditingItem(eq); setIsModalOpen(true); }}
+                            aria-label="Editar equipo"
                             className="p-1.5 hover:bg-slate-100 rounded-lg text-slate-600"
                             title="Editar"
                           >
@@ -440,6 +446,7 @@ export const Catalog: React.FC = () => {
                           {eq.estado === 'Archivado' ? (
                             <button 
                               onClick={() => handleRestore(eq.id, eq.nombre)}
+                              aria-label="Restaurar equipo"
                               className="p-1.5 hover:bg-green-50 rounded-lg text-green-600"
                               title="Restaurar"
                             >
@@ -448,6 +455,7 @@ export const Catalog: React.FC = () => {
                           ) : (
                             <button 
                               onClick={() => handleDelete(eq.id, eq.nombre)}
+                              aria-label="Archivar equipo"
                               className="p-1.5 hover:bg-red-50 rounded-lg text-red-500"
                               title="Archivar"
                             >
@@ -489,11 +497,21 @@ export const Catalog: React.FC = () => {
             {filteredEquipments.map(eq => (
               <div key={eq.id} className={cn("bg-white p-4 rounded-2xl border border-slate-200 shadow-sm space-y-4", selectedIds.includes(eq.id) && "ring-2 ring-amber-500 bg-amber-50/30")}>
                 <div className="flex items-center gap-3">
-                  <button onClick={() => toggleSelect(eq.id)} className={cn("transition-all", selectedIds.includes(eq.id) ? "text-amber-500" : "text-slate-300")}>
+                  <button 
+                    aria-label={selectedIds.includes(eq.id) ? "Deseleccionar equipo" : "Seleccionar equipo"}
+                    onClick={() => toggleSelect(eq.id)} 
+                    className={cn("transition-all", selectedIds.includes(eq.id) ? "text-amber-500" : "text-slate-300")}
+                  >
                     {selectedIds.includes(eq.id) ? <CheckSquare className="w-6 h-6" /> : <Square className="w-6 h-6" />}
                   </button>
-                  <div className="w-12 h-12 rounded-lg bg-slate-100 overflow-hidden shrink-0">
-                    <img src={eq.foto_url || 'https://picsum.photos/seed/gear/100/100'} className="w-full h-full object-cover" />
+                  <div className="w-12 h-12 rounded-lg bg-slate-100 overflow-hidden shrink-0 aspect-square">
+                    <img 
+                      src={optimizeCloudinaryUrl(eq.foto_url || 'https://picsum.photos/seed/gear/100/100')} 
+                      alt={eq.nombre}
+                      width={100}
+                      height={100}
+                      className="w-full h-full object-cover" 
+                    />
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="font-bold text-slate-900 text-base truncate">{eq.nombre}</p>
@@ -524,22 +542,35 @@ export const Catalog: React.FC = () => {
                   <div className="flex gap-2">
                     <button 
                       onClick={() => { setSelectedEquipment(eq); setIsHistoryOpen(true); }}
+                      aria-label="Ver hoja de vida"
                       className="p-2 text-slate-400 hover:text-amber-500 bg-slate-50 rounded-lg"
                     >
                       <History className="w-5 h-5" />
                     </button>
-                    <button disabled className="p-2 rounded-lg bg-slate-50 opacity-50 cursor-not-allowed">
+                    <button disabled aria-label="Favorito (deshabilitado)" className="p-2 rounded-lg bg-slate-50 opacity-50 cursor-not-allowed">
                       <Star className="w-5 h-5 text-slate-300" />
                     </button>
-                    <button onClick={() => { setEditingItem(eq); setIsModalOpen(true); }} className="p-2 text-slate-400 bg-slate-50 rounded-lg">
+                    <button 
+                      onClick={() => { setEditingItem(eq); setIsModalOpen(true); }} 
+                      aria-label="Editar equipo"
+                      className="p-2 text-slate-400 bg-slate-50 rounded-lg"
+                    >
                       <Edit2 className="w-5 h-5" />
                     </button>
                     {eq.estado === 'Archivado' ? (
-                      <button onClick={() => handleRestore(eq.id, eq.nombre)} className="p-2 text-green-400 bg-green-50 rounded-lg">
+                      <button 
+                        onClick={() => handleRestore(eq.id, eq.nombre)} 
+                        aria-label="Restaurar equipo"
+                        className="p-2 text-green-400 bg-green-50 rounded-lg"
+                      >
                         <CheckCircle2 className="w-5 h-5" />
                       </button>
                     ) : (
-                      <button onClick={() => handleDelete(eq.id, eq.nombre)} className="p-2 text-red-400 bg-red-50 rounded-lg">
+                      <button 
+                        onClick={() => handleDelete(eq.id, eq.nombre)} 
+                        aria-label="Archivar equipo"
+                        className="p-2 text-red-400 bg-red-50 rounded-lg"
+                      >
                         <Trash2 className="w-5 h-5" />
                       </button>
                     )}
@@ -555,7 +586,11 @@ export const Catalog: React.FC = () => {
               <thead>
                 <tr className="bg-slate-50 border-b border-slate-200">
                   <th className="p-4 w-10">
-                    <button onClick={selectAll} className="text-slate-400 hover:text-slate-600">
+                    <button 
+                      aria-label="Seleccionar todos"
+                      onClick={selectAll} 
+                      className="text-slate-400 hover:text-slate-600"
+                    >
                       {selectedIds.length === filteredEquipments.length ? <CheckSquare className="w-5 h-5 text-amber-500" /> : <Square className="w-5 h-5" />}
                     </button>
                   </th>
@@ -570,14 +605,24 @@ export const Catalog: React.FC = () => {
                 {filteredEquipments.map(eq => (
                   <tr key={eq.id} className={cn("hover:bg-slate-50 transition-colors group", selectedIds.includes(eq.id) && "bg-amber-50/30")}>
                     <td className="p-4">
-                      <button onClick={() => toggleSelect(eq.id)} className={cn("transition-all", selectedIds.includes(eq.id) ? "text-amber-500" : "text-slate-300 group-hover:text-slate-400")}>
+                      <button 
+                        aria-label={selectedIds.includes(eq.id) ? "Deseleccionar equipo" : "Seleccionar equipo"}
+                        onClick={() => toggleSelect(eq.id)} 
+                        className={cn("transition-all", selectedIds.includes(eq.id) ? "text-amber-500" : "text-slate-300 group-hover:text-slate-400")}
+                      >
                         {selectedIds.includes(eq.id) ? <CheckSquare className="w-5 h-5" /> : <Square className="w-5 h-5" />}
                       </button>
                     </td>
                     <td className="p-4">
                       <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-lg bg-slate-100 overflow-hidden shrink-0">
-                          <img src={eq.foto_url || 'https://picsum.photos/seed/gear/100/100'} className="w-full h-full object-cover" />
+                        <div className="w-10 h-10 rounded-lg bg-slate-100 overflow-hidden shrink-0 aspect-square">
+                          <img 
+                            src={optimizeCloudinaryUrl(eq.foto_url || 'https://picsum.photos/seed/gear/100/100')} 
+                            alt={eq.nombre}
+                            width={100}
+                            height={100}
+                            className="w-full h-full object-cover" 
+                          />
                         </div>
                         <div>
                           <p className="font-bold text-slate-900 text-sm">{eq.nombre}</p>
@@ -614,25 +659,41 @@ export const Catalog: React.FC = () => {
                       <div className="flex justify-end gap-2">
                         <button 
                           onClick={() => { setSelectedEquipment(eq); setIsHistoryOpen(true); }}
+                          aria-label="Ver hoja de vida"
                           className="p-1.5 text-slate-400 hover:text-amber-500 hover:bg-amber-50 rounded-lg"
                           title="Hoja de Vida"
                         >
                           <History className="w-4 h-4" />
                         </button>
-                        <button disabled className="p-1.5 rounded-lg opacity-50 cursor-not-allowed" title="Favorito">
+                        <button disabled aria-label="Favorito (deshabilitado)" className="p-1.5 rounded-lg opacity-50 cursor-not-allowed" title="Favorito">
                           <Star className="w-4 h-4 text-slate-300" />
                         </button>
                         {role === 'Administración' && (
                           <>
-                            <button onClick={() => { setEditingItem(eq); setIsModalOpen(true); }} className="p-1.5 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-lg" title="Editar">
+                            <button 
+                              onClick={() => { setEditingItem(eq); setIsModalOpen(true); }} 
+                              aria-label="Editar equipo"
+                              className="p-1.5 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-lg" 
+                              title="Editar"
+                            >
                               <Edit2 className="w-4 h-4" />
                             </button>
                             {eq.estado === 'Archivado' ? (
-                              <button onClick={() => handleRestore(eq.id, eq.nombre)} className="p-1.5 text-green-400 hover:text-green-600 hover:bg-green-50 rounded-lg" title="Restaurar">
+                              <button 
+                                onClick={() => handleRestore(eq.id, eq.nombre)} 
+                                aria-label="Restaurar equipo"
+                                className="p-1.5 text-green-400 hover:text-green-600 hover:bg-green-50 rounded-lg" 
+                                title="Restaurar"
+                              >
                                 <CheckCircle2 className="w-4 h-4" />
                               </button>
                             ) : (
-                              <button onClick={() => handleDelete(eq.id, eq.nombre)} className="p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg" title="Archivar">
+                              <button 
+                                onClick={() => handleDelete(eq.id, eq.nombre)} 
+                                aria-label="Archivar equipo"
+                                className="p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg" 
+                                title="Archivar"
+                              >
                                 <Trash2 className="w-4 h-4" />
                               </button>
                             )}

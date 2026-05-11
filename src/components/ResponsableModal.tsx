@@ -4,6 +4,7 @@ import { useApp } from '../context/AppContext';
 import { Loader2, ExternalLink } from 'lucide-react';
 import { motion } from 'motion/react';
 import { useNavigate } from 'react-router-dom';
+import { optimizeCloudinaryUrl } from '../lib/utils';
 
 export const ResponsableModal: React.FC = () => {
   const { activeResponsable, loading: authLoading } = useApp();
@@ -33,8 +34,14 @@ export const ResponsableModal: React.FC = () => {
 
   if (activeResponsable || authLoading) return null;
 
+  const bgUrl = optimizeCloudinaryUrl("https://res.cloudinary.com/divij23kk/image/upload/v1778076280/Gemini_Generated_Image_ioi8z5ioi8z5ioi8_ayoatx.png");
+  const logoUrl = optimizeCloudinaryUrl("https://res.cloudinary.com/divij23kk/image/upload/v1775522044/Logo-Escuela_clscco_1_pe7ao5.png");
+
   return (
-    <div className="min-h-screen bg-black flex items-center justify-center p-4 bg-[url('https://res.cloudinary.com/divij23kk/image/upload/v1778076280/Gemini_Generated_Image_ioi8z5ioi8z5ioi8_ayoatx.png')] bg-center bg-cover bg-no-repeat">
+    <div 
+      className="min-h-screen bg-black flex items-center justify-center p-4 bg-center bg-cover bg-no-repeat"
+      style={{ backgroundImage: `url(${bgUrl})` }}
+    >
       <motion.div 
         initial={{ scale: 0.9, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
@@ -43,7 +50,7 @@ export const ResponsableModal: React.FC = () => {
         <div className="bg-white p-8 text-slate-900 text-center border-b border-slate-100">
           <div className="mb-6 flex justify-center">
             <img 
-              src="https://res.cloudinary.com/divij23kk/image/upload/v1775522044/Logo-Escuela_clscco_1_pe7ao5.png" 
+              src={logoUrl} 
               alt="Logo Escuela" 
               className="w-24 h-24 object-contain"
               referrerPolicy="no-referrer"

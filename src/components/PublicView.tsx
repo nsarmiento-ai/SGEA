@@ -15,7 +15,7 @@ import {
   Image as ImageIcon
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
-import { cn, formatDate } from '../lib/utils';
+import { cn, formatDate, optimizeCloudinaryUrl } from '../lib/utils';
 import { 
   format, 
   startOfMonth, 
@@ -112,8 +112,10 @@ export const PublicView: React.FC = () => {
         <div className="max-w-7xl mx-auto flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div className="flex items-center gap-4">
             <img 
-              src="https://res.cloudinary.com/divij23kk/image/upload/v1775522044/Logo-Escuela_clscco_1_pe7ao5.png" 
+              src={optimizeCloudinaryUrl("https://res.cloudinary.com/divij23kk/image/upload/v1775522044/Logo-Escuela_clscco_1_pe7ao5.png")} 
               alt="Logo Escuela de Cine" 
+              width={40}
+              height={40}
               className="h-10 w-auto object-contain bg-white p-0.5 rounded shadow-sm border border-slate-100"
             />
             <div className="min-w-0">
@@ -124,6 +126,7 @@ export const PublicView: React.FC = () => {
 
           <div className="flex bg-slate-100 p-1 rounded-xl">
             <button
+              aria-label="Ver catálogo"
               onClick={() => setActiveTab('catalog')}
               className={cn(
                 "flex-1 md:flex-none px-4 py-2 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-2",
@@ -134,6 +137,7 @@ export const PublicView: React.FC = () => {
               Catálogo
             </button>
             <button
+              aria-label="Ver agenda"
               onClick={() => setActiveTab('calendar')}
               className={cn(
                 "flex-1 md:flex-none px-4 py-2 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-2",
@@ -215,11 +219,13 @@ export const PublicView: React.FC = () => {
                         key={eq.id}
                         className="bg-white rounded-3xl border border-slate-200 overflow-hidden group hover:shadow-xl hover:shadow-slate-200/50 transition-all flex flex-col"
                       >
-                        <div className="aspect-[4/3] relative overflow-hidden bg-slate-100">
+                        <div className="aspect-[4/3] relative overflow-hidden bg-slate-100 italic">
                           {eq.foto_url ? (
                             <img 
-                              src={eq.foto_url} 
+                              src={optimizeCloudinaryUrl(eq.foto_url)} 
                               alt={eq.nombre}
+                              width={400}
+                              height={300}
                               className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                               referrerPolicy="no-referrer"
                             />

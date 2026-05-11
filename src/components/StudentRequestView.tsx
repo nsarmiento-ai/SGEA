@@ -6,7 +6,7 @@ import { MATERIAS_CATEGORIES } from '../constants';
 import { Loader2, Package, Search, Users, BookOpen, Calendar, CheckCircle, AlertCircle, ArrowLeft, Filter, Info } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { useNavigate } from 'react-router-dom';
-import { cn } from '../lib/utils';
+import { cn, optimizeCloudinaryUrl } from '../lib/utils';
 
 export const StudentRequestView: React.FC = () => {
   const navigate = useNavigate();
@@ -143,8 +143,10 @@ export const StudentRequestView: React.FC = () => {
           </button>
           <div className="flex items-center gap-3">
             <img 
-              src="https://res.cloudinary.com/divij23kk/image/upload/v1775522044/Logo-Escuela_clscco_1_pe7ao5.png" 
+              src={optimizeCloudinaryUrl("https://res.cloudinary.com/divij23kk/image/upload/v1775522044/Logo-Escuela_clscco_1_pe7ao5.png")} 
               alt="Logo" 
+              width={40}
+              height={40}
               className="h-10 w-auto"
             />
             <div>

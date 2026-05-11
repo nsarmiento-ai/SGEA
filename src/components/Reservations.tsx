@@ -32,7 +32,7 @@ import {
   Check
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
-import { cn } from '../lib/utils';
+import { cn, optimizeCloudinaryUrl } from '../lib/utils';
 import { parseISO, areIntervalsOverlapping, format } from 'date-fns';
 import { generateReservationPDF } from '../lib/pdf';
 import { sendAssistedEmail } from '../lib/email';
@@ -649,6 +649,7 @@ export const Reservations: React.FC = () => {
                   >
                     <button 
                       onClick={() => toggleSelect(eq.id)}
+                      aria-label={selectedIds.includes(eq.id) ? "Deseleccionar equipo" : "Seleccionar equipo"}
                       className={cn(
                         "absolute top-4 left-4 z-10 p-2 rounded-xl transition-all",
                         selectedIds.includes(eq.id) ? "bg-amber-500 text-white shadow-lg" : "bg-white/80 backdrop-blur-sm text-slate-400 hover:text-slate-600 opacity-0 group-hover:opacity-100"
@@ -657,10 +658,12 @@ export const Reservations: React.FC = () => {
                       {selectedIds.includes(eq.id) ? <CheckSquare className="w-5 h-5" /> : <Square className="w-5 h-5" />}
                     </button>
 
-                    <div className="relative h-56 bg-slate-100 overflow-hidden">
+                    <div className="relative h-56 bg-slate-100 overflow-hidden aspect-[4/3]">
                       <img
-                        src={eq.foto_url || 'https://picsum.photos/seed/camera/400/300'}
+                        src={optimizeCloudinaryUrl(eq.foto_url || 'https://picsum.photos/seed/camera/400/300')}
                         alt={eq.nombre}
+                        width={400}
+                        height={300}
                         referrerPolicy="no-referrer"
                         className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
                       />
@@ -751,11 +754,21 @@ export const Reservations: React.FC = () => {
                   return (
                     <div key={eq.id} className={cn("bg-white p-4 rounded-2xl border border-slate-200 shadow-sm space-y-4", selectedIds.includes(eq.id) && "ring-2 ring-amber-500 bg-amber-50/30")}>
                       <div className="flex items-center gap-3">
-                        <button onClick={() => toggleSelect(eq.id)} className={cn("transition-all", selectedIds.includes(eq.id) ? "text-amber-500" : "text-slate-300")}>
+                        <button 
+                          aria-label={selectedIds.includes(eq.id) ? "Deseleccionar equipo" : "Seleccionar equipo"}
+                          onClick={() => toggleSelect(eq.id)} 
+                          className={cn("transition-all", selectedIds.includes(eq.id) ? "text-amber-500" : "text-slate-300")}
+                        >
                           {selectedIds.includes(eq.id) ? <CheckSquare className="w-6 h-6" /> : <Square className="w-6 h-6" />}
                         </button>
-                        <div className="w-12 h-12 rounded-lg bg-slate-100 overflow-hidden shrink-0">
-                          <img src={eq.foto_url || 'https://picsum.photos/seed/gear/100/100'} className="w-full h-full object-cover" />
+                        <div className="w-12 h-12 rounded-lg bg-slate-100 overflow-hidden shrink-0 aspect-square">
+                          <img 
+                            src={optimizeCloudinaryUrl(eq.foto_url || 'https://picsum.photos/seed/gear/100/100')} 
+                            alt={eq.nombre}
+                            width={100}
+                            height={100}
+                            className="w-full h-full object-cover" 
+                          />
                         </div>
                         <div className="flex-1 min-w-0">
                           <p className="font-bold text-slate-900 text-base truncate">{eq.nombre}</p>
@@ -797,7 +810,11 @@ export const Reservations: React.FC = () => {
                   <thead>
                     <tr className="bg-slate-50 border-b border-slate-200">
                       <th className="p-4 w-10">
-                        <button onClick={selectAll} className="text-slate-400 hover:text-slate-600">
+                        <button 
+                          aria-label="Seleccionar todos"
+                          onClick={selectAll} 
+                          className="text-slate-400 hover:text-slate-600"
+                        >
                           {selectedIds.length === filteredEquipments.length ? <CheckSquare className="w-5 h-5 text-amber-500" /> : <Square className="w-5 h-5" />}
                         </button>
                       </th>
@@ -818,14 +835,24 @@ export const Reservations: React.FC = () => {
                       return (
                         <tr key={eq.id} className={cn("hover:bg-slate-50 transition-colors group", selectedIds.includes(eq.id) && "bg-amber-50/30")}>
                           <td className="p-4">
-                            <button onClick={() => toggleSelect(eq.id)} className={cn("transition-all", selectedIds.includes(eq.id) ? "text-amber-500" : "text-slate-300 group-hover:text-slate-400")}>
+                            <button 
+                              aria-label={selectedIds.includes(eq.id) ? "Deseleccionar equipo" : "Seleccionar equipo"}
+                              onClick={() => toggleSelect(eq.id)} 
+                              className={cn("transition-all", selectedIds.includes(eq.id) ? "text-amber-500" : "text-slate-300 group-hover:text-slate-400")}
+                            >
                               {selectedIds.includes(eq.id) ? <CheckSquare className="w-5 h-5" /> : <Square className="w-5 h-5" />}
                             </button>
                           </td>
                           <td className="p-4">
                             <div className="flex items-center gap-3">
-                              <div className="w-10 h-10 rounded-lg bg-slate-100 overflow-hidden shrink-0">
-                                <img src={eq.foto_url || 'https://picsum.photos/seed/gear/100/100'} className="w-full h-full object-cover" />
+                              <div className="w-10 h-10 rounded-lg bg-slate-100 overflow-hidden shrink-0 aspect-square">
+                                <img 
+                                  src={optimizeCloudinaryUrl(eq.foto_url || 'https://picsum.photos/seed/gear/100/100')} 
+                                  alt={eq.nombre}
+                                  width={100}
+                                  height={100}
+                                  className="w-full h-full object-cover" 
+                                />
                               </div>
                               <div>
                                 <p className="font-bold text-slate-900 text-sm">{eq.nombre}</p>
@@ -848,11 +875,16 @@ export const Reservations: React.FC = () => {
                           </td>
                           <td className="p-4 text-right">
                             {isInCart ? (
-                              <button onClick={() => removeFromCart(eq.id)} className="p-2 text-red-500 hover:bg-red-50 rounded-xl">
+                              <button 
+                                aria-label="Quitar de la reserva"
+                                onClick={() => removeFromCart(eq.id)} 
+                                className="p-2 text-red-500 hover:bg-red-50 rounded-xl"
+                              >
                                 <Trash2 className="w-5 h-5" />
                               </button>
                             ) : (
                               <button 
+                                aria-label="Añadir a la reserva"
                                 onClick={() => addToCart(eq)} 
                                 disabled={isUnavailable}
                                 className={cn("p-2 rounded-xl transition-all", isUnavailable ? "text-slate-300" : "text-amber-500 hover:bg-amber-50")}
