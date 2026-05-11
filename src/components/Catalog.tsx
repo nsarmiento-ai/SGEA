@@ -228,7 +228,7 @@ export const Catalog: React.FC = () => {
           <h1 className="text-2xl md:text-3xl font-display font-bold text-slate-900 min-h-[32px] md:min-h-[40px]">
             {showArchived ? 'Archivo de Equipos (Bajas)' : 'Catálogo de Equipos'}
           </h1>
-          <p className="text-sm md:text-base text-slate-500">
+          <p className="text-sm md:text-base text-slate-700">
             {showArchived ? 'Equipos fuera de servicio permanente o históricos.' : 'Gestione el inventario de la escuela.'}
           </p>
         </div>
@@ -350,7 +350,7 @@ export const Catalog: React.FC = () => {
       {loading ? (
         <div className="flex flex-col items-center justify-center py-20">
           <Loader2 className="w-10 h-10 animate-spin text-amber-500 mb-4" />
-          <p className="text-slate-500 font-medium">Cargando inventario...</p>
+          <p className="text-slate-700 font-medium">Cargando inventario...</p>
         </div>
       ) : viewMode === 'grid' ? (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
@@ -602,11 +602,11 @@ export const Catalog: React.FC = () => {
                       {selectedIds.length === filteredEquipments.length ? <CheckSquare className="w-5 h-5 text-amber-500" /> : <Square className="w-5 h-5" />}
                     </button>
                   </th>
-                  <th className="p-4 text-xs font-bold text-slate-700 uppercase tracking-wider">Recurso</th>
-                  <th className="p-4 text-xs font-bold text-slate-700 uppercase tracking-wider">ID / Serie</th>
-                  <th className="p-4 text-xs font-bold text-slate-700 uppercase tracking-wider">Categoría</th>
-                  <th className="p-4 text-xs font-bold text-slate-700 uppercase tracking-wider">Estado</th>
-                  <th className="p-4 text-xs font-bold text-slate-700 uppercase tracking-wider text-right">Acciones</th>
+                      <th className="p-4 text-xs font-bold text-slate-700 uppercase tracking-wider">Recurso</th>
+                      <th className="p-4 text-xs font-bold text-slate-700 uppercase tracking-wider">ID / Serie</th>
+                      <th className="p-4 text-xs font-bold text-slate-700 uppercase tracking-wider">Categoría</th>
+                      <th className="p-4 text-xs font-bold text-slate-700 uppercase tracking-wider">Estado</th>
+                      <th className="p-4 text-xs font-bold text-slate-700 uppercase tracking-wider text-right">Acciones</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
@@ -636,7 +636,7 @@ export const Catalog: React.FC = () => {
                         </div>
                         <div>
                           <p className="font-bold text-slate-900 text-sm">{eq.nombre}</p>
-                          <p className="text-xs text-slate-500">{eq.modelo}</p>
+                          <p className="text-xs text-slate-700">{eq.modelo}</p>
                         </div>
                       </div>
                     </td>

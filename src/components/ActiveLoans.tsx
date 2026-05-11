@@ -182,7 +182,7 @@ export const ActiveLoans: React.FC<{ filterMora?: boolean }> = ({ filterMora = f
         <h1 className="text-2xl md:text-3xl font-display font-bold text-slate-900 min-h-[32px] md:min-h-[40px]">
           {filterMora ? 'Panel de Mora' : (role === 'Docente' ? 'Mis Préstamos' : 'Devolución de Equipos')}
         </h1>
-        <p className="text-sm md:text-base text-slate-500">
+        <p className="text-sm md:text-base text-slate-700">
           {filterMora ? 'Equipos con fecha de devolución vencida.' : (role === 'Docente' ? 'Seguimiento de sus equipos retirados.' : 'Administración de recepción de equipos.')}
         </p>
       </header>
@@ -195,7 +195,7 @@ export const ActiveLoans: React.FC<{ filterMora?: boolean }> = ({ filterMora = f
             <Package aria-hidden="true" className="text-slate-400 w-6 h-6 md:w-8 md:h-8" />
           </div>
           <h3 className="text-base md:text-lg font-bold text-slate-900">No hay préstamos {filterMora ? 'en mora' : 'activos'}</h3>
-          <p className="text-xs md:text-sm text-slate-500">Todo el grupo de equipos está en orden.</p>
+          <p className="text-xs md:text-sm text-slate-700">Todo el grupo de equipos está en orden.</p>
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">

@@ -119,8 +119,8 @@ export const PublicView: React.FC = () => {
               className="h-10 w-auto object-contain bg-white p-0.5 rounded shadow-sm border border-slate-100"
             />
             <div className="min-w-0">
-              <h1 className="text-lg font-bold tracking-tight text-slate-900">SGEA</h1>
-              <p className="text-[10px] uppercase font-black tracking-widest text-slate-400">Escuela Universitaria de Cine - UNT</p>
+              <h1 className="text-lg font-bold tracking-tight text-slate-900 min-h-[28px]">SGEA</h1>
+              <p className="text-[10px] uppercase font-black tracking-widest text-slate-700">Escuela Universitaria de Cine - UNT</p>
             </div>
           </div>
 
@@ -208,7 +208,7 @@ export const PublicView: React.FC = () => {
                 ) : filteredEquipments.length === 0 ? (
                   <div className="col-span-full py-20 text-center">
                     <Package className="w-12 h-12 text-slate-200 mx-auto mb-4" />
-                    <p className="text-slate-400 font-bold">No se encontraron equipos</p>
+                    <p className="text-slate-700 font-bold">No se encontraron equipos</p>
                   </div>
                 ) : (
                   filteredEquipments.map((eq, index) => {
@@ -298,7 +298,7 @@ export const PublicView: React.FC = () => {
               {/* Simplified Calendar Header */}
               <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm flex items-center justify-between">
                 <div className="flex items-center gap-4">
-                  <h2 className="text-lg font-bold capitalize">
+                  <h2 className="text-lg font-bold capitalize min-h-[28px]">
                     {format(currentMonth, 'MMMM yyyy', { locale: es })}
                   </h2>
                   <div className="flex gap-1">

@@ -18,8 +18,12 @@ export function formatDate(date: string | Date) {
 export function optimizeCloudinaryUrl(url: string | undefined | null) {
   if (!url || !url.includes('res.cloudinary.com')) return url || '';
   
-  // If it already has transformations, don't double up or handle carefully
-  if (url.includes('/upload/f_auto,q_auto')) return url;
+  // If it already has transformations, replace them with optimized ones
+  if (url.includes('/upload/')) {
+    const parts = url.split('/upload/');
+    // Standardize transformations: auto format, eco quality, limit width to 300px
+    return `${parts[0]}/upload/f_auto,q_auto:eco,w_300,c_limit/${parts[1]}`;
+  }
   
-  return url.replace('/upload/', '/upload/f_auto,q_auto:eco,w_300,c_limit/');
+  return url;
 }

@@ -429,7 +429,7 @@ export const Reservations: React.FC = () => {
       <header className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 mb-8">
         <div>
           <h1 className="text-2xl md:text-3xl font-display font-bold text-slate-900 min-h-[32px] md:min-h-[40px]">Reservas</h1>
-          <p className="text-sm md:text-base text-slate-500">Gestione sus reservas de equipamiento.</p>
+          <p className="text-sm md:text-base text-slate-700">Gestione sus reservas de equipamiento.</p>
         </div>
         <div className="flex flex-col sm:flex-row flex-wrap gap-3">
           <div className="bg-slate-100 p-1 rounded-2xl flex w-full sm:w-auto shadow-inner">
@@ -513,10 +513,10 @@ export const Reservations: React.FC = () => {
       {activeTab === 'catalogo' ? (
         <>
           {/* Date selection at the top */}
-          <div className="bg-white p-4 md:p-6 rounded-2xl md:rounded-3xl border border-slate-200 shadow-sm mb-8">
-            <div className="flex flex-col lg:flex-row lg:items-end gap-6">
-              <div className="flex-1 w-full">
-                <label className="block text-xs font-black text-slate-500 mb-3 uppercase tracking-wider">¿Para cuándo necesitas el equipo?</label>
+        <div className="bg-white p-4 md:p-6 rounded-2xl md:rounded-3xl border border-slate-200 shadow-sm mb-8">
+          <div className="flex flex-col lg:flex-row lg:items-end gap-6">
+            <div className="flex-1 w-full">
+              <label className="block text-xs font-black text-slate-700 mb-3 uppercase tracking-wider">¿Para cuándo necesitas el equipo?</label>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-1">
                     <p className="text-[10px] font-bold text-slate-400 ml-1 uppercase">Entrada</p>
