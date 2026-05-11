@@ -401,6 +401,7 @@ export const Catalog: React.FC = () => {
                     loading={index === 0 ? "eager" : "lazy"}
                     {...(index === 0 ? { fetchPriority: "high" } : {})}
                     referrerPolicy="no-referrer"
+                    crossOrigin="anonymous"
                     className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
                   />
                   <button 
@@ -518,6 +519,7 @@ export const Catalog: React.FC = () => {
                       height={100}
                       loading={index === 0 ? "eager" : "lazy"}
                       {...(index === 0 ? { fetchPriority: "high" } : {})}
+                      crossOrigin="anonymous"
                       className="w-full h-full object-cover" 
                     />
                   </div>
@@ -631,6 +633,7 @@ export const Catalog: React.FC = () => {
                             height={100}
                             loading={index === 0 ? "eager" : "lazy"}
                             {...(index === 0 ? { fetchPriority: "high" } : {})}
+                            crossOrigin="anonymous"
                             className="w-full h-full object-cover" 
                           />
                         </div>

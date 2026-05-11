@@ -232,6 +232,7 @@ export const PublicView: React.FC = () => {
                               {...(index === 0 ? { fetchPriority: "high" } : {})}
                               className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                               referrerPolicy="no-referrer"
+                              crossOrigin="anonymous"
                             />
                           ) : (
                             <div className="w-full h-full flex items-center justify-center text-slate-200">

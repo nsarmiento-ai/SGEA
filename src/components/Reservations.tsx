@@ -669,6 +669,7 @@ export const Reservations: React.FC = () => {
                         loading={index === 0 ? "eager" : "lazy"}
                         {...(index === 0 ? { fetchPriority: "high" } : {})}
                         referrerPolicy="no-referrer"
+                        crossOrigin="anonymous"
                         className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
                       />
                       <div className="absolute bottom-4 left-4 flex flex-col gap-2">
