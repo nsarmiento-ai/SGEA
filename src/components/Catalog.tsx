@@ -233,16 +233,6 @@ export const Catalog: React.FC = () => {
           </p>
         </div>
         <div className="flex flex-wrap gap-2 self-start">
-          {role === 'Administración' && (
-            <button 
-              onClick={() => { throw new Error('Test Sentry SGEA'); }}
-              className="flex items-center gap-2 px-3 py-2 md:px-4 md:py-2 rounded-xl font-bold text-xs md:text-sm transition-all border bg-red-50 text-red-600 border-red-200 hover:bg-red-100"
-            >
-              <AlertCircle className="w-4 h-4" />
-              <span className="hidden sm:inline">Test Sentry Error</span>
-              <span className="sm:hidden">Test</span>
-            </button>
-          )}
           <button 
             disabled
             className="flex items-center gap-2 px-3 py-2 md:px-4 md:py-2 rounded-xl font-bold text-xs md:text-sm opacity-50 cursor-not-allowed bg-white text-slate-400 border-slate-200"

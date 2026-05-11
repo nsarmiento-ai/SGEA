@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
+import * as Sentry from "@sentry/react";
 import { supabase } from '../lib/supabase';
 import { Responsable } from '../types';
 
@@ -42,6 +43,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const handleAuthChange = async (session: any) => {
     if (!session?.user) {
+      Sentry.setUser(null);
       setActiveResponsableState(null);
       setRole(null);
       setUserEmail(null);
@@ -50,6 +52,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       lastSessionId.current = null;
       return;
     }
+
+    Sentry.setUser({
+      id: session.user.id,
+      email: session.user.email || undefined
+    });
 
     // Prevent redundant fetches if session hasn't changed
     if (lastSessionId.current === session.user.id) {
@@ -109,6 +116,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const signOut = async () => {
     localStorage.removeItem('selected_role');
+    Sentry.setUser(null);
     await supabase.auth.signOut();
   };
 
