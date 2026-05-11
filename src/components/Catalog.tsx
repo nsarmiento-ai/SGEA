@@ -37,7 +37,7 @@ const statusConfig: Record<EquipmentStatus, { color: string, icon: any, label: s
   'Prestado': { color: 'text-blue-600 bg-blue-50 border-blue-200', icon: Clock, label: 'Prestado' },
   'Fuera de Servicio': { color: 'text-red-600 bg-red-50 border-red-200', icon: XCircle, label: 'Fuera de Servicio' },
   'Archivado': { color: 'text-slate-500 bg-slate-50 border-slate-200', icon: Trash2, label: 'Archivado' },
-  'En Mantenimiento': { color: 'text-amber-600 bg-amber-50 border-amber-200', icon: AlertCircle, label: 'Mantenimiento' },
+  'En Mantenimiento': { color: 'text-amber-800 bg-amber-50 border-amber-200', icon: AlertCircle, label: 'Mantenimiento' },
   'En Mora': { color: 'text-purple-600 bg-purple-50 border-purple-200', icon: AlertCircle, label: 'En Mora' },
 };
 
@@ -350,7 +350,7 @@ export const Catalog: React.FC = () => {
         </div>
       ) : viewMode === 'grid' ? (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-          {(filteredEquipments || []).map((eq) => {
+          {(filteredEquipments || []).map((eq, index) => {
             const eqReservations = (reservations || []).filter(r => 
               (r.equipos_ids || []).includes(eq.id) && 
               (r.estado === 'Pendiente' || r.estado === 'Activa')
@@ -394,6 +394,8 @@ export const Catalog: React.FC = () => {
                     alt={eq.nombre}
                     width={400}
                     height={300}
+                    loading={index === 0 ? "eager" : "lazy"}
+                    {...(index === 0 ? { fetchPriority: "high" } : {})}
                     referrerPolicy="no-referrer"
                     className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
                   />
@@ -423,7 +425,7 @@ export const Catalog: React.FC = () => {
               
               <div className="p-4">
                   <div className="flex justify-between items-start mb-1">
-                    <span className="text-[10px] uppercase tracking-wider font-bold text-amber-600">{eq.categoria}</span>
+                    <span className="text-[10px] uppercase tracking-wider font-bold text-amber-800">{eq.categoria}</span>
                     <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                       <button 
                         onClick={() => { setSelectedEquipment(eq); setIsHistoryOpen(true); }}
@@ -810,14 +812,14 @@ const HistoryModal: React.FC<{ equipment: Equipment, onClose: () => void }> = ({
                         <p className="text-[10px] font-black text-slate-400 uppercase mb-1">Recepción</p>
                         <p className="text-xs font-bold text-slate-700">{entry.pañolero_recibe || 'Pendiente'}</p>
                         {entry.fecha_entrada && (
-                          <p className="text-[10px] text-slate-500 mt-1">Estado: <span className="text-amber-600 font-black">{entry.estado_entrada}</span></p>
+                          <p className="text-[10px] text-slate-500 mt-1">Estado: <span className="text-amber-800 font-black">{entry.estado_entrada}</span></p>
                         )}
                       </div>
                     </div>
                     
                     {entry.observaciones_entrada && (
                       <div className="mt-4 p-3 bg-amber-50 border border-amber-100 rounded-xl">
-                        <p className="text-[10px] font-black text-amber-600 uppercase mb-1">Observaciones al recibir</p>
+                        <p className="text-[10px] font-black text-amber-800 uppercase mb-1">Observaciones al recibir</p>
                         <p className="text-xs text-slate-700 italic">"{entry.observaciones_entrada}"</p>
                       </div>
                     )}
@@ -829,7 +831,11 @@ const HistoryModal: React.FC<{ equipment: Equipment, onClose: () => void }> = ({
         </div>
         
         <div className="p-6 border-t border-slate-100 bg-slate-50 rounded-b-2xl flex justify-end">
-          <button onClick={onClose} className="bg-slate-900 text-white px-8 py-3 rounded-2xl font-bold shadow-lg shadow-slate-200">
+          <button 
+            aria-label="Cerrar hoja de vida"
+            onClick={onClose} 
+            className="bg-slate-900 text-white px-8 py-3 rounded-2xl font-bold shadow-lg shadow-slate-200"
+          >
             Cerrar Hoja de Vida
           </button>
         </div>
@@ -885,7 +891,11 @@ const EquipmentModal: React.FC<{ item: Equipment | null, onClose: () => void, on
       <div className="bg-white rounded-2xl shadow-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
         <div className="p-6 border-b border-slate-100 flex justify-between items-center">
           <h2 className="text-xl font-bold">{item ? 'Editar Equipo' : 'Nuevo Equipo'}</h2>
-          <button onClick={onClose} className="text-slate-400 hover:text-slate-600">
+          <button 
+            aria-label="Cerrar formulario"
+            onClick={onClose} 
+            className="text-slate-400 hover:text-slate-600"
+          >
             <XCircle className="w-6 h-6" />
           </button>
         </div>

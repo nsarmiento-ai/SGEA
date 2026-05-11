@@ -626,7 +626,7 @@ export const Reservations: React.FC = () => {
             </div>
           ) : viewMode === 'grid' ? (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
-              {(filteredEquipments || []).map((eq) => {
+              {(filteredEquipments || []).map((eq, index) => {
                 const isInCart = (cart || []).find(item => item.id === eq.id);
                 const isReservedForDates = checkOverlap([eq.id], formData.fecha_inicio, formData.fecha_fin);
                 const isOutOfService = eq.estado === 'Fuera de Servicio';
@@ -664,6 +664,8 @@ export const Reservations: React.FC = () => {
                         alt={eq.nombre}
                         width={400}
                         height={300}
+                        loading={index === 0 ? "eager" : "lazy"}
+                        {...(index === 0 ? { fetchPriority: "high" } : {})}
                         referrerPolicy="no-referrer"
                         className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
                       />
@@ -674,7 +676,7 @@ export const Reservations: React.FC = () => {
                         {isUnavailable && (
                           <span className={cn(
                             "px-3 py-1 text-white text-[10px] font-black uppercase rounded-lg tracking-wider w-fit shadow-lg",
-                            isArchived ? "bg-slate-600" : isOutOfService ? "bg-red-600" : isNoHabilitado ? "bg-red-800" : "bg-amber-600"
+                            isArchived ? "bg-slate-600" : isOutOfService ? "bg-red-600" : isNoHabilitado ? "bg-red-800" : "bg-amber-800"
                           )}>
                             {isArchived ? 'Archivado' : isOutOfService ? 'Fuera de Servicio' : isNoHabilitado ? 'No habilitado' : 'Ocupado en estas fechas'}
                           </span>
@@ -945,7 +947,7 @@ export const Reservations: React.FC = () => {
                   <div className="flex items-center justify-end border-t lg:border-t-0 pt-4 lg:pt-0">
                     <button 
                       onClick={() => generateReservationPDF(res, (equipments || []).filter(e => (res.equipos_ids || []).includes(e.id)))}
-                      className="w-full lg:w-auto flex items-center justify-center gap-2 px-6 py-3 text-sm font-bold text-slate-600 hover:text-amber-600 bg-slate-100 hover:bg-amber-50 rounded-xl transition-all"
+                      className="w-full lg:w-auto flex items-center justify-center gap-2 px-6 py-3 text-sm font-bold text-slate-600 hover:text-amber-800 bg-slate-100 hover:bg-amber-50 rounded-xl transition-all"
                     >
                       <Info className="w-4 h-4" />
                       Descargar Comprobante

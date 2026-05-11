@@ -21,5 +21,5 @@ export function optimizeCloudinaryUrl(url: string | undefined | null) {
   // If it already has transformations, don't double up or handle carefully
   if (url.includes('/upload/f_auto,q_auto')) return url;
   
-  return url.replace('/upload/', '/upload/f_auto,q_auto/');
+  return url.replace('/upload/', '/upload/f_auto,q_auto,w_500,c_limit/');
 }

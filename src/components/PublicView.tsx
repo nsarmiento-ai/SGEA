@@ -40,7 +40,7 @@ const statusConfig: Record<EquipmentStatus, { color: string, icon: any, label: s
   'Prestado': { color: 'text-blue-600 bg-blue-50 border-blue-200', icon: Clock, label: 'En uso' },
   'Fuera de Servicio': { color: 'text-red-600 bg-red-50 border-red-200', icon: XCircle, label: 'Mantenimiento' },
   'Archivado': { color: 'text-slate-500 bg-slate-50 border-slate-200', icon: XCircle, label: 'No disponible' },
-  'En Mantenimiento': { color: 'text-amber-600 bg-amber-50 border-amber-200', icon: AlertCircle, label: 'Mantenimiento' },
+  'En Mantenimiento': { color: 'text-amber-800 bg-amber-50 border-amber-200', icon: AlertCircle, label: 'Mantenimiento' },
   'En Mora': { color: 'text-purple-600 bg-purple-50 border-purple-200', icon: AlertCircle, label: 'Retrasado' },
 };
 
@@ -209,7 +209,7 @@ export const PublicView: React.FC = () => {
                     <p className="text-slate-400 font-bold">No se encontraron equipos</p>
                   </div>
                 ) : (
-                  filteredEquipments.map((eq) => {
+                  filteredEquipments.map((eq, index) => {
                     const config = statusConfig[eq.estado as EquipmentStatus] || statusConfig['Disponible'];
                     const Icon = config.icon;
 
@@ -226,6 +226,8 @@ export const PublicView: React.FC = () => {
                               alt={eq.nombre}
                               width={400}
                               height={300}
+                              loading="lazy"
+                              {...(index === 0 ? { fetchPriority: "high" } : {})}
                               className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                               referrerPolicy="no-referrer"
                             />
@@ -243,7 +245,7 @@ export const PublicView: React.FC = () => {
                           </div>
                         </div>
                         <div className="p-5 flex-1 flex flex-col">
-                          <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">{eq.categoria}</p>
+                          <p className="text-[10px] font-black text-amber-800 uppercase tracking-widest mb-1">{eq.categoria}</p>
                           <h3 className="text-base font-bold text-slate-900 group-hover:text-slate-700 transition-colors mb-1">{eq.nombre}</h3>
                           <p className="text-xs text-slate-500 font-medium">{eq.modelo}</p>
                           
@@ -298,8 +300,20 @@ export const PublicView: React.FC = () => {
                     {format(currentMonth, 'MMMM yyyy', { locale: es })}
                   </h2>
                   <div className="flex gap-1">
-                    <button onClick={() => setCurrentMonth(subMonths(currentMonth, 1))} className="p-1.5 hover:bg-slate-100 rounded-lg transition-colors"><ChevronLeft className="w-5 h-5"/></button>
-                    <button onClick={() => setCurrentMonth(addMonths(currentMonth, 1))} className="p-1.5 hover:bg-slate-100 rounded-lg transition-colors"><ChevronRight className="w-5 h-5"/></button>
+                    <button 
+                      aria-label="Mes anterior"
+                      onClick={() => setCurrentMonth(subMonths(currentMonth, 1))} 
+                      className="p-1.5 hover:bg-slate-100 rounded-lg transition-colors"
+                    >
+                      <ChevronLeft className="w-5 h-5"/>
+                    </button>
+                    <button 
+                      aria-label="Mes siguiente"
+                      onClick={() => setCurrentMonth(addMonths(currentMonth, 1))} 
+                      className="p-1.5 hover:bg-slate-100 rounded-lg transition-colors"
+                    >
+                      <ChevronRight className="w-5 h-5"/>
+                    </button>
                   </div>
                 </div>
                 <div className="flex items-center gap-3 text-[10px] font-black uppercase tracking-widest">

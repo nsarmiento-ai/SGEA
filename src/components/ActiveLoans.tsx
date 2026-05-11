@@ -242,7 +242,7 @@ export const ActiveLoans: React.FC<{ filterMora?: boolean }> = ({ filterMora = f
                       <Calendar className="w-4 h-4 text-slate-400 mt-0.5" />
                       <div>
                         <p className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">Devolución Estimada</p>
-                        <p className={cn("text-xs md:text-sm font-bold", isMora ? "text-red-600" : "text-amber-600")}>
+                        <p className={cn("text-xs md:text-sm font-bold", isMora ? "text-red-600" : "text-amber-800")}>
                           {formatDate(loan.fecha_devolucion_estimada)}
                         </p>
                       </div>
@@ -554,10 +554,10 @@ const ReceiveModal: React.FC<{ loan: Loan, equipmentsMap: Record<string, Equipme
             </div>
             {!Object.values(checkedItems).every(v => v) && (
               <div className="p-4 bg-amber-600/10 border border-amber-600/20 rounded-2xl flex items-start gap-4">
-                <AlertCircle className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
+                <AlertCircle className="w-5 h-5 text-amber-800 shrink-0 mt-0.5" />
                 <div>
                   <p className="text-xs font-bold text-amber-700">Devolución Parcial</p>
-                  <p className="text-[10px] text-amber-600 leading-relaxed">
+                  <p className="text-[10px] text-amber-800 leading-relaxed">
                     Los equipos no marcados cambiarán su estado a <strong>En Mora</strong> y seguirán apareciendo como activos para este alumno.
                   </p>
                 </div>

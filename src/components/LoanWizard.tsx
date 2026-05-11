@@ -563,7 +563,7 @@ export const LoanWizard: React.FC = () => {
                           "text-[9px] font-black uppercase tracking-wider px-2 py-1 rounded-lg border",
                           req.estado === 'Autorizado para Despacho' 
                             ? "bg-green-50 text-green-600 border-green-200" 
-                            : "bg-amber-50 text-amber-600 border-amber-200"
+                            : "bg-amber-50 text-amber-800 border-amber-200"
                         )}>
                           {req.estado === 'Autorizado para Despacho' ? 'Autorizado' : 'Pendiente'}
                         </div>

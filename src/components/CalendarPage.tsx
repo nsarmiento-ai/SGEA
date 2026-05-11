@@ -96,7 +96,7 @@ export const CalendarPage: React.FC = () => {
           </button>
           <button
             onClick={() => setCurrentMonth(new Date())}
-            className="px-4 py-2 text-xs md:text-sm font-bold text-amber-600 hover:bg-amber-50 rounded-lg transition-colors flex-1 sm:flex-none flex justify-center"
+            className="px-4 py-2 text-xs md:text-sm font-bold text-amber-800 hover:bg-amber-50 rounded-lg transition-colors flex-1 sm:flex-none flex justify-center"
           >
             Hoy
           </button>
@@ -329,7 +329,7 @@ export const CalendarPage: React.FC = () => {
                           <div className="flex items-center justify-between mb-4">
                             <span className={cn(
                               "px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider border",
-                              isLoan ? "bg-emerald-50 text-emerald-600 border-emerald-200" : (isStudent ? "bg-indigo-50 text-indigo-600 border-indigo-200" : (event.estado === 'Pendiente' ? "bg-amber-50 text-amber-600 border-amber-200" : "bg-blue-50 text-blue-600 border-blue-200"))
+                              isLoan ? "bg-emerald-50 text-emerald-600 border-emerald-200" : (isStudent ? "bg-indigo-50 text-indigo-600 border-indigo-200" : (event.estado === 'Pendiente' ? "bg-amber-50 text-amber-800 border-amber-200" : "bg-blue-50 text-blue-600 border-blue-200"))
                             )}>
                               {subLabel}
                             </span>
