@@ -513,7 +513,7 @@ const ReceiveModal: React.FC<{ loan: Loan, equipmentsMap: Record<string, Equipme
                       <option value="Fuera de Servicio">Fuera de Servicio</option>
                     </select>
                   ) : (
-                    <span className="text-[10px] font-black uppercase text-amber-600 bg-amber-100 px-2 py-1 rounded-full flex items-center gap-1">
+                    <span className="text-[10px] font-black uppercase text-amber-800 bg-amber-100 px-2 py-1 rounded-full flex items-center gap-1">
                       <Clock className="w-3 h-3" />
                       Faltante
                     </span>

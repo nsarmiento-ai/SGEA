@@ -226,8 +226,8 @@ export const PublicView: React.FC = () => {
                               alt={eq.nombre}
                               width={400}
                               height={300}
-                              loading="lazy"
-                              {...(index === 0 ? { fetchPriority: "high" } : {})}
+                              loading={index < 2 ? "eager" : "lazy"}
+                              {...(index < 2 ? { fetchPriority: "high" } : {})}
                               className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                               referrerPolicy="no-referrer"
                             />

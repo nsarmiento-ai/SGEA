@@ -394,8 +394,8 @@ export const Catalog: React.FC = () => {
                     alt={eq.nombre}
                     width={400}
                     height={300}
-                    loading={index === 0 ? "eager" : "lazy"}
-                    {...(index === 0 ? { fetchPriority: "high" } : {})}
+                    loading={index < 2 ? "eager" : "lazy"}
+                    {...(index < 2 ? { fetchPriority: "high" } : {})}
                     referrerPolicy="no-referrer"
                     className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
                   />
@@ -496,7 +496,7 @@ export const Catalog: React.FC = () => {
         <div className="space-y-4 lg:space-y-0">
           {/* Mobile Card List */}
           <div className="lg:hidden space-y-4">
-            {filteredEquipments.map(eq => (
+            {filteredEquipments.map((eq, index) => (
               <div key={eq.id} className={cn("bg-white p-4 rounded-2xl border border-slate-200 shadow-sm space-y-4", selectedIds.includes(eq.id) && "ring-2 ring-amber-500 bg-amber-50/30")}>
                 <div className="flex items-center gap-3">
                   <button 
@@ -512,6 +512,8 @@ export const Catalog: React.FC = () => {
                       alt={eq.nombre}
                       width={100}
                       height={100}
+                      loading={index < 3 ? "eager" : "lazy"}
+                      {...(index < 3 ? { fetchPriority: "high" } : {})}
                       className="w-full h-full object-cover" 
                     />
                   </div>
@@ -604,7 +606,7 @@ export const Catalog: React.FC = () => {
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
-                {filteredEquipments.map(eq => (
+                {filteredEquipments.map((eq, index) => (
                   <tr key={eq.id} className={cn("hover:bg-slate-50 transition-colors group", selectedIds.includes(eq.id) && "bg-amber-50/30")}>
                     <td className="p-4">
                       <button 
@@ -623,6 +625,8 @@ export const Catalog: React.FC = () => {
                             alt={eq.nombre}
                             width={100}
                             height={100}
+                            loading={index < 5 ? "eager" : "lazy"}
+                            {...(index < 5 ? { fetchPriority: "high" } : {})}
                             className="w-full h-full object-cover" 
                           />
                         </div>
@@ -983,7 +987,7 @@ const EquipmentModal: React.FC<{ item: Equipment | null, onClose: () => void, on
                 onClick={() => {
                   setFormData({ ...formData, piezas: [...(formData.piezas || []), ''] });
                 }}
-                className="text-xs font-bold text-amber-600 hover:text-amber-700 flex items-center gap-1"
+                className="text-xs font-bold text-amber-800 hover:text-amber-900 flex items-center gap-1"
               >
                 <Plus className="w-4 h-4" /> Agregar Pieza
               </button>

@@ -664,8 +664,8 @@ export const Reservations: React.FC = () => {
                         alt={eq.nombre}
                         width={400}
                         height={300}
-                        loading={index === 0 ? "eager" : "lazy"}
-                        {...(index === 0 ? { fetchPriority: "high" } : {})}
+                        loading={index < 2 ? "eager" : "lazy"}
+                        {...(index < 2 ? { fetchPriority: "high" } : {})}
                         referrerPolicy="no-referrer"
                         className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
                       />
@@ -746,7 +746,7 @@ export const Reservations: React.FC = () => {
             <div className="space-y-4 lg:space-y-0">
               {/* Mobile Card List */}
               <div className="lg:hidden space-y-4">
-                {filteredEquipments.map(eq => {
+                {filteredEquipments.map((eq, index) => {
                   const isInCart = (cart || []).find(item => item.id === eq.id);
                   const isReservedForDates = checkOverlap([eq.id], formData.fecha_inicio, formData.fecha_fin);
                   const isOutOfService = eq.estado === 'Fuera de Servicio';
@@ -769,6 +769,8 @@ export const Reservations: React.FC = () => {
                             alt={eq.nombre}
                             width={100}
                             height={100}
+                            loading={index < 3 ? "eager" : "lazy"}
+                            {...(index < 3 ? { fetchPriority: "high" } : {})}
                             className="w-full h-full object-cover" 
                           />
                         </div>
@@ -827,7 +829,7 @@ export const Reservations: React.FC = () => {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100">
-                    {filteredEquipments.map(eq => {
+                    {filteredEquipments.map((eq, index) => {
                       const isInCart = (cart || []).find(item => item.id === eq.id);
                       const isReservedForDates = checkOverlap([eq.id], formData.fecha_inicio, formData.fecha_fin);
                       const isOutOfService = eq.estado === 'Fuera de Servicio';
@@ -853,6 +855,8 @@ export const Reservations: React.FC = () => {
                                   alt={eq.nombre}
                                   width={100}
                                   height={100}
+                                  loading={index < 5 ? "eager" : "lazy"}
+                                  {...(index < 5 ? { fetchPriority: "high" } : {})}
                                   className="w-full h-full object-cover" 
                                 />
                               </div>
