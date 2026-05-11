@@ -24,13 +24,13 @@ import { useEffect, useState, useRef } from 'react';
 import { supabase } from './lib/supabase';
 
 function AppContent() {
-  const { activeResponsable, loading, role, profile } = useApp();
+  const { activeResponsable, loading, role } = useApp();
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
   const hasInitialized = useRef(false);
 
   useEffect(() => {
-    if (!profile || hasInitialized.current) return;
+    if (hasInitialized.current) return;
     hasInitialized.current = true;
 
     // Force PostgREST schema refresh after DB updates
@@ -47,7 +47,9 @@ function AppContent() {
     };
 
     const seedAulasIfNeeded = async () => {
-      if (profile?.rol === 'Administración') {
+      // If we don't have a role yet, we can't seed.
+      // We will check again once role is set.
+      if (role === 'Administración') {
         try {
           const { data: existing } = await supabase.from('equipamiento').select('nombre').eq('categoria', 'Espacio');
           const existingNames = (existing || []).map(e => e.nombre);
@@ -69,7 +71,7 @@ function AppContent() {
 
     refreshSchema();
     seedAulasIfNeeded();
-  }, [profile?.rol]);
+  }, [role]);
 
   if (loading) {
     return (

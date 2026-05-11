@@ -33,7 +33,7 @@ import { MATERIAS_CATEGORIES } from '../constants';
 import { useNavigate } from 'react-router-dom';
 
 export const LoanWizard: React.FC = () => {
-  const { activeResponsable, profile } = useApp();
+  const { activeResponsable } = useApp();
   const navigate = useNavigate();
   const [step, setStep] = useState(1);
   const [equipments, setEquipments] = useState<Equipment[]>([]);
@@ -399,7 +399,6 @@ export const LoanWizard: React.FC = () => {
     
     sendAssistedEmail({
       to: docenteEmail,
-      cc: profile?.email || undefined,
       subject: `SGEA - Comprobante de Préstamo - Escuela de Cine`,
       body: `Hola,\n\nSe ha registrado un préstamo de equipamiento audiovisual.\n\nAlumno: ${loan.alumno_nombre}\nMateria: ${loan.materia}\nFecha de Salida: ${format(parseISO(loan.fecha_salida), 'dd/MM/yyyy HH:mm')}\nFecha de Devolución Estimada: ${format(parseISO(loan.fecha_devolucion_estimada), 'dd/MM/yyyy HH:mm')}\n\nEquipos:\n${equipments.map((e: any) => `- ${e.nombre} (${e.modelo})`).join('\n')}\n\nNota: Se adjunta el comprobante en PDF (Favor de adjuntar el archivo descargado manualmente).\n\nSaludos,\nSistema SGEA`
     });

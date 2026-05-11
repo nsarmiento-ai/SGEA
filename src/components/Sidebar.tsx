@@ -22,7 +22,7 @@ interface SidebarProps {
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
-  const { activeResponsable, profile, userEmail, isSuperAdmin, role, setRole, signOut } = useApp();
+  const { activeResponsable, userEmail, isSuperAdmin, role, setRole, signOut } = useApp();
   const navigate = useNavigate();
 
   const handleRoleChange = () => {

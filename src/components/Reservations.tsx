@@ -53,7 +53,7 @@ const mapStatus = (status: string | null | undefined): EquipmentStatus => {
 };
 
 export const Reservations: React.FC = () => {
-  const { activeResponsable, profile, toggleFavorite } = useApp();
+  const { activeResponsable, toggleFavorite } = useApp();
   const [equipments, setEquipments] = useState<Equipment[]>([]);
   const [reservations, setReservations] = useState<Reservation[]>([]);
   const [loading, setLoading] = useState(true);
@@ -162,7 +162,7 @@ export const Reservations: React.FC = () => {
     const matchesSearch = (eq?.nombre || '').toLowerCase().includes((search || '').toLowerCase()) || 
                          (eq?.modelo || '').toLowerCase().includes((search || '').toLowerCase());
     const matchesCategory = category === 'Todas' || (eq?.categoria || 'Otros') === category;
-    const matchesFavorites = showFavorites ? (profile?.favoritos || []).includes(eq?.id) : true;
+    const matchesFavorites = true; // Favorites temporarily disabled
     return matchesSearch && matchesCategory && matchesFavorites;
   });
 
@@ -337,7 +337,6 @@ export const Reservations: React.FC = () => {
     
     sendAssistedEmail({
       to: docenteEmail,
-      cc: profile?.email || undefined,
       subject: `SGEA - Comprobante de Reserva - Escuela de Cine`,
       body: `Hola,\n\nSe ha registrado una nueva solicitud de reserva de equipamiento.\n\nDocente: ${reservation.docente_nombre}\nUso: ${reservation.materia}\nFecha Inicio: ${format(parseISO(reservation.fecha_inicio), 'dd/MM/yyyy HH:mm')}\nFecha Fin: ${format(parseISO(reservation.fecha_fin), 'dd/MM/yyyy HH:mm')}\n\nEquipos:\n${equipments.map((e: any) => `- ${e.nombre} (${e.modelo})`).join('\n')}\n\nNota: Se adjunta el comprobante en PDF (Favor de adjuntar el archivo descargado manualmente).\n\nSaludos,\nSistema SGEA`
     });
@@ -472,16 +471,11 @@ export const Reservations: React.FC = () => {
             )}
             {activeTab === 'catalogo' && (
               <button 
-                onClick={() => setShowFavorites(!showFavorites)}
-                className={cn(
-                  "flex items-center justify-center gap-2 px-4 md:px-6 py-3 rounded-2xl font-bold text-xs md:text-sm transition-all border shadow-sm flex-1 sm:flex-none",
-                  showFavorites 
-                    ? "bg-amber-500 text-white border-amber-600 shadow-amber-200" 
-                    : "bg-white text-slate-600 border-slate-200 hover:border-amber-500"
-                )}
+                disabled
+                className="flex items-center justify-center gap-2 px-4 md:px-6 py-3 rounded-2xl font-bold text-xs md:text-sm transition-all border shadow-sm flex-1 sm:flex-none opacity-50 cursor-not-allowed bg-white text-slate-400 border-slate-200"
               >
-                <Star className={cn("w-4 h-4 md:w-5 md:h-5", showFavorites ? "fill-current" : "text-amber-500")} />
-                <span className="hidden sm:inline">{showFavorites ? 'Viendo habituales' : 'Ver habituales'}</span>
+                <Star className="w-4 h-4 md:w-5 md:h-5 text-slate-300" />
+                <span className="hidden sm:inline">Habituales (Off)</span>
                 <span className="sm:hidden">Habituales</span>
               </button>
             )}
@@ -608,113 +602,15 @@ export const Reservations: React.FC = () => {
                   </button>
                 </div>
               </div>
+                 {/* Section for Full Catalog or filtered list */}
+          <div className="mt-10 mb-6 flex items-center gap-2">
+            <div className="w-8 h-8 rounded-lg bg-slate-100 flex items-center justify-center text-slate-400">
+              <Filter className="w-4 h-4" />
             </div>
-          )}
-
-          {/* Sección Mis Habituales */}
-          {!showFavorites && (profile?.favoritos || []).length > 0 && (
-            <div className="mb-10 animate-in fade-in slide-in-from-top-4 duration-700">
-              <div className="flex items-center gap-2 mb-6">
-                <div className="w-8 h-8 rounded-lg bg-amber-500 flex items-center justify-center text-white shadow-lg shadow-amber-200">
-                  <Star className="w-4 h-4 fill-current" />
-                </div>
-                <h2 className="text-xl font-black text-slate-900 uppercase tracking-tight">Mis Habituales</h2>
-                <div className="h-px flex-1 bg-slate-100 ml-4"></div>
-              </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
-                {(equipments || [])
-                  .filter(eq => (profile?.favoritos || []).includes(eq.id))
-                  .map((eq) => {
-                    const isInCart = (cart || []).find(item => item.id === eq.id);
-                    const isReservedForDates = checkOverlap([eq.id], formData.fecha_inicio, formData.fecha_fin);
-                    const isOutOfService = eq.estado === 'Fuera de Servicio';
-                    const isArchived = eq.estado === 'Archivado';
-                    const isNoHabilitado = eq.permiso_uso === 'No habilitado';
-                    const isUnavailable = isReservedForDates || isOutOfService || isArchived || isNoHabilitado;
-
-                    return (
-                      <motion.div
-                        layout
-                        key={`fav-${eq.id}`}
-                        initial={{ opacity: 0, scale: 0.95 }}
-                        animate={{ opacity: 1, scale: 1 }}
-                        className={cn(
-                          "bg-white rounded-3xl border overflow-hidden shadow-sm hover:shadow-xl transition-all group flex flex-col",
-                          isInCart ? "border-amber-500 ring-2 ring-amber-500/20" : "border-slate-200",
-                          isUnavailable && !isInCart && "opacity-75 grayscale-[0.5]"
-                        )}
-                      >
-                        <div className="relative h-48 bg-slate-100 overflow-hidden">
-                          <img
-                            src={eq.foto_url || 'https://picsum.photos/seed/camera/400/300'}
-                            alt={eq.nombre}
-                            referrerPolicy="no-referrer"
-                            className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
-                          />
-                          <button 
-                            onClick={() => toggleFavorite(eq.id)}
-                            className="absolute top-4 right-4 p-2.5 bg-white/90 backdrop-blur-sm rounded-full shadow-lg border border-slate-100 transition-transform active:scale-90"
-                          >
-                            <Star className={cn("w-5 h-5", (profile?.favoritos || []).includes(eq.id) ? "fill-amber-500 text-amber-500" : "text-slate-400")} />
-                          </button>
-                          <div className="absolute bottom-4 left-4 flex flex-col gap-2">
-                            <span className="px-3 py-1 bg-slate-900/80 backdrop-blur-sm text-white text-[10px] font-black uppercase rounded-lg tracking-wider w-fit">
-                              {eq.categoria}
-                            </span>
-                          </div>
-                        </div>
-                        
-                        <div className="p-5 flex-1 flex flex-col">
-                          <h3 className="font-black text-slate-900 text-base leading-tight mb-1">{eq.nombre}</h3>
-                          <p className="text-xs text-slate-500 mb-2">{eq.modelo}</p>
-
-                          {eq.permiso_uso !== 'Libre uso' && (
-                            <div className={cn(
-                              "mb-4 flex items-center gap-1.5 px-2 py-1 rounded-lg text-[10px] font-bold border w-fit",
-                              eq.permiso_uso === 'Restringido' ? "bg-blue-50 text-blue-700 border-blue-100" : "bg-red-50 text-red-700 border-red-100"
-                            )}>
-                              <Lock className="w-3 h-3" />
-                              {eq.permiso_uso}
-                            </div>
-                          )}
-                          
-                          <div className="mt-auto">
-                            {isInCart ? (
-                              <button 
-                                onClick={() => removeFromCart(eq.id)}
-                                className="w-full py-2.5 bg-red-50 text-red-600 rounded-xl font-bold text-xs flex items-center justify-center gap-2 hover:bg-red-100 transition-colors"
-                              >
-                                <Trash2 className="w-4 h-4" />
-                                Quitar
-                              </button>
-                            ) : (
-                              <button 
-                                onClick={() => addToCart(eq)}
-                                disabled={isUnavailable}
-                                className={cn(
-                                  "w-full py-2.5 rounded-xl font-bold text-xs flex items-center justify-center gap-2 transition-all shadow-md",
-                                  isUnavailable 
-                                    ? "bg-slate-100 text-slate-400 cursor-not-allowed shadow-none" 
-                                    : "bg-slate-900 text-white hover:bg-amber-500 shadow-slate-200"
-                                )}
-                              >
-                                {isUnavailable ? 'No disponible' : 'Añadir'}
-                              </button>
-                            )}
-                          </div>
-                        </div>
-                      </motion.div>
-                    );
-                  })}
-              </div>
-              <div className="mt-10 mb-6 flex items-center gap-2">
-                <div className="w-8 h-8 rounded-lg bg-slate-100 flex items-center justify-center text-slate-400">
-                  <Filter className="w-4 h-4" />
-                </div>
-                <h2 className="text-xl font-black text-slate-900 uppercase tracking-tight">Catálogo Completo</h2>
-                <div className="h-px flex-1 bg-slate-100 ml-4"></div>
-              </div>
-            </div>
+            <h2 className="text-xl font-black text-slate-900 uppercase tracking-tight">Catálogo de Equipos</h2>
+            <div className="h-px flex-1 bg-slate-100 ml-4"></div>
+          </div>
+         </div>
           )}
 
           {loading ? (
@@ -768,15 +664,6 @@ export const Reservations: React.FC = () => {
                         referrerPolicy="no-referrer"
                         className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
                       />
-                      <button 
-                        onClick={() => toggleFavorite(eq.id)}
-                        className="absolute top-4 right-4 p-2.5 bg-white/90 backdrop-blur-sm rounded-full shadow-lg border border-slate-100 transition-transform active:scale-90"
-                      >
-                        <Star className={cn(
-                          "w-5 h-5 transition-colors",
-                          (profile?.favoritos || []).includes(eq.id) ? "fill-amber-500 text-amber-500" : "text-slate-400"
-                        )} />
-                      </button>
                       <div className="absolute bottom-4 left-4 flex flex-col gap-2">
                         <span className="px-3 py-1 bg-slate-900/80 backdrop-blur-sm text-white text-[10px] font-black uppercase rounded-lg tracking-wider w-fit">
                           {eq.categoria}

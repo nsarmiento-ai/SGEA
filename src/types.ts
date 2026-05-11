@@ -101,13 +101,6 @@ export interface StudentRequest {
   autorizado_por_direccion?: string;
 }
 
-export interface Profile {
-  id: string;
-  email: string;
-  rol: 'Administración' | 'Docente' | null;
-  favoritos: string[];
-  created_at?: string;
-}
 
 export interface ResourceHistory {
   id: string;

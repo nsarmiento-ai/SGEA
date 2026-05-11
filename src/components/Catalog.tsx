@@ -97,7 +97,7 @@ const InventoryMetrics: React.FC<{ equipments: Equipment[] }> = ({ equipments })
 };
 
 export const Catalog: React.FC = () => {
-  const { activeResponsable, profile, toggleFavorite, role } = useApp();
+  const { activeResponsable, toggleFavorite, role } = useApp();
   const [equipments, setEquipments] = useState<Equipment[]>([]);
   const [reservations, setReservations] = useState<Reservation[]>([]);
   const [loading, setLoading] = useState(true);
@@ -177,7 +177,7 @@ export const Catalog: React.FC = () => {
                          (eq?.modelo || '').toLowerCase().includes((search || '').toLowerCase()) ||
                          (eq?.numero_serie || '').toLowerCase().includes((search || '').toLowerCase());
     const matchesCategory = category === 'Todas' || (eq?.categoria || 'Otros') === category;
-    const matchesFavorites = showFavorites ? (profile?.favoritos || []).includes(eq?.id) : true;
+    const matchesFavorites = true; // Favorites temporarily disabled
     
     // For Docente, never show archived. For Admin, depends on showArchived toggle.
     if (role === 'Docente') {
@@ -233,18 +233,22 @@ export const Catalog: React.FC = () => {
           </p>
         </div>
         <div className="flex flex-wrap gap-2 self-start">
+          {role === 'Administración' && (
+            <button 
+              onClick={() => { throw new Error('Test Sentry SGEA'); }}
+              className="flex items-center gap-2 px-3 py-2 md:px-4 md:py-2 rounded-xl font-bold text-xs md:text-sm transition-all border bg-red-50 text-red-600 border-red-200 hover:bg-red-100"
+            >
+              <AlertCircle className="w-4 h-4" />
+              <span className="hidden sm:inline">Test Sentry Error</span>
+              <span className="sm:hidden">Test</span>
+            </button>
+          )}
           <button 
-            onClick={() => setShowFavorites(!showFavorites)}
-            className={cn(
-              "flex items-center gap-2 px-3 py-2 md:px-4 md:py-2 rounded-xl font-bold text-xs md:text-sm transition-all border",
-              showFavorites 
-                ? "bg-amber-500 text-white border-amber-600" 
-                : "bg-white text-slate-600 border-slate-200 hover:border-amber-500"
-            )}
+            disabled
+            className="flex items-center gap-2 px-3 py-2 md:px-4 md:py-2 rounded-xl font-bold text-xs md:text-sm opacity-50 cursor-not-allowed bg-white text-slate-400 border-slate-200"
           >
-            <Star className={cn("w-4 h-4", showFavorites ? "fill-current" : "text-amber-500")} />
-            <span className="hidden sm:inline">{showFavorites ? 'Viendo Habituales' : 'Ver Habituales'}</span>
-            <span className="sm:hidden">Habituales</span>
+            <Star className="w-4 h-4" />
+            <span className="hidden sm:inline">Habituales (Off)</span>
           </button>
           {role === 'Administración' && (
             <button 
@@ -401,13 +405,10 @@ export const Catalog: React.FC = () => {
                     className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
                   />
                   <button 
-                    onClick={() => toggleFavorite(eq.id)}
-                    className="absolute top-3 right-12 p-2 bg-white/90 backdrop-blur-sm rounded-full shadow-sm border border-slate-100 transition-transform active:scale-90"
+                    disabled
+                    className="absolute top-3 right-12 p-2 bg-white/50 backdrop-blur-sm rounded-full shadow-sm border border-slate-100 opacity-50 cursor-not-allowed"
                   >
-                    <Star className={cn(
-                      "w-4 h-4 transition-colors",
-                      (profile?.favoritos || []).includes(eq.id) ? "fill-amber-500 text-amber-500" : "text-slate-400"
-                    )} />
+                    <Star className="text-slate-300 w-4 h-4" />
                   </button>
                   <div className="absolute top-3 right-3 flex flex-col gap-2 items-end">
                     <div className={cn(
@@ -537,8 +538,8 @@ export const Catalog: React.FC = () => {
                     >
                       <History className="w-5 h-5" />
                     </button>
-                    <button onClick={() => toggleFavorite(eq.id)} className={cn("p-2 rounded-lg bg-slate-50", (profile?.favoritos || []).includes(eq.id) ? "text-amber-500" : "text-slate-300")}>
-                      <Star className={cn("w-5 h-5", (profile?.favoritos || []).includes(eq.id) && "fill-current")} />
+                    <button disabled className="p-2 rounded-lg bg-slate-50 opacity-50 cursor-not-allowed">
+                      <Star className="w-5 h-5 text-slate-300" />
                     </button>
                     <button onClick={() => { setEditingItem(eq); setIsModalOpen(true); }} className="p-2 text-slate-400 bg-slate-50 rounded-lg">
                       <Edit2 className="w-5 h-5" />
@@ -628,8 +629,8 @@ export const Catalog: React.FC = () => {
                         >
                           <History className="w-4 h-4" />
                         </button>
-                        <button onClick={() => toggleFavorite(eq.id)} className={cn("p-1.5 rounded-lg transition-all", (profile?.favoritos || []).includes(eq.id) ? "text-amber-500" : "text-slate-300 hover:text-slate-400")} title="Favorito">
-                          <Star className={cn("w-4 h-4", (profile?.favoritos || []).includes(eq.id) && "fill-current")} />
+                        <button disabled className="p-1.5 rounded-lg opacity-50 cursor-not-allowed" title="Favorito">
+                          <Star className="w-4 h-4 text-slate-300" />
                         </button>
                         {role === 'Administración' && (
                           <>

@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
 import { supabase } from '../lib/supabase';
-import { Responsable, Profile } from '../types';
+import { Responsable } from '../types';
 
 export type AppRole = 'Administración' | 'Docente' | 'Director';
 

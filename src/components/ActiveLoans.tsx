@@ -25,7 +25,7 @@ import { differenceInDays, isPast, format } from 'date-fns';
 import { CONTACTS_DATA } from '../lib/contactsData';
 
 export const ActiveLoans: React.FC<{ filterMora?: boolean }> = ({ filterMora = false }) => {
-  const { activeResponsable, profile, role } = useApp();
+  const { activeResponsable, role } = useApp();
   const [loans, setLoans] = useState<Loan[]>([]);
   const [equipments, setEquipments] = useState<Record<string, Equipment>>({});
   const [loading, setLoading] = useState(true);
@@ -35,7 +35,7 @@ export const ActiveLoans: React.FC<{ filterMora?: boolean }> = ({ filterMora = f
 
   useEffect(() => {
     fetchData();
-  }, [filterMora, profile]);
+  }, [filterMora]);
 
   const fetchData = async () => {
     setLoading(true);
@@ -119,7 +119,6 @@ export const ActiveLoans: React.FC<{ filterMora?: boolean }> = ({ filterMora = f
     
     sendAssistedEmail({
       to: docenteEmail,
-      cc: profile?.email || undefined,
       subject: `SGEA - Comprobante de Devolución - Escuela de Cine`,
       body: `Hola,\n\nSe ha registrado la devolución del equipamiento audiovisual solicitado.\n\nDocente a Cargo: ${loan.docente_responsable}\nAlumno: ${loan.alumno_nombre}\nFecha Devolución: ${format(new Date(), 'dd/MM/yyyy HH:mm')}\nRecibido por: ${responsableRecibe}\n\nEquipos Recibidos:\n${equipments.map((e: any) => `- ${e.nombre} (${e.modelo})`).join('\n')}\n\nNota: Se adjunta el comprobante en PDF (Favor de adjuntar el archivo descargado manualmente).\n\nSaludos,\nSistema SGEA`
     });

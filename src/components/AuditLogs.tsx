@@ -17,7 +17,7 @@ import { formatDate, cn } from '../lib/utils';
 import { useApp } from '../context/AppContext';
 
 export const AuditLogs: React.FC = () => {
-  const { profile } = useApp();
+  const { role } = useApp();
   const [logs, setLogs] = useState<AuditLog[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
@@ -70,7 +70,7 @@ export const AuditLogs: React.FC = () => {
           <h1 className="text-2xl md:text-3xl font-display font-bold text-slate-900">Historial de Auditoría</h1>
           <p className="text-sm md:text-base text-slate-500">Registro inmutable de todas las acciones.</p>
         </div>
-        {profile?.rol === 'Administración' && (
+        {role === 'Administración' && (
           <button 
             onClick={handleReset}
             className="w-full sm:w-auto px-4 py-2.5 bg-red-50 text-red-600 border border-red-100 rounded-xl text-[10px] font-black uppercase tracking-wider hover:bg-red-100 transition-colors shadow-sm"

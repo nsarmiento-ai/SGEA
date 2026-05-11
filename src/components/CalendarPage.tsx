@@ -34,7 +34,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { cn } from '../lib/utils';
 
 export const CalendarPage: React.FC = () => {
-  const { profile, userEmail, role: activeRole, isSuperAdmin } = useApp();
+  const { userEmail, role: activeRole, isSuperAdmin } = useApp();
   const isAdministracion = activeRole === 'Administración';
   const isDocente = activeRole === 'Docente';
   const isDirector = activeRole === 'Director';
