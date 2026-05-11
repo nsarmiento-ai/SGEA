@@ -40,7 +40,7 @@ const statusConfig: Record<EquipmentStatus, { color: string, icon: any, label: s
   'Prestado': { color: 'text-blue-600 bg-blue-50 border-blue-200', icon: Clock, label: 'En uso' },
   'Fuera de Servicio': { color: 'text-red-600 bg-red-50 border-red-200', icon: XCircle, label: 'Mantenimiento' },
   'Archivado': { color: 'text-slate-500 bg-slate-50 border-slate-200', icon: XCircle, label: 'No disponible' },
-  'En Mantenimiento': { color: 'text-amber-800 bg-amber-50 border-amber-200', icon: AlertCircle, label: 'Mantenimiento' },
+  'En Mantenimiento': { color: 'text-amber-950 bg-amber-50 border-amber-200', icon: AlertCircle, label: 'Mantenimiento' },
   'En Mora': { color: 'text-purple-600 bg-purple-50 border-purple-200', icon: AlertCircle, label: 'Retrasado' },
 };
 
@@ -67,18 +67,18 @@ export const PublicView: React.FC = () => {
     try {
       const { data: eqData } = await supabase
         .from('equipamiento')
-        .select('*')
+        .select('id, nombre, modelo, categoria, foto_url, estado, piezas, permiso_uso')
         .neq('estado', 'Archivado')
         .order('nombre', { ascending: true });
 
       const { data: resData } = await supabase
         .from('reservas')
-        .select('fecha_inicio, fecha_fin, equipos_ids')
+        .select('fecha_inicio, fecha_fin, equipos_ids, estado')
         .in('estado', ['Pendiente', 'Aprobada']);
 
       const { data: loanData } = await supabase
         .from('prestamos')
-        .select('fecha_salida, fecha_devolucion_estimada, equipos_ids')
+        .select('fecha_salida, fecha_devolucion_estimada, equipos_ids, estado')
         .eq('estado', 'Activo');
 
       if (eqData) setEquipments(eqData as any);
@@ -197,6 +197,8 @@ export const PublicView: React.FC = () => {
                 </div>
               </div>
 
+              <h2 className="sr-only">Catálogo de Equipamiento</h2>
+
               {/* Grid */}
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-6">
                 {loading ? (
@@ -245,7 +247,7 @@ export const PublicView: React.FC = () => {
                           </div>
                         </div>
                         <div className="p-5 flex-1 flex flex-col">
-                          <p className="text-[10px] font-black text-amber-800 uppercase tracking-widest mb-1">{eq.categoria}</p>
+                          <p className="text-[10px] font-black text-amber-950 uppercase tracking-widest mb-1">{eq.categoria}</p>
                           <h3 className="text-base font-bold text-slate-900 group-hover:text-slate-700 transition-colors mb-1">{eq.nombre}</h3>
                           <p className="text-xs text-slate-500 font-medium">{eq.modelo}</p>
                           

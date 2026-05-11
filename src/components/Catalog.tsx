@@ -37,7 +37,7 @@ const statusConfig: Record<EquipmentStatus, { color: string, icon: any, label: s
   'Prestado': { color: 'text-blue-600 bg-blue-50 border-blue-200', icon: Clock, label: 'Prestado' },
   'Fuera de Servicio': { color: 'text-red-600 bg-red-50 border-red-200', icon: XCircle, label: 'Fuera de Servicio' },
   'Archivado': { color: 'text-slate-500 bg-slate-50 border-slate-200', icon: Trash2, label: 'Archivado' },
-  'En Mantenimiento': { color: 'text-amber-800 bg-amber-50 border-amber-200', icon: AlertCircle, label: 'Mantenimiento' },
+  'En Mantenimiento': { color: 'text-amber-950 bg-amber-50 border-amber-200', icon: AlertCircle, label: 'Mantenimiento' },
   'En Mora': { color: 'text-purple-600 bg-purple-50 border-purple-200', icon: AlertCircle, label: 'En Mora' },
 };
 
@@ -137,8 +137,8 @@ export const Catalog: React.FC = () => {
     setLoading(true);
     console.log('Catalog: Iniciando fetch de equipos (tabla equipamiento) y reservas (tabla reservas)...');
     const [eqRes, resRes] = await Promise.all([
-      supabase.from('equipamiento').select('*').order('nombre', { ascending: true }),
-      supabase.from('reservas').select('*')
+      supabase.from('equipamiento').select('id, nombre, modelo, numero_serie, categoria, foto_url, estado, permiso_uso, piezas, descripcion').order('nombre', { ascending: true }),
+      supabase.from('reservas').select('id, equipos_ids, fecha_inicio, fecha_fin, estado')
     ]);
     
     console.log('Catalog: Respuesta cruda de Supabase (equipamiento):', eqRes);
@@ -269,6 +269,8 @@ export const Catalog: React.FC = () => {
       </header>
 
       <InventoryMetrics equipments={equipments} />
+
+      <h2 className="sr-only">Explorar Catálogo</h2>
 
       <div className="flex flex-col lg:flex-row gap-4 mb-8">
         <div className="relative flex-1">
@@ -425,7 +427,7 @@ export const Catalog: React.FC = () => {
               
               <div className="p-4">
                   <div className="flex justify-between items-start mb-1">
-                    <span className="text-[10px] uppercase tracking-wider font-bold text-amber-800">{eq.categoria}</span>
+                    <span className="text-[10px] uppercase tracking-wider font-bold text-amber-950">{eq.categoria}</span>
                     <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                       <button 
                         onClick={() => { setSelectedEquipment(eq); setIsHistoryOpen(true); }}
@@ -744,7 +746,7 @@ const HistoryModal: React.FC<{ equipment: Equipment, onClose: () => void }> = ({
     const fetchHistory = async () => {
       const { data, error } = await supabase
         .from('historial_recursos')
-        .select('*')
+        .select('id, recurso_id, docente_nombre, alumno_nombre, materia, fecha_salida, fecha_entrada, pañolero_entrega, pañolero_recibe, estado_salida, estado_entrada, observaciones_entrada, tipo_accion, created_at')
         .eq('recurso_id', equipment.id)
         .order('created_at', { ascending: false });
       
@@ -816,14 +818,14 @@ const HistoryModal: React.FC<{ equipment: Equipment, onClose: () => void }> = ({
                         <p className="text-[10px] font-black text-slate-400 uppercase mb-1">Recepción</p>
                         <p className="text-xs font-bold text-slate-700">{entry.pañolero_recibe || 'Pendiente'}</p>
                         {entry.fecha_entrada && (
-                          <p className="text-[10px] text-slate-500 mt-1">Estado: <span className="text-amber-800 font-black">{entry.estado_entrada}</span></p>
+                          <p className="text-[10px] text-slate-500 mt-1">Estado: <span className="text-amber-950 font-black">{entry.estado_entrada}</span></p>
                         )}
                       </div>
                     </div>
                     
                     {entry.observaciones_entrada && (
                       <div className="mt-4 p-3 bg-amber-50 border border-amber-100 rounded-xl">
-                        <p className="text-[10px] font-black text-amber-800 uppercase mb-1">Observaciones al recibir</p>
+                        <p className="text-[10px] font-black text-amber-950 uppercase mb-1">Observaciones al recibir</p>
                         <p className="text-xs text-slate-700 italic">"{entry.observaciones_entrada}"</p>
                       </div>
                     )}
@@ -987,7 +989,7 @@ const EquipmentModal: React.FC<{ item: Equipment | null, onClose: () => void, on
                 onClick={() => {
                   setFormData({ ...formData, piezas: [...(formData.piezas || []), ''] });
                 }}
-                className="text-xs font-bold text-amber-800 hover:text-amber-900 flex items-center gap-1"
+                className="text-xs font-bold text-amber-950 hover:text-amber-900 flex items-center gap-1"
               >
                 <Plus className="w-4 h-4" /> Agregar Pieza
               </button>

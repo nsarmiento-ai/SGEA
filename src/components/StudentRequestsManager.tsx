@@ -27,7 +27,7 @@ export const StudentRequestsManager: React.FC<{ filterDireccion?: boolean }> = (
 
   const fetchRequests = async () => {
     setLoading(true);
-    let query = supabase.from('solicitudes_alumnos').select('*');
+    let query = supabase.from('solicitudes_alumnos').select('id, responsable, dni, docente_nombre, materia, equipos, fecha_inicio, fecha_fin, estado, tipo_uso, created_at, integrantes, observaciones, autorizado_por_docente, autorizado_por_direccion');
     
     if (filterDireccion) {
       query = query.eq('estado', 'Pendiente de Dirección');
@@ -44,7 +44,7 @@ export const StudentRequestsManager: React.FC<{ filterDireccion?: boolean }> = (
   };
 
   const fetchEquipment = async () => {
-    const { data } = await supabase.from('equipamiento').select('*');
+    const { data } = await supabase.from('equipamiento').select('id, nombre');
     if (data) {
       const eMap: Record<string, Equipment> = {};
       data.forEach(e => eMap[e.id] = e);
@@ -194,7 +194,7 @@ export const StudentRequestsManager: React.FC<{ filterDireccion?: boolean }> = (
                   <div className="p-6 lg:w-2/3 border-b lg:border-b-0 lg:border-r border-slate-100">
                     <div className="flex flex-wrap items-center gap-3 mb-4">
                       <span className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest ${
-                        req.tipo_uso === 'Uso Externo' ? 'bg-amber-100 text-amber-700' : 'bg-slate-100 text-slate-700'
+                        req.tipo_uso === 'Uso Externo' ? 'bg-amber-100 text-amber-950' : 'bg-slate-100 text-slate-700'
                       }`}>
                         {req.tipo_uso}
                       </span>

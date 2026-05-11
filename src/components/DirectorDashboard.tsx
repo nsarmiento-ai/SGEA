@@ -177,7 +177,7 @@ export const DirectorDashboard: React.FC = () => {
           icon={Clock} 
           label="Pendientes Firma" 
           value={stats.pendingDirection} 
-          color="text-amber-800" 
+          color="text-amber-950" 
           bgColor="bg-amber-50"
           desc="Solicitudes de Uso Externo"
         />

@@ -56,17 +56,17 @@ export const CalendarPage: React.FC = () => {
     setLoading(true);
     try {
       // Usamos consultas individuales para que si una falla (ej: tabla no existe) las demás sigan funcionando
-      const res = await supabase.from('reservas').select('*').in('estado', ['Pendiente', 'Aprobada']);
+      const res = await supabase.from('reservas').select('id, docente_nombre, alumno_nombre, fecha_inicio, fecha_fin, equipos_ids, materia, aula, estado').in('estado', ['Pendiente', 'Aprobada']);
       if (res.data) setReservations(res.data);
 
-      const loansRes = await supabase.from('prestamos').select('*').eq('estado', 'Activo');
+      const loansRes = await supabase.from('prestamos').select('id, alumno_nombre, fecha_salida, fecha_devolucion_estimada, equipos_ids, estado').eq('estado', 'Activo');
       if (loansRes.data) setLoans(loansRes.data);
 
-      const eqRes = await supabase.from('equipamiento').select('*');
+      const eqRes = await supabase.from('equipamiento').select('id, nombre');
       if (eqRes.data) setEquipments(eqRes.data);
 
       try {
-        const studentRes = await supabase.from('solicitudes_alumnos').select('*').not('estado', 'in', '("Rechazado","Cancelado","Entregado")');
+        const studentRes = await supabase.from('solicitudes_alumnos').select('id, responsable, fecha_inicio, fecha_fin, equipos, estado, materia').not('estado', 'in', '("Rechazado","Cancelado","Entregado")');
         if (studentRes.error) throw studentRes.error;
         if (studentRes.data) setStudentRequests(studentRes.data);
       } catch (e) {
@@ -96,7 +96,7 @@ export const CalendarPage: React.FC = () => {
           </button>
           <button
             onClick={() => setCurrentMonth(new Date())}
-            className="px-4 py-2 text-xs md:text-sm font-bold text-amber-800 hover:bg-amber-50 rounded-lg transition-colors flex-1 sm:flex-none flex justify-center"
+            className="px-4 py-2 text-xs md:text-sm font-bold text-amber-950 hover:bg-amber-50 rounded-lg transition-colors flex-1 sm:flex-none flex justify-center"
           >
             Hoy
           </button>
@@ -329,7 +329,7 @@ export const CalendarPage: React.FC = () => {
                           <div className="flex items-center justify-between mb-4">
                             <span className={cn(
                               "px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider border",
-                              isLoan ? "bg-emerald-50 text-emerald-600 border-emerald-200" : (isStudent ? "bg-indigo-50 text-indigo-600 border-indigo-200" : (event.estado === 'Pendiente' ? "bg-amber-50 text-amber-800 border-amber-200" : "bg-blue-50 text-blue-600 border-blue-200"))
+                              isLoan ? "bg-emerald-50 text-emerald-600 border-emerald-200" : (isStudent ? "bg-indigo-50 text-indigo-600 border-indigo-200" : (event.estado === 'Pendiente' ? "bg-amber-50 text-amber-950 border-amber-200" : "bg-blue-50 text-blue-600 border-blue-200"))
                             )}>
                               {subLabel}
                             </span>

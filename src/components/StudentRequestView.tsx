@@ -37,7 +37,7 @@ export const StudentRequestView: React.FC = () => {
       setLoading(true);
       const { data } = await supabase
         .from('equipamiento')
-        .select('*')
+        .select('id, nombre, modelo, categoria, foto_url, estado, permiso_uso')
         .neq('estado', 'Archivado')
         .order('nombre');
       if (data) setEquipment(data);

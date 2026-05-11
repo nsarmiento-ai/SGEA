@@ -42,7 +42,7 @@ export const ActiveLoans: React.FC<{ filterMora?: boolean }> = ({ filterMora = f
     const [loansRes] = await Promise.all([
       supabase
         .from('prestamos')
-        .select('*')
+        .select('id, alumno_nombre, alumno_dni, materia, equipos_ids, fecha_salida, fecha_devolucion_estimada, estado, piezas_prestadas, pañolero_entrega')
         .eq('estado', 'Activo')
         .order('fecha_devolucion_estimada', { ascending: true })
     ]);
@@ -71,7 +71,7 @@ export const ActiveLoans: React.FC<{ filterMora?: boolean }> = ({ filterMora = f
 
       const eqIds = Array.from(new Set((finalLoans || []).flatMap(l => l.equipos_ids || [])));
       if (eqIds.length > 0) {
-        const { data: eqData } = await supabase.from('equipamiento').select('*').in('id', eqIds);
+        const { data: eqData } = await supabase.from('equipamiento').select('id, nombre, foto_url, categoria').in('id', eqIds);
         if (eqData) {
           const eqMap = eqData.reduce((acc, eq) => {
             let parsedPiezas = eq.piezas;
@@ -242,7 +242,7 @@ export const ActiveLoans: React.FC<{ filterMora?: boolean }> = ({ filterMora = f
                       <Calendar className="w-4 h-4 text-slate-400 mt-0.5" />
                       <div>
                         <p className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">Devolución Estimada</p>
-                        <p className={cn("text-xs md:text-sm font-bold", isMora ? "text-red-600" : "text-amber-800")}>
+                        <p className={cn("text-xs md:text-sm font-bold", isMora ? "text-red-600" : "text-amber-950")}>
                           {formatDate(loan.fecha_devolucion_estimada)}
                         </p>
                       </div>
@@ -513,7 +513,7 @@ const ReceiveModal: React.FC<{ loan: Loan, equipmentsMap: Record<string, Equipme
                       <option value="Fuera de Servicio">Fuera de Servicio</option>
                     </select>
                   ) : (
-                    <span className="text-[10px] font-black uppercase text-amber-800 bg-amber-100 px-2 py-1 rounded-full flex items-center gap-1">
+                    <span className="text-[10px] font-black uppercase text-amber-950 bg-amber-100 px-2 py-1 rounded-full flex items-center gap-1">
                       <Clock className="w-3 h-3" />
                       Faltante
                     </span>
@@ -554,10 +554,10 @@ const ReceiveModal: React.FC<{ loan: Loan, equipmentsMap: Record<string, Equipme
             </div>
             {!Object.values(checkedItems).every(v => v) && (
               <div className="p-4 bg-amber-600/10 border border-amber-600/20 rounded-2xl flex items-start gap-4">
-                <AlertCircle className="w-5 h-5 text-amber-800 shrink-0 mt-0.5" />
+                <AlertCircle className="w-5 h-5 text-amber-950 shrink-0 mt-0.5" />
                 <div>
                   <p className="text-xs font-bold text-amber-700">Devolución Parcial</p>
-                  <p className="text-[10px] text-amber-800 leading-relaxed">
+                  <p className="text-[10px] text-amber-950 leading-relaxed">
                     Los equipos no marcados cambiarán su estado a <strong>En Mora</strong> y seguirán apareciendo como activos para este alumno.
                   </p>
                 </div>

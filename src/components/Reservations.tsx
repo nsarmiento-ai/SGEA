@@ -109,8 +109,8 @@ export const Reservations: React.FC = () => {
     try {
       console.log('Iniciando fetch de equipos (tabla equipamiento) y reservas (tabla reservas)...');
       const [eqData, resData] = await Promise.all([
-        supabase.from('equipamiento').select('*').order('nombre', { ascending: true }),
-        supabase.from('reservas').select('*').order('fecha_inicio', { ascending: true })
+        supabase.from('equipamiento').select('id, nombre, modelo, numero_serie, categoria, foto_url, estado, permiso_uso, descripcion').order('nombre', { ascending: true }),
+        supabase.from('reservas').select('id, equipos_ids, fecha_inicio, fecha_fin, estado, docente_nombre, materia, aula, alumno_nombre').order('fecha_inicio', { ascending: true })
       ]);
 
       // We use CONTACTS_DATA now for consistency
@@ -456,12 +456,14 @@ export const Reservations: React.FC = () => {
             {activeTab === 'catalogo' && (
               <div className="bg-white border border-slate-200 rounded-2xl p-1 flex shadow-sm flex-1 sm:flex-none">
                 <button 
+                  aria-label="Ver cuadrícula"
                   onClick={() => setViewMode('grid')}
                   className={cn("flex-1 p-2 rounded-xl transition-all", viewMode === 'grid' ? "bg-slate-100 text-slate-900" : "text-slate-400 hover:text-slate-600")}
                 >
                   <LayoutGrid className="w-5 h-5 mx-auto" />
                 </button>
                 <button 
+                  aria-label="Ver lista"
                   onClick={() => setViewMode('list')}
                   className={cn("flex-1 p-2 rounded-xl transition-all", viewMode === 'list' ? "bg-slate-100 text-slate-900" : "text-slate-400 hover:text-slate-600")}
                 >
@@ -676,7 +678,7 @@ export const Reservations: React.FC = () => {
                         {isUnavailable && (
                           <span className={cn(
                             "px-3 py-1 text-white text-[10px] font-black uppercase rounded-lg tracking-wider w-fit shadow-lg",
-                            isArchived ? "bg-slate-600" : isOutOfService ? "bg-red-600" : isNoHabilitado ? "bg-red-800" : "bg-amber-800"
+                            isArchived ? "bg-slate-600" : isOutOfService ? "bg-red-600" : isNoHabilitado ? "bg-red-800" : "bg-amber-950"
                           )}>
                             {isArchived ? 'Archivado' : isOutOfService ? 'Fuera de Servicio' : isNoHabilitado ? 'No habilitado' : 'Ocupado en estas fechas'}
                           </span>
@@ -951,7 +953,7 @@ export const Reservations: React.FC = () => {
                   <div className="flex items-center justify-end border-t lg:border-t-0 pt-4 lg:pt-0">
                     <button 
                       onClick={() => generateReservationPDF(res, (equipments || []).filter(e => (res.equipos_ids || []).includes(e.id)))}
-                      className="w-full lg:w-auto flex items-center justify-center gap-2 px-6 py-3 text-sm font-bold text-slate-600 hover:text-amber-800 bg-slate-100 hover:bg-amber-50 rounded-xl transition-all"
+                      className="w-full lg:w-auto flex items-center justify-center gap-2 px-6 py-3 text-sm font-bold text-slate-600 hover:text-amber-950 bg-slate-100 hover:bg-amber-50 rounded-xl transition-all"
                     >
                       <Info className="w-4 h-4" />
                       Descargar Comprobante

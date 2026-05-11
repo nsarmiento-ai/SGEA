@@ -111,7 +111,7 @@ export const LoanWizard: React.FC = () => {
     try {
       const { data, error } = await supabase
         .from('solicitudes_alumnos')
-        .select('*')
+        .select('id, responsable, docente_nombre, materia, equipos, fecha_fin, dni, observaciones')
         .neq('estado', 'Entregado')
         .neq('estado', 'Rechazado')
         .neq('estado', 'Cancelado');
@@ -157,8 +157,8 @@ export const LoanWizard: React.FC = () => {
     try {
       console.log('LoanWizard: Fetching available equipment...');
       const [eqRes, resRes] = await Promise.all([
-        supabase.from('equipamiento').select('*'),
-        supabase.from('reservas').select('*')
+        supabase.from('equipamiento').select('id, nombre, modelo, category, foto_url, estado, piezas, permiso_uso'),
+        supabase.from('reservas').select('id, docente_nombre, alumno_nombre, equipos_ids, fecha_fin, materia')
       ]);
       
       if (eqRes.error) throw eqRes.error;
@@ -563,7 +563,7 @@ export const LoanWizard: React.FC = () => {
                           "text-[9px] font-black uppercase tracking-wider px-2 py-1 rounded-lg border",
                           req.estado === 'Autorizado para Despacho' 
                             ? "bg-green-50 text-green-600 border-green-200" 
-                            : "bg-amber-50 text-amber-800 border-amber-200"
+                            : "bg-amber-50 text-amber-950 border-amber-200"
                         )}>
                           {req.estado === 'Autorizado para Despacho' ? 'Autorizado' : 'Pendiente'}
                         </div>

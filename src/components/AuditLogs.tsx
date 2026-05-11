@@ -50,7 +50,7 @@ export const AuditLogs: React.FC = () => {
     setLoading(true);
     const { data, error } = await supabase
       .from('audit_logs')
-      .select('*')
+      .select('id, responsable_nombre, accion, detalles, created_at')
       .order('created_at', { ascending: false });
     
     if (!error && data) setLogs(data);
