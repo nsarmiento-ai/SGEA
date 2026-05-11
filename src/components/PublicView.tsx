@@ -228,8 +228,8 @@ export const PublicView: React.FC = () => {
                               alt={eq.nombre}
                               width={400}
                               height={300}
-                              loading={index < 2 ? "eager" : "lazy"}
-                              {...(index < 2 ? { fetchPriority: "high" } : {})}
+                              loading={index < 3 ? "eager" : "lazy"}
+                              {...(index < 3 ? { fetchPriority: "high" } : {})}
                               className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                               referrerPolicy="no-referrer"
                             />
@@ -248,8 +248,8 @@ export const PublicView: React.FC = () => {
                         </div>
                         <div className="p-5 flex-1 flex flex-col">
                           <p className="text-[10px] font-black text-amber-950 uppercase tracking-widest mb-1">{eq.categoria}</p>
-                          <h3 className="text-base font-bold text-slate-900 group-hover:text-slate-700 transition-colors mb-1">{eq.nombre}</h3>
-                          <p className="text-xs text-slate-500 font-medium">{eq.modelo}</p>
+                          <h2 className="text-base font-bold text-slate-900 group-hover:text-slate-700 transition-colors mb-1">{eq.nombre}</h2>
+                          <p className="text-xs text-slate-700 font-medium">{eq.modelo}</p>
                           
                           {eq.piezas && eq.piezas.length > 0 && (
                             <div className="mt-4 pt-4 border-t border-slate-50">

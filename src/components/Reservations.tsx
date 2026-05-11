@@ -666,8 +666,8 @@ export const Reservations: React.FC = () => {
                         alt={eq.nombre}
                         width={400}
                         height={300}
-                        loading={index < 2 ? "eager" : "lazy"}
-                        {...(index < 2 ? { fetchPriority: "high" } : {})}
+                        loading={index < 3 ? "eager" : "lazy"}
+                        {...(index < 3 ? { fetchPriority: "high" } : {})}
                         referrerPolicy="no-referrer"
                         className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
                       />
@@ -687,8 +687,8 @@ export const Reservations: React.FC = () => {
                     </div>
                     
                     <div className="p-6 flex-1 flex flex-col">
-                      <h3 className="font-black text-slate-900 text-lg leading-tight mb-1">{eq.nombre}</h3>
-                      <p className="text-sm text-slate-500 mb-2">{eq.modelo}</p>
+                      <h2 className="font-black text-slate-900 text-lg leading-tight mb-1">{eq.nombre}</h2>
+                      <p className="text-sm text-slate-700 mb-2">{eq.modelo}</p>
 
                       {eq.permiso_uso !== 'Libre uso' && (
                         <div className={cn(
@@ -824,10 +824,10 @@ export const Reservations: React.FC = () => {
                           {selectedIds.length === filteredEquipments.length ? <CheckSquare className="w-5 h-5 text-amber-500" /> : <Square className="w-5 h-5" />}
                         </button>
                       </th>
-                      <th className="p-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Recurso</th>
-                      <th className="p-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Categoría</th>
-                      <th className="p-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Estado</th>
-                      <th className="p-4 text-xs font-bold text-slate-500 uppercase tracking-wider text-right">Acción</th>
+                      <th className="p-4 text-xs font-bold text-slate-700 uppercase tracking-wider">Recurso</th>
+                      <th className="p-4 text-xs font-bold text-slate-700 uppercase tracking-wider">Categoría</th>
+                      <th className="p-4 text-xs font-bold text-slate-700 uppercase tracking-wider">Estado</th>
+                      <th className="p-4 text-xs font-bold text-slate-700 uppercase tracking-wider text-right">Acción</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100">
@@ -1001,7 +1001,7 @@ export const Reservations: React.FC = () => {
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
                   <div className="md:col-span-2">
-                    <label className="block text-[10px] md:text-xs font-black text-slate-500 mb-2 uppercase tracking-wider">Materia</label>
+                    <label className="block text-[10px] md:text-xs font-black text-slate-700 mb-2 uppercase tracking-wider">Materia</label>
                     <div className="relative">
                       <BookOpen className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 w-5 h-5" />
                       <select
@@ -1021,7 +1021,7 @@ export const Reservations: React.FC = () => {
                   </div>
 
                   <div>
-                    <label className="block text-[10px] md:text-xs font-black text-slate-500 mb-2 uppercase tracking-wider">Aula / Espacio</label>
+                    <label className="block text-[10px] md:text-xs font-black text-slate-700 mb-2 uppercase tracking-wider">Aula / Espacio</label>
                     <div className="relative">
                       <MapPin className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 w-5 h-5" />
                       <select
@@ -1045,7 +1045,7 @@ export const Reservations: React.FC = () => {
                   </div>
 
                   <div>
-                    <label className="block text-[10px] md:text-xs font-black text-slate-500 mb-2 uppercase tracking-wider">Docente Responsable</label>
+                    <label className="block text-[10px] md:text-xs font-black text-slate-700 mb-2 uppercase tracking-wider">Docente Responsable</label>
                     <div className="relative">
                       <User className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 w-5 h-5" />
                       <input

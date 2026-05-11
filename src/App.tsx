@@ -123,7 +123,7 @@ function ProtectedRoute() {
       
       {/* Mobile Toggle Button */}
       <button 
-        aria-label="Abrir menú side-bar"
+        aria-label="Abrir menú"
         onClick={() => setIsSidebarOpen(true)}
         className="fixed top-4 left-4 z-30 p-2 bg-slate-900 text-white rounded-lg lg:hidden shadow-lg"
       >

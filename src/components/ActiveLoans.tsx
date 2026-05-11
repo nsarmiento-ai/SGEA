@@ -192,7 +192,7 @@ export const ActiveLoans: React.FC<{ filterMora?: boolean }> = ({ filterMora = f
       ) : loans.length === 0 ? (
         <div className="bg-white rounded-2xl md:rounded-3xl p-8 md:p-12 text-center border border-dashed border-slate-300">
           <div className="bg-slate-100 w-12 h-12 md:w-16 md:h-16 rounded-full flex items-center justify-center mx-auto mb-4">
-            <Package className="text-slate-400 w-6 h-6 md:w-8 md:h-8" />
+            <Package aria-hidden="true" className="text-slate-400 w-6 h-6 md:w-8 md:h-8" />
           </div>
           <h3 className="text-base md:text-lg font-bold text-slate-900">No hay préstamos {filterMora ? 'en mora' : 'activos'}</h3>
           <p className="text-xs md:text-sm text-slate-500">Todo el grupo de equipos está en orden.</p>
@@ -218,7 +218,7 @@ export const ActiveLoans: React.FC<{ filterMora?: boolean }> = ({ filterMora = f
                     </div>
                     <div className="min-w-0">
                       <h3 className="font-bold text-slate-900 text-sm md:text-base truncate">{loan.alumno_nombre}</h3>
-                      <p className="text-[10px] md:text-xs text-slate-500 truncate">DNI: {loan.alumno_dni}</p>
+                      <p className="text-[10px] md:text-xs text-slate-700 truncate">DNI: {loan.alumno_dni}</p>
                     </div>
                   </div>
                   {isMora && (
@@ -498,7 +498,7 @@ const ReceiveModal: React.FC<{ loan: Loan, equipmentsMap: Record<string, Equipme
                     />
                     <div>
                       <h4 className="text-sm font-bold text-slate-900">{eq.nombre}</h4>
-                      <p className="text-[10px] text-slate-500 font-medium">{eq.modelo}</p>
+                      <p className="text-[10px] text-slate-700 font-medium">{eq.modelo}</p>
                     </div>
                   </div>
 
@@ -539,7 +539,7 @@ const ReceiveModal: React.FC<{ loan: Loan, equipmentsMap: Record<string, Equipme
 
           <div className="pt-4 space-y-4">
             <div>
-              <label className="flex items-center gap-2 text-[10px] font-black text-slate-500 mb-2 uppercase tracking-wider">
+              <label className="flex items-center gap-2 text-[10px] font-black text-slate-700 mb-2 uppercase tracking-wider">
                 <AlertCircle className="w-3.5 h-3.5 text-amber-500" />
                 Observaciones Generales
               </label>

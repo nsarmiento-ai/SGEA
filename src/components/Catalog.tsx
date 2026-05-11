@@ -36,7 +36,7 @@ const statusConfig: Record<EquipmentStatus, { color: string, icon: any, label: s
   'Disponible': { color: 'text-green-600 bg-green-50 border-green-200', icon: CheckCircle2, label: 'Disponible' },
   'Prestado': { color: 'text-blue-600 bg-blue-50 border-blue-200', icon: Clock, label: 'Prestado' },
   'Fuera de Servicio': { color: 'text-red-600 bg-red-50 border-red-200', icon: XCircle, label: 'Fuera de Servicio' },
-  'Archivado': { color: 'text-slate-500 bg-slate-50 border-slate-200', icon: Trash2, label: 'Archivado' },
+  'Archivado': { color: 'text-slate-700 bg-slate-50 border-slate-200', icon: Trash2, label: 'Archivado' },
   'En Mantenimiento': { color: 'text-amber-950 bg-amber-50 border-amber-200', icon: AlertCircle, label: 'Mantenimiento' },
   'En Mora': { color: 'text-purple-600 bg-purple-50 border-purple-200', icon: AlertCircle, label: 'En Mora' },
 };
@@ -70,7 +70,7 @@ const InventoryMetrics: React.FC<{ equipments: Equipment[] }> = ({ equipments })
           <CheckCircle2 className="w-6 h-6" />
         </div>
         <div>
-          <p className="text-xs font-bold text-slate-500 uppercase tracking-wider">Total Disponible</p>
+          <p className="text-xs font-bold text-slate-700 uppercase tracking-wider">Total Disponible</p>
           <p className="text-2xl font-black text-slate-900">{stats.disponible}</p>
         </div>
       </div>
@@ -79,7 +79,7 @@ const InventoryMetrics: React.FC<{ equipments: Equipment[] }> = ({ equipments })
           <Clock className="w-6 h-6" />
         </div>
         <div>
-          <p className="text-xs font-bold text-slate-500 uppercase tracking-wider">Total en Préstamo</p>
+          <p className="text-xs font-bold text-slate-700 uppercase tracking-wider">Total en Préstamo</p>
           <p className="text-2xl font-black text-slate-900">{stats.prestado}</p>
         </div>
       </div>
@@ -88,7 +88,7 @@ const InventoryMetrics: React.FC<{ equipments: Equipment[] }> = ({ equipments })
           <XCircle className="w-6 h-6" />
         </div>
         <div>
-          <p className="text-xs font-bold text-slate-500 uppercase tracking-wider">Fuera de Servicio</p>
+          <p className="text-xs font-bold text-slate-700 uppercase tracking-wider">Fuera de Servicio</p>
           <p className="text-2xl font-black text-slate-900">{stats.fueraDeServicio}</p>
         </div>
       </div>
@@ -396,8 +396,8 @@ export const Catalog: React.FC = () => {
                     alt={eq.nombre}
                     width={400}
                     height={300}
-                    loading={index < 2 ? "eager" : "lazy"}
-                    {...(index < 2 ? { fetchPriority: "high" } : {})}
+                    loading={index < 3 ? "eager" : "lazy"}
+                    {...(index < 3 ? { fetchPriority: "high" } : {})}
                     referrerPolicy="no-referrer"
                     className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
                   />
@@ -471,8 +471,8 @@ export const Catalog: React.FC = () => {
                     </div>
                   </div>
                 
-                <h3 className="font-bold text-slate-900 leading-tight mb-1">{eq.nombre}</h3>
-                <p className="text-xs text-slate-500 mb-2">{eq.modelo}</p>
+                <h2 className="font-bold text-slate-900 leading-tight mb-1">{eq.nombre}</h2>
+                <p className="text-xs text-slate-700 mb-2">{eq.modelo}</p>
 
                 {eq.permiso_uso !== 'Libre uso' && (
                   <div className={cn(
@@ -600,11 +600,11 @@ export const Catalog: React.FC = () => {
                       {selectedIds.length === filteredEquipments.length ? <CheckSquare className="w-5 h-5 text-amber-500" /> : <Square className="w-5 h-5" />}
                     </button>
                   </th>
-                  <th className="p-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Recurso</th>
-                  <th className="p-4 text-xs font-bold text-slate-500 uppercase tracking-wider">ID / Serie</th>
-                  <th className="p-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Categoría</th>
-                  <th className="p-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Estado</th>
-                  <th className="p-4 text-xs font-bold text-slate-500 uppercase tracking-wider text-right">Acciones</th>
+                  <th className="p-4 text-xs font-bold text-slate-700 uppercase tracking-wider">Recurso</th>
+                  <th className="p-4 text-xs font-bold text-slate-700 uppercase tracking-wider">ID / Serie</th>
+                  <th className="p-4 text-xs font-bold text-slate-700 uppercase tracking-wider">Categoría</th>
+                  <th className="p-4 text-xs font-bold text-slate-700 uppercase tracking-wider">Estado</th>
+                  <th className="p-4 text-xs font-bold text-slate-700 uppercase tracking-wider text-right">Acciones</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">

@@ -437,7 +437,7 @@ export const LoanWizard: React.FC = () => {
             <Check className="w-10 h-10" />
           </div>
           <h2 className="text-2xl md:text-3xl font-display font-bold text-slate-900 mb-2">¡Préstamo Registrado!</h2>
-          <p className="text-sm md:text-base text-slate-500 mb-8 max-w-md mx-auto">
+          <p className="text-sm md:text-base text-slate-700 mb-8 max-w-md mx-auto">
             El préstamo se ha guardado correctamente y el comprobante PDF se ha descargado de forma automática.
           </p>
 
@@ -483,7 +483,7 @@ export const LoanWizard: React.FC = () => {
     <div className="p-4 md:p-8 max-w-7xl mx-auto pt-16 lg:pt-8 text-slate-900">
       <header className="mb-8">
         <h1 className="text-2xl md:text-3xl font-display font-bold text-slate-900">Despacho de Equipos</h1>
-        <p className="text-sm md:text-base text-slate-500">Complete la información del préstamo.</p>
+        <p className="text-sm md:text-base text-slate-700">Complete la información del préstamo.</p>
       </header>
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 md:gap-8 relative">
@@ -497,8 +497,8 @@ export const LoanWizard: React.FC = () => {
             >
               <div className="bg-white p-6 rounded-3xl max-w-md w-full shadow-2xl border border-slate-200">
                 <div className="flex items-center gap-3 mb-4 text-red-600">
-                  <AlertCircle className="w-8 h-8" />
-                  <h3 className="text-lg font-black uppercase tracking-wider">Conflicto de Inventario</h3>
+                  <AlertCircle className="w-8 h-8" aria-hidden="true" />
+                  <h2 className="text-lg font-black uppercase tracking-wider">Conflicto de Inventario</h2>
                 </div>
                 <p className="text-sm font-medium text-slate-600 mb-6 leading-relaxed">
                   Los siguientes equipos no figuran como "Disponible" en la base de datos debido a préstamos previos o errores de sincronización:
@@ -538,10 +538,10 @@ export const LoanWizard: React.FC = () => {
           {studentRequests.length > 0 && (
             <div className="bg-white rounded-3xl shadow-sm border border-slate-200 overflow-hidden">
               <div className="p-4 bg-indigo-50 border-b border-indigo-100 flex items-center justify-between">
-                <h3 className="text-xs font-black uppercase tracking-widest text-indigo-600 flex items-center gap-2">
-                  <ExternalLink className="w-4 h-4" />
+                <h2 className="text-xs font-black uppercase tracking-widest text-indigo-600 flex items-center gap-2">
+                  <ExternalLink className="w-4 h-4" aria-hidden="true" />
                   Solicitudes de Alumnos
-                </h3>
+                </h2>
               </div>
               <div className="p-3 max-h-48 overflow-y-auto space-y-2">
                   {studentRequests.map(req => (
