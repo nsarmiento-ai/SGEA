@@ -31,7 +31,30 @@ import { supabase } from '../lib/supabase';
 import { useApp } from '../context/AppContext';
 import { Reservation, Equipment, Loan, StudentRequest } from '../types';
 import { motion, AnimatePresence } from 'motion/react';
-import { cn } from '../lib/utils';
+import { cn, optimizeCloudinaryThumb } from '../lib/utils';
+
+const EquipmentThumbnail: React.FC<{ url?: string; id: string; name?: string }> = ({ url, id, name }) => {
+  const [error, setError] = useState(false);
+  
+  if (!url || error) {
+    return (
+      <div className="w-10 h-10 rounded-lg bg-slate-100 flex items-center justify-center shrink-0 border border-slate-200">
+        <Package className="w-5 h-5 text-slate-400" />
+      </div>
+    );
+  }
+
+  return (
+    <img 
+      src={optimizeCloudinaryThumb(url)} 
+      alt={name || 'Equipo'} 
+      className="w-10 h-10 rounded-lg object-cover shrink-0 border border-slate-100 shadow-sm"
+      onError={() => setError(true)}
+      crossOrigin="anonymous"
+      referrerPolicy="no-referrer"
+    />
+  );
+};
 
 export const CalendarPage: React.FC = () => {
   const { userEmail, role: activeRole, isSuperAdmin } = useApp();
@@ -62,7 +85,7 @@ export const CalendarPage: React.FC = () => {
       const loansRes = await supabase.from('prestamos').select('id, alumno_nombre, fecha_salida, fecha_devolucion_estimada, equipos_ids, estado').eq('estado', 'Activo');
       if (loansRes.data) setLoans(loansRes.data);
 
-      const eqRes = await supabase.from('equipamiento').select('id, nombre');
+      const eqRes = await supabase.from('equipamiento').select('id, nombre, modelo, foto_url');
       if (eqRes.data) setEquipments(eqRes.data);
 
       try {
@@ -360,13 +383,15 @@ export const CalendarPage: React.FC = () => {
                               {(isStudent ? event.equipos : (event.equipos_ids || [])).map((id: string) => {
                                 const eq = (equipments || []).find(e => e.id === id);
                                 return (
-                                  <div key={id} className="flex items-center gap-2 p-2 bg-slate-50/50 rounded-xl border border-slate-100">
-                                    <div className="w-8 h-8 rounded-lg bg-slate-200 overflow-hidden flex-shrink-0">
-                                      <img src={eq?.foto_url || `https://picsum.photos/seed/${id}/50/50`} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
-                                    </div>
+                                  <div key={id} className="flex items-center gap-3 p-2.5 bg-white rounded-xl border border-slate-100 shadow-sm hover:border-amber-200 transition-colors">
+                                    <EquipmentThumbnail 
+                                      url={eq?.foto_url} 
+                                      id={id} 
+                                      name={eq?.nombre} 
+                                    />
                                     <div className="min-w-0">
                                       <p className="text-[11px] font-bold text-slate-900 truncate">{eq?.nombre || 'General'}</p>
-                                      <p className="text-[9px] text-slate-500 truncate">{eq?.modelo || 'SGEA'}</p>
+                                      <p className="text-[9px] text-slate-500 truncate font-medium uppercase tracking-wider">{eq?.modelo || 'SGEA'}</p>
                                     </div>
                                   </div>
                                 );

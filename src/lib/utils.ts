@@ -28,3 +28,14 @@ export function optimizeCloudinaryUrl(url: string | undefined | null, highPriori
   
   return url;
 }
+
+export function optimizeCloudinaryThumb(url: string | undefined | null) {
+  if (!url || !url.includes('res.cloudinary.com')) return url || '';
+  
+  if (url.includes('/upload/')) {
+    const parts = url.split('/upload/');
+    return `${parts[0]}/upload/w_50,h_50,c_fill,g_auto,f_auto,q_auto:eco/${parts[1]}`;
+  }
+  
+  return url;
+}
