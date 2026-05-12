@@ -6,6 +6,7 @@ import { motion } from 'motion/react';
 import { useNavigate } from 'react-router-dom';
 import { optimizeCloudinaryUrl, cn } from '../lib/utils';
 import { AnimatedBackground } from './ui/AnimatedBackground';
+import { BackgroundImageTexture } from './ui/BackgroundImageTexture';
 import { BorderBeam } from './ui/BorderBeam';
 import { TextAnimate } from './ui/TextAnimate';
 
@@ -42,6 +43,7 @@ export const ResponsableModal: React.FC = () => {
   return (
     <div className="relative min-h-screen flex items-center justify-center p-4 overflow-hidden bg-slate-950">
       <AnimatedBackground className="opacity-40" />
+      <BackgroundImageTexture variant="grid-noise" opacity={0.08} className="z-[1]" />
       
       {/* Radial Gradient overlay for focus */}
       <div className="absolute inset-0 z-0 bg-[radial-gradient(circle_at_center,rgba(245,158,11,0.05)_0%,transparent_70%)] pointer-events-none" />
@@ -57,6 +59,7 @@ export const ResponsableModal: React.FC = () => {
           "bg-white/5 backdrop-blur-2xl border border-white/10",
           "shadow-[0_0_50px_-12px_rgba(0,0,0,0.5)]"
         )}>
+          <BackgroundImageTexture variant="inflicted" opacity={0.1} />
           <BorderBeam size={250} duration={10} colorFrom="#f59e0b" colorTo="#d97706" />
 
           <div className="p-8 text-center border-b border-white/5">
