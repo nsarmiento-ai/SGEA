@@ -6,6 +6,7 @@
 import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { AppProvider, useApp } from './context/AppContext';
 import { Sidebar } from './components/Sidebar';
+import { Header } from './components/Header';
 import { ResponsableModal } from './components/ResponsableModal';
 import { RoleSelectionModal } from './components/RoleSelectionModal';
 import { Loader2, Menu } from 'lucide-react';
@@ -130,19 +131,13 @@ function ProtectedRoute() {
   }
 
   return (
-    <div className="flex min-h-screen relative">
+    <div className="flex min-h-screen relative bg-slate-50">
       <Sidebar isOpen={isSidebarOpen} onClose={() => setIsSidebarOpen(false)} />
       
-      {/* Mobile Toggle Button */}
-      <button 
-        aria-label="Abrir menú"
-        onClick={() => setIsSidebarOpen(true)}
-        className="fixed top-4 left-4 z-30 p-2 bg-slate-900 text-white rounded-lg lg:hidden shadow-lg"
-      >
-        <Menu className="w-6 h-6" />
-      </button>
-
-      <main className="flex-1 w-full overflow-x-hidden">
+      <div className="flex-1 flex flex-col min-w-0">
+        <Header onOpenSidebar={() => setIsSidebarOpen(true)} />
+        
+        <main className="flex-1 w-full overflow-x-hidden">
         <Suspense fallback={<LoadingFallback />}>
           <Routes>
             {/* Redirección inicial basada en el rol */}
@@ -194,8 +189,9 @@ function ProtectedRoute() {
         </Suspense>
       </main>
     </div>
+  </div>
   );
-}
+};
 
 
 export default function App() {

@@ -407,7 +407,7 @@ export const CalendarPage: React.FC = () => {
   }
 
   return (
-    <div className="p-4 md:p-8 max-w-7xl mx-auto pt-16 lg:pt-8">
+    <div className="p-4 md:p-8 max-w-7xl mx-auto">
       {/* Visual Identity Headers */}
       {isDirector && (
         <div className="mb-6 bg-[#450a0a] text-white px-6 py-3 rounded-2xl flex items-center justify-between shadow-xl border-l-4 border-amber-500">

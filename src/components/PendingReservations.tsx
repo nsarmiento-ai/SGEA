@@ -121,7 +121,7 @@ export const PendingReservations: React.FC = () => {
   }
 
   return (
-    <div className="p-4 md:p-8 max-w-6xl mx-auto pt-16 lg:pt-8 text-slate-900">
+    <div className="p-4 md:p-8 max-w-6xl mx-auto text-slate-900">
       {/* Visual Identity Headers */}
       {role === 'Administración' && (
         <div className="mb-6 bg-slate-100 text-slate-900 px-6 py-3 rounded-2xl flex items-center justify-between border border-slate-200">

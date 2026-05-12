@@ -153,7 +153,7 @@ export const DirectorDashboard: React.FC = () => {
   }
 
   return (
-    <div className="p-4 md:p-8 max-w-7xl mx-auto pt-16 lg:pt-8 text-slate-900">
+    <div className="p-4 md:p-8 max-w-7xl mx-auto text-slate-900">
       {/* Visual Identity Header */}
       <div className="mb-8 bg-[#450a0a] text-white px-6 py-4 rounded-3xl flex items-center justify-between shadow-xl border-l-8 border-amber-500">
         <div className="flex items-center gap-4">
@@ -166,7 +166,6 @@ export const DirectorDashboard: React.FC = () => {
           </div>
         </div>
         <div className="hidden md:block text-right">
-          <p className="text-[10px] font-bold opacity-60 uppercase tracking-widest">{userEmail}</p>
           <p className="text-xs font-bold text-amber-400">Escuela Universitaria de Cine - UNT</p>
         </div>
       </div>

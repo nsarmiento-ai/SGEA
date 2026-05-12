@@ -480,7 +480,7 @@ export const LoanWizard: React.FC = () => {
   );
 
   return (
-    <div className="p-4 md:p-8 max-w-7xl mx-auto pt-16 lg:pt-8 text-slate-900">
+    <div className="p-4 md:p-8 max-w-7xl mx-auto text-slate-900">
       <header className="mb-8">
         <h1 className="text-2xl md:text-3xl font-display font-bold text-slate-900 min-h-[32px] md:min-h-[40px]">Despacho de Equipos</h1>
         <p className="text-sm md:text-base text-slate-700">Complete la información del préstamo.</p>

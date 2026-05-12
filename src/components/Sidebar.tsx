@@ -6,7 +6,6 @@ import {
   Clock, 
   AlertTriangle, 
   History, 
-  LogOut,
   Camera,
   Calendar,
   ShieldCheck,
@@ -22,13 +21,8 @@ interface SidebarProps {
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
-  const { activeResponsable, userEmail, isSuperAdmin, role, setRole, signOut } = useApp();
+  const { role } = useApp();
   const navigate = useNavigate();
-
-  const handleRoleChange = () => {
-    setRole(null);
-    navigate('/select-role');
-  };
 
   const menuItems = [
     { icon: LayoutDashboard, label: 'Inventario', path: '/catalogo' },
@@ -116,31 +110,6 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
             </NavLink>
           ))}
         </nav>
-
-        <div className="flex-shrink-0 p-4 border-t border-slate-800 space-y-2 min-h-[120px]">
-          {isSuperAdmin && (
-            <button
-              onClick={handleRoleChange}
-              className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-amber-400 hover:bg-amber-500/10 transition-colors font-black text-xs uppercase tracking-widest"
-            >
-              <ShieldCheck className="w-5 h-5" />
-              🔄 Cambiar Rol
-            </button>
-          )}
-
-          <div className="bg-slate-800/50 rounded-xl p-4">
-            <p className="text-[10px] uppercase font-bold text-slate-500 mb-1">Responsable</p>
-            <p className="text-sm font-semibold text-white truncate">{activeResponsable}</p>
-          </div>
-          
-          <button
-            onClick={signOut}
-            className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-red-400 hover:bg-red-500/10 transition-colors font-medium"
-          >
-            <LogOut className="w-5 h-5" />
-            Cerrar Sesión
-          </button>
-        </div>
       </aside>
     </>
   );

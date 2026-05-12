@@ -64,7 +64,7 @@ export const AuditLogs: React.FC = () => {
   );
 
   return (
-    <div className="p-4 md:p-8 max-w-7xl mx-auto pt-16 lg:pt-8">
+    <div className="p-4 md:p-8 max-w-7xl mx-auto">
       <header className="mb-8 flex flex-col sm:flex-row justify-between items-start gap-4">
         <div>
           <h1 className="text-2xl md:text-3xl font-display font-bold text-slate-900">Historial de Auditoría</h1>
