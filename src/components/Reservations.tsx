@@ -777,6 +777,8 @@ export const Reservations: React.FC = () => {
                             loading={index === 0 ? "eager" : "lazy"}
                             {...(index === 0 ? { fetchPriority: "high" } : {})}
                             decoding={index === 0 ? "sync" : "async"}
+                            crossOrigin="anonymous"
+                            referrerPolicy="no-referrer"
                             className="w-full h-full object-cover" 
                           />
                         </div>
@@ -863,6 +865,8 @@ export const Reservations: React.FC = () => {
                                   height={100}
                                   loading={index < 5 ? "eager" : "lazy"}
                                   {...(index < 5 ? { fetchPriority: "high" } : {})}
+                                  crossOrigin="anonymous"
+                                  referrerPolicy="no-referrer"
                                   className="w-full h-full object-cover" 
                                 />
                               </div>
@@ -1148,7 +1152,7 @@ export const Reservations: React.FC = () => {
                     <div key={eq.id} className="flex items-center justify-between bg-slate-50 p-2.5 rounded-xl border border-slate-100">
                       <div className="flex items-center gap-3">
                         <div className="w-8 h-8 rounded-lg bg-slate-200 overflow-hidden shrink-0">
-                          <img src={eq.foto_url || 'https://picsum.photos/seed/gear/50/50'} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+                          <img src={eq.foto_url || 'https://picsum.photos/seed/gear/50/50'} className="w-full h-full object-cover" crossOrigin="anonymous" referrerPolicy="no-referrer" />
                         </div>
                         <span className="text-xs font-bold text-slate-700 truncate">{eq.nombre}</span>
                       </div>

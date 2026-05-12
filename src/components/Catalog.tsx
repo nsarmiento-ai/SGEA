@@ -524,6 +524,7 @@ export const Catalog: React.FC = () => {
                       {...(index === 0 ? { fetchPriority: "high" } : {})}
                       decoding={index === 0 ? "sync" : "async"}
                       crossOrigin="anonymous"
+                      referrerPolicy="no-referrer"
                       className="w-full h-full object-cover" 
                     />
                   </div>
@@ -639,6 +640,7 @@ export const Catalog: React.FC = () => {
                             {...(index === 0 ? { fetchPriority: "high" } : {})}
                             decoding={index === 0 ? "sync" : "async"}
                             crossOrigin="anonymous"
+                            referrerPolicy="no-referrer"
                             className="w-full h-full object-cover" 
                           />
                         </div>

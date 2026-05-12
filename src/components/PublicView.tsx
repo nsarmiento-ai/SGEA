@@ -116,6 +116,8 @@ export const PublicView: React.FC = () => {
               alt="Logo Escuela de Cine" 
               width={40}
               height={40}
+              crossOrigin="anonymous"
+              referrerPolicy="no-referrer"
               className="h-10 w-auto object-contain bg-white p-0.5 rounded shadow-sm border border-slate-100"
             />
             <div className="min-w-0">
