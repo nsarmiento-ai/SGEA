@@ -402,6 +402,7 @@ export const Catalog: React.FC = () => {
                     height={300}
                     loading={index === 0 ? "eager" : "lazy"}
                     {...(index === 0 ? { fetchPriority: "high" } : {})}
+                    decoding={index === 0 ? "sync" : "async"}
                     referrerPolicy="no-referrer"
                     crossOrigin="anonymous"
                     className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
@@ -521,6 +522,7 @@ export const Catalog: React.FC = () => {
                       height={100}
                       loading={index === 0 ? "eager" : "lazy"}
                       {...(index === 0 ? { fetchPriority: "high" } : {})}
+                      decoding={index === 0 ? "sync" : "async"}
                       crossOrigin="anonymous"
                       className="w-full h-full object-cover" 
                     />
@@ -635,6 +637,7 @@ export const Catalog: React.FC = () => {
                             height={100}
                             loading={index === 0 ? "eager" : "lazy"}
                             {...(index === 0 ? { fetchPriority: "high" } : {})}
+                            decoding={index === 0 ? "sync" : "async"}
                             crossOrigin="anonymous"
                             className="w-full h-full object-cover" 
                           />

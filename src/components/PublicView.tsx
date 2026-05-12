@@ -230,6 +230,7 @@ export const PublicView: React.FC = () => {
                               height={300}
                               loading={index === 0 ? "eager" : "lazy"}
                               {...(index === 0 ? { fetchPriority: "high" } : {})}
+                              decoding={index === 0 ? "sync" : "async"}
                               className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                               referrerPolicy="no-referrer"
                               crossOrigin="anonymous"
