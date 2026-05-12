@@ -4,7 +4,10 @@ import { useApp } from '../context/AppContext';
 import { Loader2, ExternalLink } from 'lucide-react';
 import { motion } from 'motion/react';
 import { useNavigate } from 'react-router-dom';
-import { optimizeCloudinaryUrl } from '../lib/utils';
+import { optimizeCloudinaryUrl, cn } from '../lib/utils';
+import { AnimatedBackground } from './ui/AnimatedBackground';
+import { BorderBeam } from './ui/BorderBeam';
+import { TextAnimate } from './ui/TextAnimate';
 
 export const ResponsableModal: React.FC = () => {
   const { activeResponsable, loading: authLoading } = useApp();
@@ -34,42 +37,70 @@ export const ResponsableModal: React.FC = () => {
 
   if (activeResponsable || authLoading) return null;
 
-  const bgUrl = optimizeCloudinaryUrl("https://res.cloudinary.com/divij23kk/image/upload/v1778076280/Gemini_Generated_Image_ioi8z5ioi8z5ioi8_ayoatx.png");
   const logoUrl = optimizeCloudinaryUrl("https://res.cloudinary.com/divij23kk/image/upload/v1775522044/Logo-Escuela_clscco_1_pe7ao5.png");
 
   return (
-    <div 
-      className="min-h-screen bg-black flex items-center justify-center p-4 bg-center bg-cover bg-no-repeat"
-      style={{ backgroundImage: `url(${bgUrl})` }}
-    >
+    <div className="relative min-h-screen flex items-center justify-center p-4 overflow-hidden bg-slate-950">
+      <AnimatedBackground className="opacity-40" />
+      
+      {/* Radial Gradient overlay for focus */}
+      <div className="absolute inset-0 z-0 bg-[radial-gradient(circle_at_center,rgba(245,158,11,0.05)_0%,transparent_70%)] pointer-events-none" />
+
       <motion.div 
-        initial={{ scale: 0.9, opacity: 0 }}
-        animate={{ scale: 1, opacity: 1 }}
-        className="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden"
+        initial={{ y: 20, opacity: 0 }}
+        animate={{ y: 0, opacity: 1 }}
+        transition={{ duration: 0.8, ease: "easeOut" }}
+        className="relative z-10 w-full max-w-md"
       >
-        <div className="bg-white p-8 text-slate-900 text-center border-b border-slate-100">
-          <div className="mb-6 flex justify-center">
-            <img 
-              src={logoUrl} 
-              alt="Logo Escuela" 
-              className="w-24 h-24 object-contain"
-              referrerPolicy="no-referrer"
+        <div className={cn(
+          "relative overflow-hidden rounded-3xl",
+          "bg-white/5 backdrop-blur-2xl border border-white/10",
+          "shadow-[0_0_50px_-12px_rgba(0,0,0,0.5)]"
+        )}>
+          <BorderBeam size={250} duration={10} colorFrom="#f59e0b" colorTo="#d97706" />
+
+          <div className="p-8 text-center border-b border-white/5">
+            <motion.div 
+              initial={{ scale: 0.8, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              transition={{ delay: 0.2 }}
+              className="mb-6 flex justify-center"
+            >
+              <img 
+                src={logoUrl} 
+                alt="Logo Escuela" 
+                className="w-24 h-24 object-contain brightness-0 invert opacity-80"
+                referrerPolicy="no-referrer"
+              />
+            </motion.div>
+            
+            <TextAnimate 
+              text="SGEA"
+              type="popIn"
+              className="text-4xl font-display font-black text-white tracking-tighter justify-center"
+            />
+            
+            <TextAnimate 
+              text="Sistema de Gestión Audiovisual"
+              type="fadeIn"
+              delay={0.4}
+              className="text-amber-500/80 text-[10px] mt-2 uppercase tracking-[0.3em] font-black justify-center"
             />
           </div>
-          <h2 className="text-3xl font-display font-black text-slate-900 tracking-tight">SGEA</h2>
-          <p className="text-slate-500 text-[10px] mt-2 uppercase tracking-[0.2em] font-black">Sistema de Gestión Audiovisual</p>
-        </div>
 
-        <div className="p-8">
-          <div className="space-y-6">
+          <div className="p-8 space-y-6">
             <div>
-              <p className="text-slate-600 text-center mb-6 font-medium">
-                Acceso para Docentes y Administradores
+              <p className="text-slate-300 text-center mb-6 font-medium text-sm">
+                Bienvenidos. Por favor, identifíquese para continuar.
               </p>
+              
               <button
                 onClick={handleGoogleLogin}
                 disabled={loggingIn}
-                className="w-full flex items-center justify-center gap-3 bg-white border border-slate-300 text-slate-700 font-bold py-4 px-6 rounded-xl hover:bg-slate-50 transition-all shadow-sm group"
+                className={cn(
+                  "w-full flex items-center justify-center gap-3 py-4 px-6 rounded-2xl transition-all shadow-xl group relative overflow-hidden",
+                  "bg-white text-slate-900 font-bold hover:bg-slate-50 active:scale-[0.98]"
+                )}
               >
                 {loggingIn ? (
                   <Loader2 className="w-6 h-6 animate-spin text-amber-500" />
@@ -93,32 +124,47 @@ export const ResponsableModal: React.FC = () => {
                     />
                   </svg>
                 )}
-                <span className="group-hover:text-slate-900">Iniciar sesión con Google</span>
+                <span>Iniciar sesión con Google</span>
               </button>
             </div>
 
             <div className="relative">
               <div className="absolute inset-0 flex items-center" aria-hidden="true">
-                <div className="w-full border-t border-slate-200"></div>
+                <div className="w-full border-t border-white/10"></div>
               </div>
               <div className="relative flex justify-center text-xs font-black uppercase tracking-widest">
-                <span className="bg-white px-4 text-slate-400">¿Eres alumno?</span>
+                <span className="bg-[#0f172a] px-4 text-slate-500">¿Eres alumno?</span>
               </div>
             </div>
 
             <button
               onClick={() => navigate('/catalogo-publico')}
-              className="w-full flex items-center justify-center gap-2 bg-slate-50 text-slate-500 font-bold py-4 px-6 rounded-xl hover:bg-slate-100 hover:text-slate-900 transition-all border border-dashed border-slate-200"
+              className={cn(
+                "w-full flex items-center justify-center gap-2 py-4 px-6 rounded-2xl transition-all border border-white/10",
+                "bg-white/5 text-slate-400 font-bold hover:bg-white/10 hover:text-white"
+              )}
             >
               <ExternalLink className="w-4 h-4" />
-              Consultar Catálogo Público
+              Catálogo Público
             </button>
           </div>
 
-          <p className="text-[10px] text-slate-400 text-center mt-8 uppercase tracking-tighter">
-            Solo correos autorizados @cine.unt.edu.ar
-          </p>
+          <div className="p-6 bg-white/5 border-t border-white/5">
+            <p className="text-[10px] text-slate-500 text-center uppercase tracking-widest font-medium">
+              Solo correos autorizados <span className="text-amber-500/60 font-black">@cine.unt.edu.ar</span>
+            </p>
+          </div>
         </div>
+
+        {/* Support link or credits */}
+        <motion.p 
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 1 }}
+          className="text-center mt-8 text-slate-600 text-xs font-medium"
+        >
+          &copy; {new Date().getFullYear()} Escuela Universitaria de Cine, Video y TV
+        </motion.p>
       </motion.div>
     </div>
   );
