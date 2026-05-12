@@ -31,6 +31,8 @@ import { motion } from 'motion/react';
 import { cn, optimizeCloudinaryUrl } from '../lib/utils';
 import { isWithinInterval, parseISO, isAfter } from 'date-fns';
 import { Reservation } from '../types';
+import { TextAnimate } from './ui/TextAnimate';
+import { BorderBeam } from './ui/BorderBeam';
 
 const statusConfig: Record<EquipmentStatus, { color: string, icon: any, label: string }> = {
   'Disponible': { color: 'text-green-600 bg-green-50 border-green-200', icon: CheckCircle2, label: 'Disponible' },
@@ -225,9 +227,11 @@ export const Catalog: React.FC = () => {
     <div className="p-4 md:p-8 max-w-7xl mx-auto">
       <header className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 mb-8">
         <div>
-          <h1 className="text-2xl md:text-3xl font-display font-bold text-slate-900 min-h-[32px] md:min-h-[40px]">
-            {showArchived ? 'Archivo de Equipos (Bajas)' : 'Catálogo de Equipos'}
-          </h1>
+          <TextAnimate 
+            text={showArchived ? 'Archivo de Equipos (Bajas)' : 'Catálogo de Equipos'}
+            type="slideUp"
+            className="text-2xl md:text-3xl font-display font-bold text-slate-900 min-h-[32px] md:min-h-[40px]"
+          />
           <p className="text-sm md:text-base text-slate-700">
             {showArchived ? 'Equipos fuera de servicio permanente o históricos.' : 'Gestione el inventario de la escuela.'}
           </p>
@@ -355,7 +359,7 @@ export const Catalog: React.FC = () => {
           <p className="text-slate-700 font-medium">Cargando inventario...</p>
         </div>
       ) : viewMode === 'grid' ? (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 auto-rows-[minmax(330px,auto)]">
           {(filteredEquipments || []).map((eq, index) => {
             const eqReservations = (reservations || []).filter(r => 
               (r.equipos_ids || []).includes(eq.id) && 
@@ -367,22 +371,29 @@ export const Catalog: React.FC = () => {
                 end: parseISO(r.fecha_fin)
               })
             );
-            const hasFutureReservations = (eqReservations || []).some(r => 
-              isAfter(parseISO(r.fecha_inicio), new Date())
-            );
+
+            // Bento-inspired grid logic: every 7th item takes more space on desktop
+            const isWide = index % 7 === 0 && filteredEquipments.length > 5;
 
             return (
               <motion.div
                 layout
                 key={eq.id}
                 initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ delay: index * 0.05 }}
                 className={cn(
-                  "card group relative", 
-                  isReservedNow && "ring-2 ring-amber-500",
-                  selectedIds.includes(eq.id) && "ring-2 ring-amber-500 bg-amber-50/30"
+                  "card group relative h-full flex flex-col", 
+                  isWide && "lg:col-span-2",
+                  isReservedNow && "ring-1 ring-amber-500/50",
+                  selectedIds.includes(eq.id) && "ring-2 ring-amber-500 bg-amber-50/50 shadow-xl shadow-amber-100"
                 )}
               >
+                {selectedIds.includes(eq.id) && (
+                  <BorderBeam size={300} duration={12} delay={index * 2} />
+                )}
+
                 <button 
                   onClick={() => toggleSelect(eq.id)}
                   aria-label={selectedIds.includes(eq.id) ? "Deseleccionar equipo" : "Seleccionar equipo"}
@@ -394,9 +405,12 @@ export const Catalog: React.FC = () => {
                   {selectedIds.includes(eq.id) ? <CheckSquare className="w-5 h-5" /> : <Square className="w-5 h-5" />}
                 </button>
 
-                <div className="relative h-48 bg-slate-100 overflow-hidden aspect-[4/3]">
+                <div className={cn(
+                  "relative bg-slate-100 overflow-hidden flex-shrink-0",
+                  isWide ? "h-64" : "h-48"
+                )}>
                   <img
-                    src={optimizeCloudinaryUrl(eq.foto_url || 'https://picsum.photos/seed/camera/400/300', index === 0)}
+                    src={optimizeCloudinaryUrl(eq.foto_url || 'https://picsum.photos/seed/camera/600/400', index === 0 || isWide)}
                     alt={eq.nombre}
                     width={400}
                     height={300}

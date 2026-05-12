@@ -7,6 +7,7 @@ import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'r
 import { AppProvider, useApp } from './context/AppContext';
 import { Sidebar } from './components/Sidebar';
 import { Header } from './components/Header';
+import { AnimatedBackground } from './components/ui/AnimatedBackground';
 import { ResponsableModal } from './components/ResponsableModal';
 import { RoleSelectionModal } from './components/RoleSelectionModal';
 import { Loader2, Menu } from 'lucide-react';
@@ -94,24 +95,27 @@ function AppContent() {
 
   // Handle Public Routes without Auth
   return (
-    <Suspense fallback={<LoadingFallback />}>
-      <Routes>
-        <Route path="/catalogo-publico" element={<PublicView />} />
-        <Route path="/solicitud" element={<StudentRequestView />} />
-        
-        {/* Protected routes below */}
-        <Route 
-          path="*" 
-          element={
-            !activeResponsable ? (
-              <ResponsableModal />
-            ) : (
-              <ProtectedRoute />
-            )
-          } 
-        />
-      </Routes>
-    </Suspense>
+    <div className="relative min-h-screen">
+      <AnimatedBackground />
+      <Suspense fallback={<LoadingFallback />}>
+        <Routes>
+          <Route path="/catalogo-publico" element={<PublicView />} />
+          <Route path="/solicitud" element={<StudentRequestView />} />
+          
+          {/* Protected routes below */}
+          <Route 
+            path="*" 
+            element={
+              !activeResponsable ? (
+                <ResponsableModal />
+              ) : (
+                <ProtectedRoute />
+              )
+            } 
+          />
+        </Routes>
+      </Suspense>
+    </div>
   );
 }
 
@@ -131,10 +135,10 @@ function ProtectedRoute() {
   }
 
   return (
-    <div className="flex min-h-screen relative bg-slate-50">
+    <div className="flex min-h-screen relative bg-transparent">
       <Sidebar isOpen={isSidebarOpen} onClose={() => setIsSidebarOpen(false)} />
       
-      <div className="flex-1 flex flex-col min-w-0">
+      <div className="flex-1 flex flex-col min-w-0 relative z-10 transition-all duration-300">
         <Header onOpenSidebar={() => setIsSidebarOpen(true)} />
         
         <main className="flex-1 w-full overflow-x-hidden">

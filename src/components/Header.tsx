@@ -10,6 +10,7 @@ import {
 import { useApp } from '../context/AppContext';
 import { cn } from '../lib/utils';
 import { motion, AnimatePresence } from 'motion/react';
+import { TextAnimate } from './ui/TextAnimate';
 
 interface HeaderProps {
   onOpenSidebar: () => void;
@@ -67,7 +68,11 @@ export const Header: React.FC<HeaderProps> = ({ onOpenSidebar }) => {
             </div>
             
             <div className="hidden sm:flex flex-col items-start min-w-[100px]">
-              <span className="text-sm font-bold text-slate-800 truncate max-w-[150px]">{activeResponsable}</span>
+              <TextAnimate 
+                text={activeResponsable || ''} 
+                type="fadeIn"
+                className="text-sm font-bold text-slate-800 truncate max-w-[150px]" 
+              />
               <span className="text-[10px] font-black text-amber-600 uppercase tracking-wider leading-none">
                 {role === 'Director' ? 'Dirección' : role === 'Docente' ? 'Docente' : 'Administrador'}
               </span>
