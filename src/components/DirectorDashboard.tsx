@@ -186,7 +186,7 @@ export const DirectorDashboard: React.FC = () => {
           value={stats.availableCount} 
           color="text-green-600" 
           bgColor="bg-green-50"
-          desc="Equipos listos en pañol"
+          desc="Equipos listos en Administrador"
         />
         <KpiCard 
           icon={TrendingUp} 

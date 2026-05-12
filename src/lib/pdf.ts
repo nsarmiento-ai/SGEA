@@ -35,7 +35,7 @@ export const generateLoanPDF = (
   doc.setTextColor(100);
   doc.text(`Nro de Operación: ${loan.id.slice(0, 8).toUpperCase()}`, 20, 45);
   doc.text(`Fecha: ${formatDate(loan.fecha_salida)}`, 20, 52);
-  doc.text(`Responsable (Administración): ${loan.responsable_nombre}`, 20, 59);
+  doc.text(`Responsable (Administrador): ${loan.responsable_nombre}`, 20, 59);
   
   doc.setFontSize(12);
   doc.setTextColor(0);
@@ -93,7 +93,7 @@ export const generateLoanPDF = (
   if (addedManuallyIds.length > 0) {
     doc.setFontSize(8);
     doc.setTextColor(150, 0, 0);
-    doc.text('(*) Equipo no autorizado originalmente - Responsabilidad compartida: Administración/Alumno/Docente', 20, tableFinalY + 10);
+    doc.text('(*) Equipo no autorizado originalmente - Responsabilidad compartida: Administrador/Alumno/Docente', 20, tableFinalY + 10);
   }
 
   // Footer / Signatures
@@ -177,7 +177,7 @@ export const generateReturnPDF = (loan: Loan, equipments: Equipment[], responsab
   doc.setTextColor(100);
   doc.text(`Nro de Operación (Préstamo): ${loan.id.slice(0, 8).toUpperCase()}`, 20, 45);
   doc.text(`Fecha de Devolución: ${formatDate(new Date().toISOString())}`, 20, 52);
-  doc.text(`Responsable (Administración): ${responsableRecibe}`, 20, 59);
+  doc.text(`Responsable (Administrador): ${responsableRecibe}`, 20, 59);
   doc.text(`Email Docente: ${docenteEmail || 'N/A'}`, 20, 66);
   
   doc.setFontSize(12);

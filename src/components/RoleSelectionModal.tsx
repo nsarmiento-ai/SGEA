@@ -39,7 +39,7 @@ export const RoleSelectionModal: React.FC = () => {
               </div>
               <div className="flex-1">
                 <p className="font-black text-slate-900 uppercase tracking-wider text-sm">Modo Administrador</p>
-                <p className="text-xs text-slate-500 font-bold mt-0.5 leading-relaxed">Gestión de stock, despacho directo y control de devoluciones (Pañol).</p>
+                <p className="text-xs text-slate-500 font-bold mt-0.5 leading-relaxed">Gestión de stock, despacho directo y control de devoluciones (Administrador).</p>
               </div>
             </button>
           )}

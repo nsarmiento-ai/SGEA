@@ -84,7 +84,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
             <div>
               <h1 className="font-display font-bold text-white text-xl leading-none">SGEA</h1>
               <span className="text-[10px] uppercase tracking-widest text-amber-400/80 font-black">
-                {role === 'Director' ? 'Dirección' : role === 'Docente' ? 'Docente' : 'Pañol'}
+                {role === 'Director' ? 'Dirección' : role === 'Docente' ? 'Docente' : 'Administrador'}
               </span>
             </div>
           </div>

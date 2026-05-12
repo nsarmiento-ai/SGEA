@@ -512,7 +512,7 @@ export const LoanWizard: React.FC = () => {
                   ))}
                 </div>
                 <p className="text-xs text-slate-500 mb-6">
-                  Si el equipo está físicamente en el Pañol, presiona <strong>Sincronizar y Reintentar</strong> para corregir el estado e intentar el despacho nuevamente.
+                  Si el equipo está físicamente en el Administrador, presiona <strong>Sincronizar y Reintentar</strong> para corregir el estado e intentar el despacho nuevamente.
                 </p>
                 <div className="flex gap-3">
                   <button

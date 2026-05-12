@@ -69,7 +69,7 @@ export const Header: React.FC<HeaderProps> = ({ onOpenSidebar }) => {
             <div className="hidden sm:flex flex-col items-start min-w-[100px]">
               <span className="text-sm font-bold text-slate-800 truncate max-w-[150px]">{activeResponsable}</span>
               <span className="text-[10px] font-black text-amber-600 uppercase tracking-wider leading-none">
-                {role === 'Director' ? 'Dirección' : role === 'Docente' ? 'Docente' : 'Pañol'}
+                {role === 'Director' ? 'Dirección' : role === 'Docente' ? 'Docente' : 'Administrador'}
               </span>
             </div>
             
@@ -91,7 +91,7 @@ export const Header: React.FC<HeaderProps> = ({ onOpenSidebar }) => {
                   <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Usuario</p>
                   <p className="font-bold text-slate-900 truncate">{activeResponsable}</p>
                   <p className="text-[10px] font-black text-amber-600 uppercase tracking-wider mt-0.5">
-                    {role === 'Director' ? 'Dirección' : role === 'Docente' ? 'Docente' : 'Pañol'}
+                    {role === 'Director' ? 'Dirección' : role === 'Docente' ? 'Docente' : 'Administrador'}
                   </p>
                 </div>
 
