@@ -82,14 +82,14 @@ export const CalendarPage: React.FC = () => {
       const res = await supabase.from('reservas').select('id, docente_nombre, alumno_nombre, fecha_inicio, fecha_fin, equipos_ids, materia, aula, estado').in('estado', ['Pendiente', 'Aprobada']);
       if (res.data) setReservations(res.data);
 
-      const loansRes = await supabase.from('prestamos').select('id, alumno_nombre, fecha_salida, fecha_devolucion_estimada, equipos_ids, estado').eq('estado', 'Activo');
+      const loansRes = await supabase.from('prestamos').select('id, alumno_nombre, docente_responsable, fecha_salida, fecha_devolucion_estimada, equipos_ids, estado').eq('estado', 'Activo');
       if (loansRes.data) setLoans(loansRes.data);
 
       const eqRes = await supabase.from('equipamiento').select('id, nombre, modelo, foto_url');
       if (eqRes.data) setEquipments(eqRes.data);
 
       try {
-        const studentRes = await supabase.from('solicitudes_alumnos').select('id, responsable, fecha_inicio, fecha_fin, equipos, estado, materia').not('estado', 'in', '("Rechazado","Cancelado","Entregado")');
+        const studentRes = await supabase.from('solicitudes_alumnos').select('id, responsable, docente_nombre, fecha_inicio, fecha_fin, equipos, estado, materia').not('estado', 'in', '("Rechazado","Cancelado","Entregado")');
         if (studentRes.error) throw studentRes.error;
         if (studentRes.data) setStudentRequests(studentRes.data);
       } catch (e) {
@@ -222,7 +222,11 @@ export const CalendarPage: React.FC = () => {
                   statusColor = isAuthorized ? 'bg-indigo-500' : 'bg-slate-300';
                 }
 
-                const label = isLoan ? event.docente_responsable : (isStudent ? event.alumno_nombre : event.docente_nombre);
+                const label = isLoan 
+                  ? (event.alumno_nombre || event.docente_responsable) 
+                  : (isStudent ? (event.responsable || event.docente_nombre) : (event.alumno_nombre || event.docente_nombre));
+                
+                const finalLabel = label || 'Reserva sin asignar';
                 
                 return (
                   <div 
@@ -236,7 +240,7 @@ export const CalendarPage: React.FC = () => {
                       isStudent && !isAuthorized && "md:border-dashed md:border-slate-400"
                     )}>
                       <span className="hidden md:inline">
-                        {isAdministracion ? `${label?.split(' ')[0]}: ` : ''}
+                        {isAdministracion ? `${finalLabel.split(' ')[0]}: ` : ''}
                         {(isStudent ? event.equipos : (event.equipos_ids || [])).map((id: string) => (equipments || []).find(e => e.id === id)?.nombre).filter(Boolean).slice(0, 2).join(', ')}
                         {(isStudent ? event.equipos : (event.equipos_ids || [])).length > 2 && '...'}
                       </span>
@@ -341,7 +345,12 @@ export const CalendarPage: React.FC = () => {
                       const start = isLoan ? event.fecha_salida : event.fecha_inicio;
                       const end = isLoan ? event.fecha_devolucion_estimada : event.fecha_fin;
                       
-                      const label = isLoan ? event.docente_responsable : (isStudent ? event.alumno_nombre : event.docente_nombre);
+                      const label = isLoan 
+                        ? (event.alumno_nombre || event.docente_responsable) 
+                        : (isStudent ? (event.responsable || event.docente_nombre) : (event.alumno_nombre || event.docente_nombre));
+                      
+                      const finalLabel = label || 'Reserva sin asignar';
+
                       let subLabel = isLoan ? 'Préstamo Activo' : (isStudent ? 'Solicitud Alumno' : `Reserva ${event.estado}`);
                       if (isStudent) {
                         subLabel = `Solicitud: ${event.estado}`;
@@ -373,7 +382,7 @@ export const CalendarPage: React.FC = () => {
                                <p className="text-[10px] text-slate-400 font-black uppercase tracking-tight">
                                  {isStudent ? 'Responsable Alumno' : 'Docente / Responsable'}
                                </p>
-                               <p className="text-sm font-bold text-slate-900 truncate">{label}</p>
+                               <p className="text-sm font-bold text-slate-900 truncate">{finalLabel}</p>
                              </div>
                           </div>
 
