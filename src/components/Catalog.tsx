@@ -264,7 +264,7 @@ export const Catalog: React.FC = () => {
             >
               <Plus className="w-5 h-5" />
               <span className="hidden sm:inline">Nuevo Equipo</span>
-              <span className="sm:hidden">Nuevo</span>
+              <span className="sm:hidden font-bold">Nuevo</span>
             </button>
           )}
         </div>
@@ -290,14 +290,14 @@ export const Catalog: React.FC = () => {
             <button 
               onClick={() => setViewMode('grid')}
               aria-label="Ver cuadrícula"
-              className={cn("p-1.5 rounded-lg transition-all", viewMode === 'grid' ? "bg-slate-100 text-slate-900" : "text-slate-400 hover:text-slate-600")}
+              className={cn("p-1.5 rounded-lg transition-all", viewMode === 'grid' ? "bg-slate-100 text-slate-900" : "text-slate-600 hover:text-slate-900")}
             >
               <LayoutGrid className="w-5 h-5" />
             </button>
             <button 
               onClick={() => setViewMode('list')}
               aria-label="Ver lista"
-              className={cn("p-1.5 rounded-lg transition-all", viewMode === 'list' ? "bg-slate-100 text-slate-900" : "text-slate-400 hover:text-slate-600")}
+              className={cn("p-1.5 rounded-lg transition-all", viewMode === 'list' ? "bg-slate-100 text-slate-900" : "text-slate-600 hover:text-slate-900")}
             >
               <List className="w-5 h-5" />
             </button>

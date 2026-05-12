@@ -454,8 +454,8 @@ export const LoanWizard: React.FC = () => {
               className={cn(
                 "flex items-center justify-center gap-2 px-6 py-4 rounded-2xl font-bold transition-all text-sm shadow-lg",
                 finishedLoan.docenteEmail 
-                  ? "bg-amber-500 text-white shadow-amber-200 hover:bg-amber-600" 
-                  : "bg-slate-100 text-slate-400 shadow-transparent cursor-not-allowed"
+                  ? "bg-amber-500 text-slate-900 shadow-amber-200 hover:bg-amber-600 font-black" 
+                  : "bg-slate-100 text-slate-500 shadow-transparent cursor-not-allowed"
               )}
             >
               <Mail className="w-5 h-5" />
@@ -523,7 +523,7 @@ export const LoanWizard: React.FC = () => {
                   </button>
                   <button
                     onClick={handleSyncAndRetry}
-                    className="flex-[2] bg-amber-500 text-white px-4 py-3 rounded-xl font-black text-xs uppercase tracking-widest hover:bg-amber-600 shadow-lg shadow-amber-200"
+                    className="flex-[2] bg-amber-500 text-slate-900 px-4 py-3 rounded-xl font-black text-xs uppercase tracking-widest hover:bg-amber-600 shadow-lg shadow-amber-200"
                   >
                     {submitting ? <Loader2 className="w-4 h-4 animate-spin mx-auto" /> : 'Sincronizar y Reintentar'}
                   </button>
@@ -603,7 +603,7 @@ export const LoanWizard: React.FC = () => {
                   <ShoppingCart className="w-5 h-5 text-amber-500" />
                   Equipos
                 </h2>
-                <span className="text-[10px] font-black uppercase tracking-wider bg-amber-100 text-amber-700 px-2 py-1 rounded-lg">
+                <span className="text-[10px] font-black uppercase tracking-wider bg-amber-100 text-amber-950 px-2 py-1 rounded-lg">
                   {selectedIds.length} OK
                 </span>
               </div>
@@ -685,7 +685,7 @@ export const LoanWizard: React.FC = () => {
                           <div className={cn(
                             "w-5 h-5 rounded-lg border-2 flex items-center justify-center transition-all",
                             selectedIds.includes(eq.id)
-                              ? "bg-amber-500 border-amber-500 text-white"
+                              ? "bg-amber-500 border-amber-500 text-slate-900 font-bold"
                               : "border-slate-200 text-transparent group-hover:border-slate-300"
                           )}>
                             <Check className="w-3.5 h-3.5" strokeWidth={3} />

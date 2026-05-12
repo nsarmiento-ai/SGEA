@@ -337,7 +337,7 @@ export const StudentRequestView: React.FC = () => {
                                   <div className="flex items-center gap-4">
                                     <div className={cn(
                                       "w-10 h-10 rounded-xl flex items-center justify-center shrink-0",
-                                      selectedIds.includes(item.id) ? "bg-amber-500 text-white" : "bg-slate-100 text-slate-400"
+                                      selectedIds.includes(item.id) ? "bg-amber-500 text-slate-900 font-bold" : "bg-slate-100 text-slate-600"
                                     )}>
                                       <Package className="w-5 h-5" />
                                     </div>
@@ -364,7 +364,7 @@ export const StudentRequestView: React.FC = () => {
                                   <div className={cn(
                                     "w-6 h-6 rounded-lg border-2 flex items-center justify-center transition-all ml-auto",
                                     selectedIds.includes(item.id)
-                                      ? "bg-amber-500 border-amber-500 text-white"
+                                      ? "bg-amber-500 border-amber-500 text-slate-900 font-bold"
                                       : "border-slate-200 text-transparent"
                                   )}>
                                     <CheckCircle className="w-4 h-4" />
@@ -455,7 +455,7 @@ export const StudentRequestView: React.FC = () => {
                         }`}
                       >
                         <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${
-                          formData.tipo_uso === 'Uso en Escuela' ? 'bg-amber-500 text-white' : 'bg-slate-200 text-slate-400'
+                          formData.tipo_uso === 'Uso en Escuela' ? 'bg-amber-500 text-slate-900 shadow-amber-200' : 'bg-slate-100 text-slate-600'
                         }`}>
                           <Package className="w-5 h-5" />
                         </div>
@@ -475,7 +475,7 @@ export const StudentRequestView: React.FC = () => {
                         }`}
                       >
                         <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${
-                          formData.tipo_uso === 'Uso Externo' ? 'bg-amber-500 text-white' : 'bg-slate-200 text-slate-400'
+                          formData.tipo_uso === 'Uso Externo' ? 'bg-amber-500 text-slate-900 shadow-amber-200' : 'bg-slate-100 text-slate-600'
                         }`}>
                           <Search className="w-5 h-5" />
                         </div>

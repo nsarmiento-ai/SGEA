@@ -174,12 +174,12 @@ export const PendingReservations: React.FC = () => {
                   <div className="p-6 lg:w-1/3 bg-slate-50 border-b lg:border-b-0 lg:border-r border-slate-100 relative">
                     {isStudent && (
                       <div className="absolute top-4 right-4 flex flex-col gap-2 items-end">
-                        <span className="bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-widest border border-amber-200 shadow-sm">
+                        <span className="bg-amber-100 text-amber-950 px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-widest border border-amber-200 shadow-sm">
                           Alumno
                         </span>
                         <span className={cn(
                           "px-2 py-0.5 rounded-full text-[8px] font-black uppercase tracking-widest border shadow-sm",
-                          status === 'Autorizado para Despacho' ? "bg-green-100 text-green-700 border-green-200" : "bg-slate-100 text-slate-500 border-slate-200"
+                          status === 'Autorizado para Despacho' ? "bg-green-100 text-green-800 border-green-200" : "bg-slate-100 text-slate-600 border-slate-200"
                         )}>
                           {status}
                         </span>
@@ -189,7 +189,7 @@ export const PendingReservations: React.FC = () => {
                     <div className="flex items-center gap-3 mb-6">
                       <div className={cn(
                         "w-12 h-12 rounded-2xl flex items-center justify-center shadow-lg",
-                        isStudent ? "bg-amber-500 text-white" : "bg-slate-900 text-white"
+                        isStudent ? "bg-amber-500 text-slate-900" : "bg-slate-900 text-white"
                       )}>
                         {isStudent ? <User className="w-6 h-6" /> : <ShieldCheck className="w-6 h-6" />}
                       </div>

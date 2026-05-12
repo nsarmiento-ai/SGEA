@@ -458,14 +458,14 @@ export const Reservations: React.FC = () => {
                 <button 
                   aria-label="Ver cuadrícula"
                   onClick={() => setViewMode('grid')}
-                  className={cn("flex-1 p-2 rounded-xl transition-all", viewMode === 'grid' ? "bg-slate-100 text-slate-900" : "text-slate-400 hover:text-slate-600")}
+                  className={cn("flex-1 p-2 rounded-xl transition-all", viewMode === 'grid' ? "bg-slate-100 text-slate-900" : "text-slate-600 hover:text-slate-900")}
                 >
                   <LayoutGrid className="w-5 h-5 mx-auto" />
                 </button>
                 <button 
                   aria-label="Ver lista"
                   onClick={() => setViewMode('list')}
-                  className={cn("flex-1 p-2 rounded-xl transition-all", viewMode === 'list' ? "bg-slate-100 text-slate-900" : "text-slate-400 hover:text-slate-600")}
+                  className={cn("flex-1 p-2 rounded-xl transition-all", viewMode === 'list' ? "bg-slate-100 text-slate-900" : "text-slate-600 hover:text-slate-900")}
                 >
                   <List className="w-5 h-5 mx-auto" />
                 </button>
@@ -475,9 +475,9 @@ export const Reservations: React.FC = () => {
               <button 
                 disabled
                 aria-label="Equipos habituales (Próximamente)"
-                className="flex items-center justify-center gap-2 px-4 md:px-6 py-3 rounded-2xl font-bold text-xs md:text-sm transition-all border shadow-sm flex-1 sm:flex-none opacity-50 cursor-not-allowed bg-white text-slate-400 border-slate-200"
+                className="flex items-center justify-center gap-2 px-4 md:px-6 py-3 rounded-2xl font-bold text-xs md:text-sm transition-all border shadow-sm flex-1 sm:flex-none opacity-50 cursor-not-allowed bg-white text-slate-600 border-slate-200"
               >
-                <Star className="w-4 h-4 md:w-5 md:h-5 text-slate-300" />
+                <Star className="w-4 h-4 md:w-5 md:h-5 text-slate-400" />
                 <span className="hidden sm:inline">Habituales (Off)</span>
                 <span className="sm:hidden sr-only">Habituales (Deshabilitado)</span>
               </button>
@@ -986,7 +986,7 @@ export const Reservations: React.FC = () => {
             >
               <div className="p-4 md:p-8 border-b border-slate-100 flex justify-between items-center bg-slate-50">
                 <div className="flex items-center gap-3 md:gap-4">
-                  <div className="w-10 h-10 md:w-12 md:h-12 rounded-xl md:rounded-2xl bg-amber-500 flex items-center justify-center text-white shadow-lg shadow-amber-200">
+                  <div className="w-10 h-10 md:w-12 md:h-12 rounded-xl md:rounded-2xl bg-amber-500 flex items-center justify-center text-slate-900 shadow-lg shadow-amber-200">
                     <ShoppingCart className="w-5 h-5 md:w-6 md:h-6" />
                   </div>
                   <div>

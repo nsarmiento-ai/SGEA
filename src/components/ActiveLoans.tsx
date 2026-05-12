@@ -153,8 +153,8 @@ export const ActiveLoans: React.FC<{ filterMora?: boolean }> = ({ filterMora = f
               className={cn(
                 "flex items-center justify-center gap-2 px-6 py-4 rounded-2xl font-bold transition-all text-sm shadow-lg",
                 finishedReturn.docenteEmail 
-                  ? "bg-amber-500 text-white shadow-amber-200 hover:bg-amber-600" 
-                  : "bg-slate-100 text-slate-400 shadow-transparent cursor-not-allowed"
+                  ? "bg-amber-500 text-slate-900 shadow-amber-200 hover:bg-amber-600 font-black" 
+                  : "bg-slate-100 text-slate-500 shadow-transparent cursor-not-allowed"
               )}
             >
               <Mail className="w-5 h-5" />
@@ -213,7 +213,7 @@ export const ActiveLoans: React.FC<{ filterMora?: boolean }> = ({ filterMora = f
               >
                 <div className={cn("p-4 flex justify-between items-center border-b", isMora ? "bg-red-50 border-red-100" : "bg-slate-50 border-slate-100")}>
                   <div className="flex items-center gap-3">
-                    <div className={cn("w-10 h-10 rounded-full flex items-center justify-center shrink-0", isMora ? "bg-red-500 text-white" : "bg-amber-500 text-white")}>
+                    <div className={cn("w-10 h-10 rounded-full flex items-center justify-center shrink-0", isMora ? "bg-red-500 text-white" : "bg-amber-500 text-slate-900")}>
                       <User className="w-5 h-5" />
                     </div>
                     <div className="min-w-0">

@@ -89,7 +89,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
             </div>
             <div>
               <h1 className="font-display font-bold text-white text-xl leading-none">SGEA</h1>
-              <span className="text-[10px] uppercase tracking-widest text-slate-500 font-bold">
+              <span className="text-[10px] uppercase tracking-widest text-amber-400/80 font-black">
                 {role === 'Director' ? 'Dirección' : role === 'Docente' ? 'Docente' : 'Pañol'}
               </span>
             </div>
@@ -107,8 +107,8 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
               className={({ isActive }) => cn(
                 "flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 group",
                 isActive 
-                  ? "bg-amber-500 text-white shadow-lg shadow-amber-500/20" 
-                  : "hover:bg-slate-800 hover:text-white"
+                  ? "bg-amber-500 text-slate-900 shadow-lg shadow-amber-500/20 font-bold" 
+                  : "text-slate-400 hover:bg-slate-800 hover:text-white font-medium"
               )}
             >
               <item.icon className="w-5 h-5" />
