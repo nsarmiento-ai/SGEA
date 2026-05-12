@@ -235,10 +235,12 @@ export const Catalog: React.FC = () => {
         <div className="flex flex-wrap gap-2 self-start">
           <button 
             disabled
+            aria-label="Equipos habituales (Próximamente)"
             className="flex items-center gap-2 px-3 py-2 md:px-4 md:py-2 rounded-xl font-bold text-xs md:text-sm opacity-50 cursor-not-allowed bg-white text-slate-400 border-slate-200"
           >
             <Star className="w-4 h-4" />
             <span className="hidden sm:inline">Habituales (Off)</span>
+            <span className="sm:hidden sr-only">Habituales (Deshabilitado)</span>
           </button>
           {role === 'Administración' && (
             <button 
@@ -774,7 +776,7 @@ const HistoryModal: React.FC<{ equipment: Equipment, onClose: () => void }> = ({
               <p className="text-sm text-slate-500 font-bold">{equipment.nombre} - {equipment.modelo}</p>
             </div>
           </div>
-          <button onClick={onClose} className="p-2 hover:bg-slate-200 rounded-xl transition-colors">
+          <button onClick={onClose} aria-label="Cerrar hoja de vida" className="p-2 hover:bg-slate-200 rounded-xl transition-colors">
             <XCircle className="w-6 h-6 text-slate-400" />
           </button>
         </div>
@@ -903,9 +905,9 @@ const EquipmentModal: React.FC<{ item: Equipment | null, onClose: () => void, on
         <div className="p-6 border-b border-slate-100 flex justify-between items-center">
           <h2 className="text-xl font-bold">{item ? 'Editar Equipo' : 'Nuevo Equipo'}</h2>
           <button 
-            aria-label="Cerrar formulario"
+            aria-label="Cerrar formulario de equipo"
             onClick={onClose} 
-            className="text-slate-400 hover:text-slate-600"
+            className="text-slate-400 hover:text-slate-600 p-2 hover:bg-slate-50 rounded-xl transition-colors"
           >
             <XCircle className="w-6 h-6" />
           </button>

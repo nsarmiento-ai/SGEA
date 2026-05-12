@@ -474,11 +474,12 @@ export const Reservations: React.FC = () => {
             {activeTab === 'catalogo' && (
               <button 
                 disabled
+                aria-label="Equipos habituales (Próximamente)"
                 className="flex items-center justify-center gap-2 px-4 md:px-6 py-3 rounded-2xl font-bold text-xs md:text-sm transition-all border shadow-sm flex-1 sm:flex-none opacity-50 cursor-not-allowed bg-white text-slate-400 border-slate-200"
               >
                 <Star className="w-4 h-4 md:w-5 md:h-5 text-slate-300" />
                 <span className="hidden sm:inline">Habituales (Off)</span>
-                <span className="sm:hidden">Habituales</span>
+                <span className="sm:hidden sr-only">Habituales (Deshabilitado)</span>
               </button>
             )}
           </div>
@@ -987,7 +988,7 @@ export const Reservations: React.FC = () => {
                     <p className="text-xs md:text-sm text-slate-500 font-bold">{cart.length} equipos seleccionados</p>
                   </div>
                 </div>
-                <button onClick={() => setIsModalOpen(false)} className="text-slate-400 hover:text-slate-600 p-2 hover:bg-white rounded-full transition-colors">
+                <button onClick={() => setIsModalOpen(false)} aria-label="Cerrar confirmación" className="text-slate-400 hover:text-slate-600 p-2 hover:bg-white rounded-full transition-colors">
                   <XCircle className="w-6 h-6 md:w-7 md:h-7" />
                 </button>
               </div>
