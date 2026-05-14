@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { supabase } from '../lib/supabase';
+import { supabase, logAction } from '../lib/supabase';
 import { StudentRequest, Equipment } from '../types';
 import { useApp } from '../context/AppContext';
 import { CONTACTS_DATA } from '../lib/contactsData';
@@ -90,6 +90,19 @@ export const StudentRequestsManager: React.FC<{ filterDireccion?: boolean }> = (
         .eq('id', request.id);
 
       if (error) throw error;
+      
+      // Log historical operation
+      await logAction(
+        activeResponsable || userEmail, 
+        filterDireccion ? 'AVAL_DIRECTOR' : 'AVAL_DOCENTE', 
+        { 
+          requestId: request.id, 
+          alumno: request.responsable,
+          materia: request.materia,
+          status: nextStatus
+        }
+      );
+
       setRequests(prev => prev.filter(r => r.id !== request.id));
     } catch (err) {
       console.error('Error authorizing request:', err);
@@ -109,6 +122,14 @@ export const StudentRequestsManager: React.FC<{ filterDireccion?: boolean }> = (
         .eq('id', id);
 
       if (error) throw error;
+
+      // Log rejection
+      await logAction(
+        activeResponsable || userEmail, 
+        'RECHAZO_SOLICITUD', 
+        { requestId: id }
+      );
+
       setRequests(prev => prev.filter(r => r.id !== id));
     } catch (err) {
       console.error('Error rejecting request:', err);

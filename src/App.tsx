@@ -26,6 +26,8 @@ const PublicView = lazy(() => import('./components/PublicView').then(m => ({ def
 const StudentRequestsManager = lazy(() => import('./components/StudentRequestsManager').then(m => ({ default: m.StudentRequestsManager })));
 const DirectorDashboard = lazy(() => import('./components/DirectorDashboard').then(m => ({ default: m.DirectorDashboard })));
 const StudentRequestView = lazy(() => import('./components/StudentRequestView').then(m => ({ default: m.StudentRequestView })));
+const LoanHistory = lazy(() => import('./components/LoanHistory').then(m => ({ default: m.LoanHistory })));
+const MyAuthorizations = lazy(() => import('./components/MyAuthorizations').then(m => ({ default: m.MyAuthorizations })));
 
 function LoadingFallback() {
   return (
@@ -171,9 +173,14 @@ function ProtectedRoute() {
               path="/historial" 
               element={role === 'Administración' ? <AuditLogs /> : <Navigate to="/" replace />} 
             />
+            <Route 
+              path="/archivo-historico" 
+              element={role === 'Administración' ? <LoanHistory /> : <Navigate to="/" replace />} 
+            />
 
             {/* Rutas compartidas o específicas de Docente */}
             <Route path="/autorizar-alumnos" element={<StudentRequestsManager />} />
+            <Route path="/mis-autorizaciones" element={<MyAuthorizations />} />
             <Route 
               path="/director" 
               element={role === 'Director' ? <DirectorDashboard /> : <Navigate to="/" replace />} 

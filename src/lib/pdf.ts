@@ -2,6 +2,18 @@ import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { Equipment, Loan } from '../types';
 import { formatDate } from './utils';
+import { format, parseISO } from 'date-fns';
+import { es } from 'date-fns/locale';
+
+export const formatDateTime = (dateStr: string) => {
+  if (!dateStr) return 'N/A';
+  try {
+    const date = parseISO(dateStr);
+    return format(date, 'dd/MM/yyyy HH:mm', { locale: es });
+  } catch (e) {
+    return dateStr;
+  }
+};
 
 export const generateLoanPDF = (
   loan: any, 
@@ -13,11 +25,8 @@ export const generateLoanPDF = (
   const pageWidth = doc.internal.pageSize.getWidth();
 
   // Use DB fields if available, otherwise fallback to authorizedIds passed
-  const dbAuthorized = loan.equipos_autorizados || authorizedIds;
-  const dbAdditional = loan.equipos_adicionales || loan.equipos_ids.filter((id: string) => !dbAuthorized.includes(id));
+  const dbAuthorized = loan.equipos_autorizados || authorizedIds || [];
   
-  const addedManuallyIds = dbAdditional;
-
   // Header Icon/Logo (Simple Circle for logo)
   doc.setFillColor(245, 158, 11);
   doc.circle(20, 20, 5, 'F');
@@ -43,25 +52,22 @@ export const generateLoanPDF = (
   doc.text(`Email Docente: ${docenteEmail || 'N/A'}`, 20, 77);
   doc.text(`Alumno: ${loan.alumno_nombre} (DNI: ${loan.alumno_dni})`, 20, 84);
   doc.text(`Materia: ${loan.materia || 'N/A'}`, 20, 91);
-  doc.text(`Devolución Estimada: ${formatDate(loan.fecha_devolucion_estimada)}`, 20, 98);
+  doc.text(`Devolución Estimada: ${formatDateTime(loan.fecha_devolucion_estimada)}`, 20, 98);
 
   // Equipment Table
   const tableData: any[][] = [];
   let counter = 1;
 
-  const addedManuallyNames: string[] = [];
+  const nonAuthorizedNames: string[] = [];
 
   equipments.forEach(eq => {
-    const isAdded = addedManuallyIds.includes(eq.id);
     const isAuthorized = dbAuthorized.includes(eq.id);
-    const needsHighlight = isAdded || !isAuthorized;
-    
-    if (needsHighlight) addedManuallyNames.push(eq.nombre);
+    if (!isAuthorized) nonAuthorizedNames.push(eq.nombre);
     
     // Main equipment row
     tableData.push([
       counter++,
-      needsHighlight ? `${eq.nombre} (*)` : eq.nombre,
+      !isAuthorized ? `${eq.nombre} (* SIN AVAL)` : eq.nombre,
       eq.modelo,
       eq.numero_serie,
       eq.categoria
@@ -96,21 +102,14 @@ export const generateLoanPDF = (
 
   const tableFinalY = (doc as any).lastAutoTable.finalY || 105;
 
-  // Disclaimer for additional items or partial authorization
-  const isParcial = loan.autorizacion_parcial || addedManuallyIds.length > 0;
-  
-  if (isParcial) {
+  // Disclaimer for non-authorized items
+  if (nonAuthorizedNames.length > 0) {
     doc.setFontSize(8);
     doc.setTextColor(180, 0, 0); // Bold red for warnings
     doc.setFont('helvetica', 'bold');
     
-    let disclaimerText = '';
-    if (addedManuallyNames.length > 0) {
-      const names = addedManuallyNames.join(', ');
-      disclaimerText = `IMPORTANTE - RESPONSABILIDAD PARCIAL: Los equipos [${names}] NO contaban con aval previo completo al momento del despacho. De acuerdo al Reglamento de Pañol, la responsabilidad total por el cuidado, integridad y devolución de dichos elementos recae exclusivamente en el solicitante que suscribe.`;
-    } else {
-      disclaimerText = 'IMPORTANTE - RESPONSABILIDAD PARCIAL: Este préstamo se entrega mediante una "Autorización de Excepción". El solicitante asume total responsabilidad por el equipamiento despachado y se compromete a responder ante cualquier daño o faltante, dada la ausencia de avales reglamentarios previos.';
-    }
+    const names = nonAuthorizedNames.join(', ');
+    const disclaimerText = `IMPORTANTE - RESPONSABILIDAD PARCIAL: Los equipos [${names}] NO contaban con aval previo al momento del despacho. De acuerdo al Reglamento de Pañol, la responsabilidad total por el cuidado, integridad y devolución de dichos elementos recae exclusivamente en el solicitante que suscribe.`;
     
     const splitText = doc.splitTextToSize(disclaimerText, pageWidth - 40);
     doc.text(splitText, 20, tableFinalY + 10);

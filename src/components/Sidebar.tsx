@@ -9,7 +9,8 @@ import {
   Camera,
   Calendar,
   ShieldCheck,
-  CheckSquare
+  CheckSquare,
+  FileText
 } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import { cn, optimizeCloudinaryUrl } from '../lib/utils';
@@ -35,20 +36,22 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
     { icon: Clock, label: role === 'Docente' ? 'Mis Préstamos' : 'Devolución', path: '/activos' },
     { icon: PlusCircle, label: 'Despacho Directo', path: '/nuevo-prestamo' },
     { icon: History, label: 'Historial de Uso', path: '/historial' },
+    { icon: FileText, label: 'Archivo Histórico', path: '/archivo-historico' },
+    { icon: CheckSquare, label: 'Mis Autorizaciones', path: '/mis-autorizaciones' },
   ].filter(item => {
     // If role is Director
     if (role === 'Director') {
-      return ['Calendario Global', 'Panel de Mora', 'Panel Dirección'].includes(item.label);
+      return ['Calendario Global', 'Panel de Mora', 'Panel Dirección', 'Mis Autorizaciones'].includes(item.label);
     }
 
     // If role is Docente
     if (role === 'Docente') {
-      return ['Calendario Global', 'Nueva Reserva', 'Mis Préstamos', 'Gestión de Avales'].includes(item.label);
+      return ['Calendario Global', 'Nueva Reserva', 'Mis Préstamos', 'Gestión de Avales', 'Mis Autorizaciones'].includes(item.label);
     }
 
     // If role is Administración
     if (role === 'Administración') {
-      const excluded = ['Panel Dirección', 'Gestión de Avales']; 
+      const excluded = ['Panel Dirección', 'Gestión de Avales', 'Mis Autorizaciones']; 
       return !excluded.includes(item.label);
     }
 

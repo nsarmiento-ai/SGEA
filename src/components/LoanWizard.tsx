@@ -279,7 +279,7 @@ export const LoanWizard: React.FC = () => {
       let equipmentsToRevert: string[] = [];
 
       try {
-        // A. Crear registro de préstamo
+      // A. Crear registro de préstamo
       const loanData: any = {
         alumno_nombre: formData.alumno_nombre,
         alumno_dni: formData.alumno_dni,
@@ -291,15 +291,23 @@ export const LoanWizard: React.FC = () => {
         estado: 'Activo',
         equipos_ids: selectedIds,
         comentarios: autorizacion_parcial 
-          ? `[RESPONSABILIDAD PARCIAL] ${formData.comentarios}`.trim() 
+          ? `[AUTORIZACIÓN PARCIAL] ${formData.comentarios}`.trim() 
           : formData.comentarios
       };
 
-      const { data: loan, error: loanError } = await supabase
+      // We only try to insert autorizacion_parcial if it's explicitly clear it exists.
+      // Otherwise we trust the comentarios flag which is safer across schema versions.
+      let loan: any;
+      let loanError: any;
+      
+      const { data, error } = await supabase
         .from('prestamos')
         .insert([loanData])
         .select()
         .single();
+      
+      loan = data;
+      loanError = error;
 
       if (loanError || !loan) {
         throw new Error(loanError?.message || 'No se pudo crear el registro del préstamo.');
