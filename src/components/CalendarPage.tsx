@@ -79,19 +79,19 @@ export const CalendarPage: React.FC = () => {
     setLoading(true);
     try {
       // Usamos consultas individuales para que si una falla (ej: tabla no existe) las demás sigan funcionando
-      const res = await supabase.from('reservas').select('id, docente_nombre, alumno_nombre, fecha_inicio, fecha_fin, equipos_ids, materia, aula, estado').in('estado', ['Pendiente', 'Aprobada']);
+      const res = await supabase.from('reservas').select('id, docente_nombre, alumno_nombre, fecha_inicio, fecha_fin, equipos_ids, materia, aula, estado, created_at');
       if (res.data) setReservations(res.data);
 
-      const loansRes = await supabase.from('prestamos').select('id, alumno_nombre, docente_responsable, fecha_salida, fecha_devolucion_estimada, equipos_ids, estado').eq('estado', 'Activo');
+      const loansRes = await supabase.from('prestamos').select('id, alumno_nombre, docente_responsable, fecha_salida, fecha_devolucion_estimada, equipos_ids, estado, created_at');
       if (loansRes.data) setLoans(loansRes.data);
 
       const eqRes = await supabase.from('equipamiento').select('id, nombre, modelo, foto_url');
       if (eqRes.data) setEquipments(eqRes.data);
 
       try {
-        const studentRes = await supabase.from('solicitudes_alumnos').select('id, responsable, docente_nombre, fecha_inicio, fecha_fin, equipos, estado, materia').not('estado', 'in', '("Rechazado","Cancelado","Entregado")');
+        const studentRes = await supabase.from('solicitudes_alumnos').select('id, responsable, docente_nombre, fecha_inicio, fecha_fin, equipos, estado, materia, integrantes, created_at').not('estado', 'in', '("Rechazado","Cancelado","Entregado")');
         if (studentRes.error) throw studentRes.error;
-        if (studentRes.data) setStudentRequests(studentRes.data);
+        if (studentRes.data) setStudentRequests(studentRes.data as any);
       } catch (e) {
         console.warn('Error al cargar solicitudes_alumnos (puede que la tabla no exista o no tenga permisos aún):', e);
         setStudentRequests([]);
@@ -222,11 +222,16 @@ export const CalendarPage: React.FC = () => {
                   statusColor = isAuthorized ? 'bg-indigo-500' : 'bg-slate-300';
                 }
 
-                const label = isLoan 
+                let label = isLoan 
                   ? (event.alumno_nombre || event.docente_responsable) 
                   : (isStudent ? (event.responsable || event.docente_nombre) : (event.alumno_nombre || event.docente_nombre));
                 
-                const finalLabel = label || 'Reserva sin asignar';
+                // Sanitize "undefined" or null strings
+                if (label === 'undefined' || label === 'null' || !label) {
+                  label = null;
+                }
+
+                const finalLabel = label || 'Usuario no identificado';
                 
                 return (
                   <div 
@@ -385,6 +390,21 @@ export const CalendarPage: React.FC = () => {
                                <p className="text-sm font-bold text-slate-900 truncate">{finalLabel}</p>
                              </div>
                           </div>
+
+                          {isStudent && event.integrantes && (
+                            <div className="mb-4 p-3 bg-amber-50 rounded-xl border border-amber-100">
+                              <p className="text-[10px] text-amber-900 font-black uppercase tracking-tight mb-1">Integrantes del Grupo</p>
+                              <div className="text-xs font-medium text-amber-950/70 lowercase first-letter:uppercase">
+                                {typeof event.integrantes === 'string' ? (
+                                  event.integrantes
+                                ) : Array.isArray(event.integrantes) ? (
+                                  event.integrantes.map((int: any, idx: number) => (
+                                    <span key={idx}>{int.nombre || int}{idx < event.integrantes.length - 1 ? ', ' : ''}</span>
+                                  ))
+                                ) : 'Dato no reconocido'}
+                              </div>
+                            </div>
+                          )}
 
                           <div className="space-y-2">
                             <p className="text-[10px] text-slate-400 font-black uppercase tracking-tight mb-2">Equipamiento Asociado</p>

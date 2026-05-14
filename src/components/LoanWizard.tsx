@@ -111,7 +111,7 @@ export const LoanWizard: React.FC = () => {
     try {
       const { data, error } = await supabase
         .from('solicitudes_alumnos')
-        .select('id, responsable, docente_nombre, materia, equipos, fecha_fin, dni, observaciones, estado, tipo_uso, autorizado_por_docente, autorizado_por_direccion')
+        .select('id, responsable, docente_nombre, materia, equipos, fecha_fin, dni, integrantes, observaciones, estado, tipo_uso, autorizado_por_docente, autorizado_por_direccion')
         .neq('estado', 'Entregado')
         .neq('estado', 'Rechazado')
         .neq('estado', 'Cancelado');
@@ -578,7 +578,15 @@ export const LoanWizard: React.FC = () => {
                             Integrantes del Grupo
                           </div>
                           <p className="text-xs font-medium text-slate-600 leading-tight">
-                            {req.integrantes || 'No especificados'}
+                            {req.integrantes ? (
+                              typeof req.integrantes === 'string' ? (
+                                req.integrantes
+                              ) : Array.isArray(req.integrantes) ? (
+                                req.integrantes.map((int: any, idx: number) => (
+                                  <span key={idx}>{int.nombre || int}{idx < req.integrantes.length - 1 ? ', ' : ''}</span>
+                                ))
+                              ) : 'Dato no reconocido'
+                            ) : 'No especificados'}
                           </p>
                           <div className="grid grid-cols-2 gap-2 pt-1">
                             <div>
@@ -719,9 +727,17 @@ export const LoanWizard: React.FC = () => {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
                     <span className="text-[9px] font-black uppercase text-slate-400 block mb-1">Integrantes</span>
-                    <p className="text-xs font-bold text-slate-700 leading-relaxed">
-                      {currentStudentRequest.integrantes || 'Sin integrantes especificados'}
-                    </p>
+                    <div className="text-xs font-bold text-slate-700 leading-relaxed">
+                      {currentStudentRequest.integrantes ? (
+                        typeof currentStudentRequest.integrantes === 'string' ? (
+                          currentStudentRequest.integrantes
+                        ) : Array.isArray(currentStudentRequest.integrantes) ? (
+                          currentStudentRequest.integrantes.map((int: any, idx: number) => (
+                            <span key={idx}>{int.nombre || int}{idx < currentStudentRequest.integrantes.length - 1 ? ', ' : ''}</span>
+                          ))
+                        ) : 'Dato no reconocido'
+                      ) : 'Sin integrantes especificados'}
+                    </div>
                   </div>
                   <div>
                     <span className="text-[9px] font-black uppercase text-slate-400 block mb-1">Materia / Proyecto</span>

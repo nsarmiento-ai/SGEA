@@ -49,8 +49,12 @@ export const generateLoanPDF = (
   const tableData: any[][] = [];
   let counter = 1;
 
+  const addedManuallyNames: string[] = [];
+
   equipments.forEach(eq => {
     const isAdded = addedManuallyIds.includes(eq.id);
+    if (isAdded) addedManuallyNames.push(eq.nombre);
+    
     // Main equipment row
     tableData.push([
       counter++,
@@ -92,8 +96,13 @@ export const generateLoanPDF = (
   // Disclaimer for additional items
   if (addedManuallyIds.length > 0) {
     doc.setFontSize(8);
-    doc.setTextColor(150, 0, 0);
-    doc.text('(*) Equipo no autorizado originalmente - Responsabilidad compartida: Administrador/Alumno/Docente', 20, tableFinalY + 10);
+    doc.setTextColor(180, 0, 0); // Darker red
+    const names = addedManuallyNames.join(', ');
+    const disclaimerText = `NOTA: Los equipos [${names}] se entregan bajo autorización parcial. Al no contar con aval previo de la autoridad correspondiente, la responsabilidad total por el cuidado y uso de dichos elementos recae exclusivamente en el alumno solicitante.`;
+    
+    // Use splitTextToSize to wrap text
+    const splitText = doc.splitTextToSize(disclaimerText, pageWidth - 40);
+    doc.text(splitText, 20, tableFinalY + 10);
   }
 
   // Footer / Signatures

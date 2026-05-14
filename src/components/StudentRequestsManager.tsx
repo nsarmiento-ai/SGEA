@@ -229,7 +229,15 @@ export const StudentRequestsManager: React.FC<{ filterDireccion?: boolean }> = (
                     {req.integrantes && (
                       <div className="mb-6 p-4 bg-slate-50 rounded-2xl">
                         <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2">Integrantes del Equipo</p>
-                        <p className="text-sm text-slate-600 leading-relaxed font-medium">{req.integrantes}</p>
+                        <div className="text-sm text-slate-600 leading-relaxed font-medium">
+                          {typeof req.integrantes === 'string' ? (
+                            req.integrantes
+                          ) : Array.isArray(req.integrantes) ? (
+                            req.integrantes.map((int: any, idx: number) => (
+                              <span key={idx}>{int.nombre || int}{idx < req.integrantes.length - 1 ? ', ' : ''}</span>
+                            ))
+                          ) : 'Dato no reconocido'}
+                        </div>
                       </div>
                     )}
 
