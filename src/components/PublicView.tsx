@@ -76,7 +76,7 @@ export const PublicView: React.FC = () => {
         .order('nombre', { ascending: true });
 
       const [resData, loanData, studentReqsRes] = await Promise.all([
-        supabase.from('reservas').select('id, fecha_inicio, fecha_fin, equipos_ids, estado').in('estado', ['Aprobada', 'Pendiente', 'Activa', 'Avalada', 'Pendiente de Dirección']),
+        supabase.from('reservas').select('id, fecha_inicio, fecha_fin, equipos_ids, estado').in('estado', ['Aprobada', 'Pendiente', 'Activa', 'Avalada', 'Pendiente Aval']),
         supabase.from('prestamos').select('id, fecha_salida, fecha_devolucion_estimada, equipos_ids, estado').in('estado', ['Activo', 'Despachado', 'En Mora']),
         supabase.from('solicitudes_alumnos').select('id, fecha_inicio, fecha_fin, equipos, estado').not('estado', 'in', '("Rechazado","Cancelado","Entregado","Entregado (Modificado)")')
       ]);

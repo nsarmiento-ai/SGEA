@@ -49,7 +49,7 @@ export const StudentRequestsManager: React.FC<{ filterDireccion?: boolean }> = (
         const { data: resData } = await supabase
           .from('reservas')
           .select('*')
-          .eq('estado', 'Pendiente de Dirección')
+          .eq('estado', 'Pendiente Aval')
           .order('created_at', { ascending: false });
 
         if (resData) {
@@ -64,7 +64,7 @@ export const StudentRequestsManager: React.FC<{ filterDireccion?: boolean }> = (
             equipos: r.equipos_ids,
             fecha_inicio: r.fecha_inicio,
             fecha_fin: r.fecha_fin,
-            estado: 'Pendiente de Dirección' as any,
+            estado: 'Pendiente Aval' as any,
             created_at: r.created_at,
             _table: 'reservas'
           } as any));
@@ -111,14 +111,18 @@ export const StudentRequestsManager: React.FC<{ filterDireccion?: boolean }> = (
     console.log('Autorizando solicitud ID:', request.id, 'con email:', userEmail);
 
     try {
+      const isReserva = (request as any)._table === 'reservas';
       const updateData: any = { 
-        estado: (request as any)._table === 'reservas' ? 'Aprobada' : nextStatus
+        estado: isReserva ? 'Aprobada' : nextStatus
       };
 
-      if (filterDireccion) {
-        updateData.autorizado_por_direccion = userEmail;
-      } else {
-        updateData.autorizado_por_docente = userEmail;
+      // Only add authorization fields for student requests (solicitudes_alumnos)
+      if (!isReserva) {
+        if (filterDireccion) {
+          updateData.autorizado_por_direccion = userEmail;
+        } else {
+          updateData.autorizado_por_docente = userEmail;
+        }
       }
 
       const { error } = await supabase

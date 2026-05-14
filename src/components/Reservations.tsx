@@ -282,9 +282,9 @@ export const Reservations: React.FC = () => {
         docente_nombre: formData.docente_nombre || activeResponsable || '',
         materia: `[${formData.tipo_uso}] ${formData.materia}`.trim(),
         alumno_nombre: formData.alumno_nombre,
-        estado: isDocente 
-          ? (formData.tipo_uso === 'Uso en Escuela' ? 'Aprobada' : 'Pendiente de Dirección')
-          : 'Pendiente'
+        estado: formData.tipo_uso === 'Uso Externo'
+          ? 'Pendiente Aval'
+          : (isDocente ? 'Aprobada' : 'Pendiente')
       };
 
       const { data: insertedData, error: insertError } = await supabase
@@ -369,7 +369,9 @@ export const Reservations: React.FC = () => {
           <p className="text-sm md:text-base text-slate-700 mb-8 max-w-md mx-auto">
             {finishedReservation.reservation.estado === 'Aprobada' 
               ? 'Tu reserva ha sido aprobada automáticamente (Uso Interno). El comprobante PDF se ha descargado.' 
-              : 'Tu reserva ha sido registrada y está pendiente de aprobación (Uso Externo requiere aval de Dirección).'}
+              : finishedReservation.reservation.estado === 'Pendiente Aval'
+                ? 'Tu reserva ha sido registrada y está pendiente de aval (Uso Externo requiere aval de Dirección). El comprobante PDF se ha descargado.'
+                : 'Tu reserva ha sido registrada y está pendiente de aprobación. El comprobante PDF se ha descargado.'}
           </p>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 w-full">

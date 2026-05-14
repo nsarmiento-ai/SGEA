@@ -80,7 +80,7 @@ export const CalendarPage: React.FC = () => {
     try {
       // Unify queries for all roles to see total availability
       const [reservationsRes, loansRes, studentReqsRes] = await Promise.all([
-        supabase.from('reservas').select('id, docente_nombre, alumno_nombre, fecha_inicio, fecha_fin, equipos_ids, materia, aula, estado, created_at').in('estado', ['Aprobada', 'Pendiente', 'Activa', 'Avalada', 'Pendiente de Dirección']),
+        supabase.from('reservas').select('id, docente_nombre, alumno_nombre, fecha_inicio, fecha_fin, equipos_ids, materia, aula, estado, created_at').in('estado', ['Aprobada', 'Pendiente', 'Activa', 'Avalada', 'Pendiente Aval']),
         supabase.from('prestamos').select('id, alumno_nombre, docente_responsable, fecha_salida, fecha_devolucion_estimada, equipos_ids, estado, created_at').in('estado', ['Activo', 'Despachado', 'En Mora']),
         supabase.from('solicitudes_alumnos').select('id, responsable, docente_nombre, fecha_inicio, fecha_fin, equipos, estado, materia, integrantes, created_at').not('estado', 'in', '("Rechazado","Cancelado","Entregado","Entregado (Modificado)")')
       ]);

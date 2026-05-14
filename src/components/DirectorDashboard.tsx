@@ -60,11 +60,12 @@ export const DirectorDashboard: React.FC = () => {
   const fetchStats = async () => {
     setLoading(true);
     try {
-      const [loans, pendingReqs, equipments, allReqs] = await Promise.all([
+      const [loans, pendingReqs, equipments, allReqs, pendingRes] = await Promise.all([
         supabase.from('prestamos').select('id, estado, equipos_ids'),
         supabase.from('solicitudes_alumnos').select('id').eq('estado', 'Pendiente de Dirección'),
         supabase.from('equipamiento').select('id, nombre, estado'),
-        supabase.from('solicitudes_alumnos').select('tipo_uso')
+        supabase.from('solicitudes_alumnos').select('tipo_uso'),
+        supabase.from('reservas').select('id').eq('estado', 'Pendiente Aval')
       ]);
 
       // Calculate Top Equipment
@@ -125,7 +126,7 @@ export const DirectorDashboard: React.FC = () => {
 
       setStats({
         activeLoans: loans.data?.filter(l => l.estado === 'Activo').length || 0,
-        pendingDirection: pendingReqs.data?.length || 0,
+        pendingDirection: (pendingReqs.data?.length || 0) + (pendingRes.data?.length || 0),
         moraCount: loans.data?.filter(l => l.estado === 'En Mora').length || 0,
         totalEquipments: equipments.data?.length || 0,
         topEquipment: topEq,

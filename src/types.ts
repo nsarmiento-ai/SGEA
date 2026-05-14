@@ -70,7 +70,7 @@ export interface Reservation {
   alumno_nombre?: string;
   fecha_inicio: string;
   fecha_fin: string;
-  estado: 'Pendiente' | 'Entregada' | 'Cancelada' | 'Activa' | 'Aprobada' | 'Rechazada' | 'Avalada' | 'Pendiente de Dirección';
+  estado: 'Pendiente' | 'Entregada' | 'Cancelada' | 'Activa' | 'Aprobada' | 'Rechazada' | 'Avalada' | 'Pendiente de Dirección' | 'Pendiente Aval';
   tipo_uso?: 'Uso en Escuela' | 'Uso Externo';
   created_at?: string;
 }
