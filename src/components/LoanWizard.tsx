@@ -159,7 +159,7 @@ export const LoanWizard: React.FC = () => {
     try {
       console.log('LoanWizard: Fetching available equipment...');
       const [eqRes, resRes] = await Promise.all([
-        supabase.from('equipamiento').select('id, nombre, modelo, category, foto_url, estado, piezas, permiso_uso'),
+        supabase.from('equipamiento').select('id, nombre, modelo, categoria, numero_serie, foto_url, estado, piezas, permiso_uso'),
         supabase.from('reservas').select('id, docente_nombre, alumno_nombre, equipos_ids, fecha_fin, materia')
       ]);
       
@@ -215,7 +215,7 @@ export const LoanWizard: React.FC = () => {
       formData.docente_responsable &&
       selectedIds.length > 0 && 
       activeResponsable &&
-      isAuthorized &&
+      // isAuthorized && // Remove this requirement as requested
       Object.keys(conflicts).length === 0
     );
     return valid;
@@ -248,6 +248,9 @@ export const LoanWizard: React.FC = () => {
       const equipos_autorizados = selectedIds.filter(id => authorizedEquipmentsIds.includes(id));
       const equipos_adicionales = selectedIds.filter(id => !authorizedEquipmentsIds.includes(id));
       const hasAddedEquipment = equipos_adicionales.length > 0;
+      
+      // Global partial authorization flag
+      const autorizacion_parcial = !isAuthorized || hasAddedEquipment;
 
       // Final availability check before creating loan
       const { data: latestStatus } = await supabase
@@ -258,10 +261,11 @@ export const LoanWizard: React.FC = () => {
       const unavailable = latestStatus?.filter(eq => {
         const estado = String(eq.estado || '').toLowerCase();
         if (estado === 'disponible') return false; // Is available
+        // If it was reserved for this request, it shows as 'Reservado' but it is actually available for THIS loan
         if (estado === 'reservado' && selectedStudentRequestId && authorizedEquipmentsIds.includes(eq.id)) {
-          return false; // Valid because it was reserved for this exact student request
+          return false;
         }
-        return true; // Not available
+        return true; // Truly not available (e.g. Prestado, Roto)
       });
       
       if (unavailable && unavailable.length > 0) {
@@ -287,7 +291,8 @@ export const LoanWizard: React.FC = () => {
           equipos_ids: selectedIds,
           comentarios: formData.comentarios,
           equipos_autorizados: equipos_autorizados,
-          equipos_adicionales: equipos_adicionales
+          equipos_adicionales: equipos_adicionales,
+          autorizacion_parcial: autorizacion_parcial
         };
 
         const { data: loan, error: loanError } = await supabase
@@ -657,9 +662,13 @@ export const LoanWizard: React.FC = () => {
                       .sort((a, b) => parseISO(a.fecha_inicio).getTime() - parseISO(b.fecha_inicio).getTime())[0];
 
                     const isNoHabilitado = eq.permiso_uso === 'No habilitado';
-                    const isNotAvailable = String(eq.estado || '').toLowerCase() !== 'disponible';
+                    const estadoLower = String(eq.estado || '').toLowerCase();
+                    const isNotAvailable = estadoLower !== 'disponible';
                     
-                    const isDisabled = (isReservedNow || isNoHabilitado || isNotAvailable) && !selectedIds.includes(eq.id);
+                    // Specific logic for items that are 'Reservado' for the current request
+                    const isReservedForThis = selectedStudentRequestId && authorizedEquipmentsIds.includes(eq.id) && estadoLower === 'reservado';
+
+                    const isDisabled = (isNoHabilitado || (isNotAvailable && !isReservedForThis)) && !selectedIds.includes(eq.id);
 
                     return (
                       <div

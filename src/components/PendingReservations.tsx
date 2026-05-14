@@ -156,7 +156,9 @@ export const PendingReservations: React.FC = () => {
                   // Authorization logic following instructions:
                   // 1. Standard reservations are ready.
                   // 2. Student requests: Authorized if explicitly approved or if "Uso en Escuela" has teacher approval.
+                  // 3. Administration can always proceed (as requested to allow resolving contingencies)
                   const canDeliver = !isStudent || 
+                    role === 'Administración' ||
                     status === 'Autorizado para Despacho' || 
                     (studentData?.tipo_uso === 'Uso en Escuela' && !!studentData?.autorizado_por_docente);
                   

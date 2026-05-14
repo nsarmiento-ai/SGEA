@@ -42,8 +42,8 @@ export const ActiveLoans: React.FC<{ filterMora?: boolean }> = ({ filterMora = f
     const [loansRes] = await Promise.all([
       supabase
         .from('prestamos')
-        .select('id, alumno_nombre, alumno_dni, materia, docente_responsable, responsable_nombre, fecha_salida, fecha_devolucion_estimada, estado, equipos_ids, piezas_prestadas, "pañolero_entrega"')
-        .eq('estado', 'Activo')
+        .select('id, alumno_nombre, alumno_dni, materia, docente_responsable, responsable_nombre, fecha_salida, fecha_devolucion_estimada, estado, equipos_ids, piezas_prestadas, "pañolero_entrega", autorizacion_parcial')
+        .in('estado', ['Activo', 'Despachado', 'En Mora'])
         .order('fecha_devolucion_estimada', { ascending: true })
     ]);
     
@@ -71,7 +71,7 @@ export const ActiveLoans: React.FC<{ filterMora?: boolean }> = ({ filterMora = f
 
       const eqIds = Array.from(new Set((finalLoans || []).flatMap(l => l.equipos_ids || [])));
       if (eqIds.length > 0) {
-        const { data: eqData } = await supabase.from('equipamiento').select('id, nombre, foto_url, categoria, piezas, estado, modelo').in('id', eqIds);
+        const { data: eqData } = await supabase.from('equipamiento').select('id, nombre, foto_url, categoria, piezas, estado, modelo, numero_serie').in('id', eqIds);
         if (eqData) {
           const eqMap = eqData.reduce((acc, eq) => {
             let parsedPiezas = eq.piezas;
