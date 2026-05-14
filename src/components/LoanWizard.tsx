@@ -274,45 +274,67 @@ export const LoanWizard: React.FC = () => {
         return;
       }
 
-      // Proceso atómico
+      // 2. Proceso atómico
       let createdLoanId: string | null = null;
       let equipmentsToRevert: string[] = [];
 
       try {
-      // A. Crear registro de préstamo
-      const loanData: any = {
-        alumno_nombre: formData.alumno_nombre,
-        alumno_dni: formData.alumno_dni,
-        materia: formData.materia,
-        docente_responsable: formData.docente_responsable,
-        responsable_nombre: activeResponsable!,
-        fecha_salida: new Date().toISOString(),
-        fecha_devolucion_estimada: new Date(formData.fechaDevolucion).toISOString(),
-        estado: 'Activo',
-        equipos_ids: selectedIds,
-        comentarios: autorizacion_parcial 
-          ? `[AUTORIZACIÓN PARCIAL] ${formData.comentarios}`.trim() 
-          : formData.comentarios
-      };
+        // Prepare metadata for historical accuracy
+        const metadata = {
+          equipos_autorizados,
+          equipos_adicionales,
+          fecha_devolucion_real: formData.fechaDevolucion,
+          authorized_by_request: selectedStudentRequestId || null
+        };
 
-      // We only try to insert autorizacion_parcial if it's explicitly clear it exists.
-      // Otherwise we trust the comentarios flag which is safer across schema versions.
-      let loan: any;
-      let loanError: any;
-      
-      const { data, error } = await supabase
-        .from('prestamos')
-        .insert([loanData])
-        .select()
-        .single();
-      
-      loan = data;
-      loanError = error;
+        // A. Crear registro de préstamo
+        const loanData: any = {
+          alumno_nombre: formData.alumno_nombre,
+          alumno_dni: formData.alumno_dni,
+          materia: formData.materia,
+          docente_responsable: formData.docente_responsable,
+          responsable_nombre: activeResponsable!,
+          fecha_salida: new Date().toISOString(),
+          fecha_devolucion_estimada: new Date(formData.fechaDevolucion).toISOString(),
+          estado: 'Activo',
+          equipos_ids: selectedIds,
+          comentarios: `${autorizacion_parcial ? '[AUTORIZACIÓN PARCIAL] ' : ''}${formData.comentarios}\n\nDetalle Técnico: Autorizados: ${equipos_autorizados.length}, Adicionales: ${equipos_adicionales.length}`.trim()
+        };
 
-      if (loanError || !loan) {
-        throw new Error(loanError?.message || 'No se pudo crear el registro del préstamo.');
-      }
-      createdLoanId = loan.id;
+        // Attempt to save metadata if possible, otherwise rely on comments
+        // We add metadata to the object. If the column doesn't exist, Supabase returns 400.
+        // So we'll try with it first.
+        let loan: any;
+        let loanError: any;
+        
+        const { data, error } = await supabase
+          .from('prestamos')
+          .insert([{ ...loanData, metadata }]) // Try with metadata
+          .select()
+          .single();
+        
+        loan = data;
+        loanError = error;
+
+        // Fallback if metadata column doesn't exist (Error 400)
+        if (loanError && (loanError.code === '42703' || loanError.status === 400)) {
+          console.warn('Metadata column likely missing, falling back to basic insert');
+          const { data: fallbackData, error: fallbackError } = await supabase
+            .from('prestamos')
+            .insert([loanData])
+            .select()
+            .single();
+          loan = fallbackData;
+          loanError = fallbackError;
+        }
+
+        if (loanError || !loan) {
+          throw new Error(loanError?.message || 'No se pudo crear el registro del préstamo.');
+        }
+        createdLoanId = loan.id;
+        
+        // Ensure loan object passed to PDF has the metadata even if not saved to DB
+        const loanWithContext = { ...loan, metadata: loan.metadata || metadata };
 
       // B. Actualizar estados de equipos
       const { error: eqError } = await supabase
@@ -376,12 +398,15 @@ export const LoanWizard: React.FC = () => {
         const selectedEquipments = (equipments || []).filter(e => (selectedIds || []).includes(e.id));
         const targetDocente = docentes.find(d => d.nombre_completo === formData.docente_responsable);
         
-        // Pass temporary metadata to PDF even if not persisted to separate columns
-        const loanForPdf = { ...loan, autorizacion_parcial };
-        generateLoanPDF(loanForPdf as any, selectedEquipments, targetDocente?.email, authorizedEquipmentsIds);
+        generateLoanPDF(loanWithContext as any, selectedEquipments, targetDocente?.email, authorizedEquipmentsIds);
 
         // 5. Success State
-        setFinishedLoan({ loan: loanForPdf, equipments: selectedEquipments, docenteEmail: targetDocente?.email, authorizedIds: authorizedEquipmentsIds });
+        setFinishedLoan({ 
+          loan: loanWithContext, 
+          equipments: selectedEquipments, 
+          docenteEmail: targetDocente?.email, 
+          authorizedIds: authorizedEquipmentsIds 
+        });
 
       } catch (innerError) {
         // Rollback block

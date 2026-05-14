@@ -53,10 +53,10 @@ export const MyAuthorizations: React.FC = () => {
   };
 
   const fetchEquipment = async () => {
-    const { data } = await supabase.from('equipamiento').select('id, nombre, modelo');
+    const { data } = await supabase.from('equipamiento').select('id, nombre, modelo, categoria, foto_url, estado, piezas, permiso_uso');
     if (data) {
       const eMap: Record<string, Equipment> = {};
-      data.forEach(e => eMap[e.id] = e);
+      data.forEach(e => eMap[e.id] = e as any);
       setEquipment(eMap);
     }
   };

@@ -43,10 +43,10 @@ export const LoanHistory: React.FC = () => {
   };
 
   const fetchEquipments = async () => {
-    const { data } = await supabase.from('equipamiento').select('id, nombre, modelo, numero_serie, categoria');
+    const { data } = await supabase.from('equipamiento').select('id, nombre, modelo, numero_serie, categoria, foto_url, estado, piezas, permiso_uso');
     if (data) {
       const eMap: Record<string, Equipment> = {};
-      data.forEach(e => eMap[e.id] = e);
+      data.forEach(e => eMap[e.id] = e as any);
       setEquipments(eMap);
     }
   };

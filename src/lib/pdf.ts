@@ -5,13 +5,13 @@ import { formatDate } from './utils';
 import { format, parseISO } from 'date-fns';
 import { es } from 'date-fns/locale';
 
-export const formatDateTime = (dateStr: string) => {
-  if (!dateStr) return 'N/A';
+export const formatDateTime = (dateVal: any) => {
+  if (!dateVal) return 'N/A';
   try {
-    const date = parseISO(dateStr);
+    const date = typeof dateVal === 'string' ? parseISO(dateVal) : dateVal;
     return format(date, 'dd/MM/yyyy HH:mm', { locale: es });
   } catch (e) {
-    return dateStr;
+    return String(dateVal);
   }
 };
 
@@ -25,7 +25,8 @@ export const generateLoanPDF = (
   const pageWidth = doc.internal.pageSize.getWidth();
 
   // Use DB fields if available, otherwise fallback to authorizedIds passed
-  const dbAuthorized = loan.equipos_autorizados || authorizedIds || [];
+  // We check for equipos_autorizados in the loan object - this might be in a 'metadata' field too
+  const dbAuthorized = (loan.metadata?.equipos_autorizados || loan.equipos_autorizados || authorizedIds || []).map(String);
   
   // Header Icon/Logo (Simple Circle for logo)
   doc.setFillColor(245, 158, 11);
@@ -42,7 +43,7 @@ export const generateLoanPDF = (
   // Loan Info
   doc.setFontSize(10);
   doc.setTextColor(100);
-  doc.text(`Nro de Operación: ${loan.id.slice(0, 8).toUpperCase()}`, 20, 45);
+  doc.text(`Nro de Operación: ${loan.id?.slice(0, 8).toUpperCase() || 'N/A'}`, 20, 45);
   doc.text(`Fecha: ${formatDate(loan.fecha_salida)}`, 20, 52);
   doc.text(`Responsable (Administrador): ${loan.responsable_nombre}`, 20, 59);
   
@@ -61,13 +62,15 @@ export const generateLoanPDF = (
   const nonAuthorizedNames: string[] = [];
 
   equipments.forEach(eq => {
-    const isAuthorized = dbAuthorized.includes(eq.id);
-    if (!isAuthorized) nonAuthorizedNames.push(eq.nombre);
+    // Check if authorized. If it's a direct loan (authorizedIds is empty), everything is marked as not authorized.
+    // If it's from a request, only the ones in authorizedIds are marked as OK.
+    const isActuallyAuthorized = dbAuthorized.includes(String(eq.id));
+    if (!isActuallyAuthorized) nonAuthorizedNames.push(eq.nombre);
     
     // Main equipment row
     tableData.push([
       counter++,
-      !isAuthorized ? `${eq.nombre} (* SIN AVAL)` : eq.nombre,
+      !isActuallyAuthorized ? `${eq.nombre} (* SIN AVAL)` : eq.nombre,
       eq.modelo,
       eq.numero_serie,
       eq.categoria
