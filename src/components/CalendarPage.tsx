@@ -78,24 +78,19 @@ export const CalendarPage: React.FC = () => {
   const fetchData = async () => {
     setLoading(true);
     try {
-      // Usamos consultas individuales para que si una falla (ej: tabla no existe) las demás sigan funcionando
-      const res = await supabase.from('reservas').select('id, docente_nombre, alumno_nombre, fecha_inicio, fecha_fin, equipos_ids, materia, aula, estado, created_at');
-      if (res.data) setReservations(res.data);
+      // Unify queries for all roles to see total availability
+      const [reservationsRes, loansRes, studentReqsRes] = await Promise.all([
+        supabase.from('reservas').select('id, docente_nombre, alumno_nombre, fecha_inicio, fecha_fin, equipos_ids, materia, aula, estado, created_at').in('estado', ['Aprobada', 'Pendiente', 'Activa']),
+        supabase.from('prestamos').select('id, alumno_nombre, docente_responsable, fecha_salida, fecha_devolucion_estimada, equipos_ids, estado, created_at').in('estado', ['Activo', 'Despachado', 'En Mora']),
+        supabase.from('solicitudes_alumnos').select('id, responsable, docente_nombre, fecha_inicio, fecha_fin, equipos, estado, materia, integrantes, created_at').not('estado', 'in', '("Rechazado","Cancelado","Entregado")')
+      ]);
 
-      const loansRes = await supabase.from('prestamos').select('id, alumno_nombre, docente_responsable, fecha_salida, fecha_devolucion_estimada, equipos_ids, estado, created_at');
+      if (reservationsRes.data) setReservations(reservationsRes.data);
       if (loansRes.data) setLoans(loansRes.data);
+      if (studentReqsRes.data) setStudentRequests(studentReqsRes.data as any);
 
       const eqRes = await supabase.from('equipamiento').select('id, nombre, modelo, foto_url');
       if (eqRes.data) setEquipments(eqRes.data);
-
-      try {
-        const studentRes = await supabase.from('solicitudes_alumnos').select('id, responsable, docente_nombre, fecha_inicio, fecha_fin, equipos, estado, materia, integrantes, created_at').not('estado', 'in', '("Rechazado","Cancelado","Entregado")');
-        if (studentRes.error) throw studentRes.error;
-        if (studentRes.data) setStudentRequests(studentRes.data as any);
-      } catch (e) {
-        console.warn('Error al cargar solicitudes_alumnos (puede que la tabla no exista o no tenga permisos aún):', e);
-        setStudentRequests([]);
-      }
     } catch (error) {
       console.error('Error fetching calendar data:', error);
     } finally {
@@ -226,6 +221,11 @@ export const CalendarPage: React.FC = () => {
                   ? (event.alumno_nombre || event.docente_responsable) 
                   : (isStudent ? (event.responsable || event.docente_nombre) : (event.alumno_nombre || event.docente_nombre));
                 
+                // Privacy: Redact names for non-admins
+                if (!isAdministracion && label) {
+                  label = 'Ocupado / Reserva';
+                }
+
                 // Sanitize "undefined" or null strings
                 if (label === 'undefined' || label === 'null' || !label) {
                   label = null;
@@ -354,7 +354,12 @@ export const CalendarPage: React.FC = () => {
                         ? (event.alumno_nombre || event.docente_responsable) 
                         : (isStudent ? (event.responsable || event.docente_nombre) : (event.alumno_nombre || event.docente_nombre));
                       
-                      const finalLabel = label || 'Reserva sin asignar';
+                      let finalLabel = label || 'Reserva sin asignar';
+                      
+                      // Privacy: Redact for non-admins
+                      if (!isAdministracion && label) {
+                        finalLabel = 'Ocupado / Reserva (Protegido)';
+                      }
 
                       let subLabel = isLoan ? 'Préstamo Activo' : (isStudent ? 'Solicitud Alumno' : `Reserva ${event.estado}`);
                       if (isStudent) {

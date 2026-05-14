@@ -53,12 +53,15 @@ export const generateLoanPDF = (
 
   equipments.forEach(eq => {
     const isAdded = addedManuallyIds.includes(eq.id);
-    if (isAdded) addedManuallyNames.push(eq.nombre);
+    const isAuthorized = dbAuthorized.includes(eq.id);
+    const needsHighlight = isAdded || !isAuthorized;
+    
+    if (needsHighlight) addedManuallyNames.push(eq.nombre);
     
     // Main equipment row
     tableData.push([
       counter++,
-      isAdded ? `${eq.nombre} (*)` : eq.nombre,
+      needsHighlight ? `${eq.nombre} (*)` : eq.nombre,
       eq.modelo,
       eq.numero_serie,
       eq.categoria
@@ -232,4 +235,61 @@ export const generateReturnPDF = (loan: Loan, equipments: Equipment[], responsab
 
   // Save
   doc.save(`devolucion_${loan.alumno_nombre.replace(/\s+/g, '_')}_${new Date().getTime()}.pdf`);
+};
+
+export const generateStudentRequestVoucherPDF = (request: any, equipments: Equipment[]) => {
+  const doc = new jsPDF();
+  const pageWidth = doc.internal.pageSize.getWidth();
+
+  // Header Icon/Logo
+  doc.setFillColor(79, 70, 229); // Indigo 600
+  doc.circle(20, 20, 5, 'F');
+
+  // Header
+  doc.setFontSize(20);
+  doc.setTextColor(15, 23, 42);
+  doc.text('SGEA - Constancia de Solicitud', pageWidth / 2, 20, { align: 'center' });
+  
+  doc.setFontSize(12);
+  doc.text('Escuela de Cine, Video y TV (UNT)', pageWidth / 2, 28, { align: 'center' });
+
+  // Info
+  doc.setFontSize(10);
+  doc.setTextColor(100);
+  doc.text(`Nro de Reserva: ${request.id?.slice(0, 8).toUpperCase() || 'PAGADO'}`, 20, 45);
+  doc.text(`Fecha de Solicitud: ${formatDate(new Date().toISOString())}`, 20, 52);
+  doc.text(`Alumno: ${request.responsable}`, 20, 59);
+  doc.text(`Materia/Proyecto: ${request.materia}`, 20, 66);
+  doc.text(`Docente Aval: ${request.docente_nombre}`, 20, 73);
+  doc.text(`Desde: ${formatDate(request.fecha_inicio)}`, 20, 80);
+  doc.text(`Hasta: ${formatDate(request.fecha_fin)}`, 20, 87);
+
+  // Equipment Table
+  const tableData = equipments.map((eq, index) => [
+    index + 1,
+    eq.nombre,
+    eq.modelo,
+    eq.categoria
+  ]);
+
+  autoTable(doc, {
+    startY: 95,
+    head: [['#', 'Equipo', 'Modelo', 'Categoría']],
+    body: tableData,
+    headStyles: { fillColor: [79, 70, 229] },
+    theme: 'grid',
+  });
+
+  const tableFinalY = (doc as any).lastAutoTable.finalY || 95;
+
+  // Disclaimer
+  doc.setFontSize(10);
+  doc.setTextColor(100);
+  doc.setFont('helvetica', 'italic');
+  const disclaimerText = 'NOTA IMPORTANTE: Esta reserva está sujeta a la aprobación del docente y la disponibilidad técnica de los equipos en Pañol. Este documento no garantiza el retiro del material si no se cumplen las condiciones reglamentarias.';
+  const splitText = doc.splitTextToSize(disclaimerText, pageWidth - 40);
+  doc.text(splitText, 20, tableFinalY + 15);
+
+  // Save
+  doc.save(`solicitud_${request.responsable.replace(/\s+/g, '_')}_${new Date().getTime()}.pdf`);
 };

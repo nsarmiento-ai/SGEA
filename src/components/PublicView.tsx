@@ -75,19 +75,27 @@ export const PublicView: React.FC = () => {
         .neq('estado', 'Archivado')
         .order('nombre', { ascending: true });
 
-      const { data: resData } = await supabase
-        .from('reservas')
-        .select('id, fecha_inicio, fecha_fin, equipos_ids, estado')
-        .in('estado', ['Pendiente', 'Aprobada', 'Activa']);
-
-      const { data: loanData } = await supabase
-        .from('prestamos')
-        .select('id, fecha_salida, fecha_devolucion_estimada, equipos_ids, estado')
-        .eq('estado', 'Activo');
+      const [resData, loanData, studentReqsRes] = await Promise.all([
+        supabase.from('reservas').select('id, fecha_inicio, fecha_fin, equipos_ids, estado').in('estado', ['Aprobada', 'Pendiente', 'Activa']),
+        supabase.from('prestamos').select('id, fecha_salida, fecha_devolucion_estimada, equipos_ids, estado').in('estado', ['Activo', 'Despachado', 'En Mora']),
+        supabase.from('solicitudes_alumnos').select('id, fecha_inicio, fecha_fin, equipos, estado').not('estado', 'in', '("Rechazado","Cancelado","Entregado")')
+      ]);
 
       if (eqData) setEquipments(eqData as any);
-      if (resData) setReservations(resData as any);
-      if (loanData) setLoans(loanData as any);
+      if (resData.data) setReservations(resData.data as any);
+      if (loanData.data) setLoans(loanData.data as any);
+      
+      // Merge student requests into reservations for availability view
+      if (studentReqsRes.data) {
+        const mappedReqs = (studentReqsRes.data as any[]).map(req => ({
+          id: req.id,
+          fecha_inicio: req.fecha_inicio,
+          fecha_fin: req.fecha_fin,
+          equipos_ids: req.equipos,
+          estado: 'Solicitud'
+        }));
+        setReservations(prev => [...prev, ...mappedReqs as any]);
+      }
     } catch (error) {
       console.error('Error fetching public data:', error);
     }

@@ -3,10 +3,11 @@ import { supabase } from '../lib/supabase';
 import { Equipment, StudentRequest } from '../types';
 import { CONTACTS_DATA } from '../lib/contactsData';
 import { MATERIAS_CATEGORIES } from '../constants';
-import { Loader2, Package, Search, Users, BookOpen, Calendar, CheckCircle, AlertCircle, ArrowLeft, Filter, Info } from 'lucide-react';
+import { Loader2, Package, Search, Users, BookOpen, Calendar, CheckCircle, AlertCircle, ArrowLeft, Filter, Info, FileText } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { useNavigate } from 'react-router-dom';
 import { cn, optimizeCloudinaryUrl } from '../lib/utils';
+import { generateStudentRequestVoucherPDF } from '../lib/pdf';
 
 export const StudentRequestView: React.FC = () => {
   const navigate = useNavigate();
@@ -94,6 +95,12 @@ export const StudentRequestView: React.FC = () => {
 
       if (insertError) throw insertError;
       console.log('Solicitud enviada con éxito:', data);
+      
+      // Auto-generate voucher
+      const reqWithId = data ? data[0] : newRequest;
+      const selectedEquipment = equipment.filter(e => selectedIds.includes(e.id));
+      generateStudentRequestVoucherPDF(reqWithId, selectedEquipment);
+
       setSubmitted(true);
     } catch (err: any) {
       console.error('Error submitting request:', err);
