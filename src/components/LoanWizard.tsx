@@ -27,7 +27,7 @@ import {
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { cn } from '../lib/utils';
-import { addDays, format, isWithinInterval, parseISO, isAfter } from 'date-fns';
+import { addDays, format, isWithinInterval, parseISO, isAfter, setHours, setMinutes } from 'date-fns';
 import { MATERIAS_CATEGORIES } from '../constants';
 
 import { useNavigate } from 'react-router-dom';
@@ -55,7 +55,7 @@ export const LoanWizard: React.FC = () => {
     alumno_dni: '',
     materia: '',
     docente_responsable: '',
-    fechaDevolucion: format(addDays(new Date(), 1), "yyyy-MM-dd'T'HH:mm"),
+    fechaDevolucion: format(setHours(setMinutes(addDays(new Date(), 1), 0), 18), "yyyy-MM-dd'T'HH:mm"),
     comentarios: ''
   });
 

@@ -200,8 +200,16 @@ export const ActiveLoans: React.FC<{ filterMora?: boolean }> = ({ filterMora = f
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
           {loans.map((loan) => {
-            const daysDiff = differenceInDays(new Date(), new Date(loan.fecha_devolucion_estimada));
-            const isMora = isPast(new Date(loan.fecha_devolucion_estimada));
+            const now = new Date();
+            const estimatedDate = new Date(loan.fecha_devolucion_estimada);
+            const isMora = isPast(estimatedDate);
+            
+            // Calculate delay days rounding up as requested
+            let daysDiff = 0;
+            if (isMora) {
+              const diffMs = now.getTime() - estimatedDate.getTime();
+              daysDiff = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
+            }
 
             return (
               <motion.div
@@ -224,7 +232,7 @@ export const ActiveLoans: React.FC<{ filterMora?: boolean }> = ({ filterMora = f
                   {isMora && (
                     <div className="bg-red-600 text-white px-2.5 py-1 rounded-full text-[9px] md:text-[10px] font-black uppercase flex items-center gap-1 shrink-0">
                       <AlertCircle className="w-3 h-3" />
-                      {daysDiff}d Mora
+                      {daysDiff} {daysDiff === 1 ? 'día' : 'días'} Mora
                     </div>
                   )}
                 </div>

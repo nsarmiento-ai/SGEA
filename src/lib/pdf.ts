@@ -98,19 +98,20 @@ export const generateLoanPDF = (
   
   if (isParcial) {
     doc.setFontSize(8);
-    doc.setTextColor(180, 0, 0); // Darker red
+    doc.setTextColor(180, 0, 0); // Bold red for warnings
+    doc.setFont('helvetica', 'bold');
     
     let disclaimerText = '';
     if (addedManuallyNames.length > 0) {
       const names = addedManuallyNames.join(', ');
-      disclaimerText = `NOTA: Los equipos [${names}] se entregan bajo autorización parcial. Al no contar con aval previo de la autoridad correspondiente, la responsabilidad total por el cuidado y uso de dichos elementos recae exclusivamente en el alumno solicitante.`;
+      disclaimerText = `IMPORTANTE - RESPONSABILIDAD PARCIAL: Los equipos [${names}] NO contaban con aval previo completo al momento del despacho. De acuerdo al Reglamento de Pañol, la responsabilidad total por el cuidado, integridad y devolución de dichos elementos recae exclusivamente en el solicitante que suscribe.`;
     } else {
-      disclaimerText = 'NOTA: Este préstamo se entrega bajo autorización parcial / responsabilidad exclusiva del alumno por falta de aval docente/directivo previo para el despacho.';
+      disclaimerText = 'IMPORTANTE - RESPONSABILIDAD PARCIAL: Este préstamo se entrega mediante una "Autorización de Excepción". El solicitante asume total responsabilidad por el equipamiento despachado y se compromete a responder ante cualquier daño o faltante, dada la ausencia de avales reglamentarios previos.';
     }
     
-    // Use splitTextToSize to wrap text
     const splitText = doc.splitTextToSize(disclaimerText, pageWidth - 40);
     doc.text(splitText, 20, tableFinalY + 10);
+    doc.setFont('helvetica', 'normal'); // Reset font
   }
 
   // Footer / Signatures
