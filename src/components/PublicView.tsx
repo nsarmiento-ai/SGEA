@@ -76,7 +76,7 @@ export const PublicView: React.FC = () => {
         .order('nombre', { ascending: true });
 
       const [resData, loanData, studentReqsRes] = await Promise.all([
-        supabase.from('reservas').select('id, fecha_inicio, fecha_fin, equipos_ids, estado').in('estado', ['Aprobada', 'Pendiente', 'Activa']),
+        supabase.from('reservas').select('id, fecha_inicio, fecha_fin, equipos_ids, estado').in('estado', ['Aprobada', 'Pendiente', 'Activa', 'Avalada', 'Pendiente de Dirección']),
         supabase.from('prestamos').select('id, fecha_salida, fecha_devolucion_estimada, equipos_ids, estado').in('estado', ['Activo', 'Despachado', 'En Mora']),
         supabase.from('solicitudes_alumnos').select('id, fecha_inicio, fecha_fin, equipos, estado').not('estado', 'in', '("Rechazado","Cancelado","Entregado","Entregado (Modificado)")')
       ]);
@@ -266,7 +266,7 @@ export const PublicView: React.FC = () => {
                         key={eq.id}
                         className="bg-white rounded-3xl border border-slate-200 overflow-hidden group hover:shadow-xl hover:shadow-slate-200/50 transition-all flex flex-col"
                       >
-                        <div className="aspect-[4/3] relative overflow-hidden bg-slate-100 italic">
+                        <div className="aspect-[4/3] relative overflow-hidden bg-slate-100 italic flex items-center justify-center">
                           {eq.foto_url ? (
                             <img 
                               src={optimizeCloudinaryUrl(eq.foto_url, index === 0)} 
@@ -281,9 +281,7 @@ export const PublicView: React.FC = () => {
                               crossOrigin="anonymous"
                             />
                           ) : (
-                            <div className="w-full h-full flex items-center justify-center text-slate-200">
-                              <ImageIcon className="w-12 h-12" />
-                            </div>
+                            <ImageIcon className="w-12 h-12 text-slate-300" />
                           )}
                           <div className={cn(
                             "absolute top-4 right-4 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest border flex items-center gap-1.5 shadow-sm backdrop-blur-md",

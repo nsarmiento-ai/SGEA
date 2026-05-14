@@ -85,7 +85,7 @@ export const Reservations: React.FC = () => {
     docente_nombre: ''
   });
 
-  const categories = ['Todas', 'Cámaras', 'Sonido', 'Iluminación', 'Grip', 'Accesorios', 'Espacio', 'Otros'];
+  const categories = ['Todas', 'Cámaras', 'Sonido', 'Iluminación', 'Grip', 'Accesorios', 'Espacio', 'Aulas', 'Otros'];
 
   useEffect(() => {
     fetchData();
@@ -274,21 +274,24 @@ export const Reservations: React.FC = () => {
 
       console.log('Intentando reserva con:', { user, carrito: cart });
 
-      const newReservation = {
+      const newReservation: any = {
         equipos_ids: equiposIds,
         usuario_id: user.id,
         fecha_inicio: new Date(formData.fecha_inicio).toISOString(),
         fecha_fin: new Date(formData.fecha_fin).toISOString(),
         docente_nombre: formData.docente_nombre || activeResponsable || '',
-        materia: formData.materia,
-        tipo_uso: formData.materia === 'Uso Personal' ? 'Uso Externo' : formData.tipo_uso,
+        materia: `[${formData.tipo_uso}] ${formData.materia}`.trim(),
         alumno_nombre: formData.alumno_nombre,
         estado: isDocente 
-          ? (formData.tipo_uso === 'Uso en Escuela' ? 'Aprobada' : 'Pendiente')
+          ? (formData.tipo_uso === 'Uso en Escuela' ? 'Aprobada' : 'Pendiente de Dirección')
           : 'Pendiente'
       };
 
-      const { data: insertedData, error: insertError } = await supabase.from('reservas').insert([newReservation]).select().single();
+      const { data: insertedData, error: insertError } = await supabase
+        .from('reservas')
+        .insert([newReservation])
+        .select()
+        .single();
       if (insertError) throw insertError;
 
       console.log('Reserva guardada con éxito', insertedData);
@@ -672,19 +675,23 @@ export const Reservations: React.FC = () => {
                       {selectedIds.includes(eq.id) ? <CheckSquare className="w-5 h-5" /> : <Square className="w-5 h-5" />}
                     </button>
 
-                    <div className="relative h-56 bg-slate-100 overflow-hidden aspect-[4/3]">
-                      <img
-                        src={optimizeCloudinaryUrl(eq.foto_url || 'https://picsum.photos/seed/camera/400/300', index === 0)}
-                        alt={eq.nombre}
-                        width={400}
-                        height={300}
-                        loading={index === 0 ? "eager" : "lazy"}
-                        {...(index === 0 ? { fetchPriority: "high" } : {})}
-                        decoding={index === 0 ? "sync" : "async"}
-                        referrerPolicy="no-referrer"
-                        crossOrigin="anonymous"
-                        className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
-                      />
+                    <div className="relative h-56 bg-slate-100 overflow-hidden aspect-[4/3] flex items-center justify-center">
+                      {eq.foto_url ? (
+                        <img
+                          src={optimizeCloudinaryUrl(eq.foto_url, index === 0)}
+                          alt={eq.nombre}
+                          width={400}
+                          height={300}
+                          loading={index === 0 ? "eager" : "lazy"}
+                          {...(index === 0 ? { fetchPriority: "high" } : {})}
+                          decoding={index === 0 ? "sync" : "async"}
+                          referrerPolicy="no-referrer"
+                          crossOrigin="anonymous"
+                          className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+                        />
+                      ) : (
+                        <Package className="w-12 h-12 text-slate-300" />
+                      )}
                       <div className="absolute bottom-4 left-4 flex flex-col gap-2">
                         <span className="px-3 py-1 bg-slate-900/80 backdrop-blur-sm text-white text-[10px] font-black uppercase rounded-lg tracking-wider w-fit">
                           {eq.categoria}
@@ -779,19 +786,23 @@ export const Reservations: React.FC = () => {
                         >
                           {selectedIds.includes(eq.id) ? <CheckSquare className="w-6 h-6" /> : <Square className="w-6 h-6" />}
                         </button>
-                        <div className="w-12 h-12 rounded-lg bg-slate-100 overflow-hidden shrink-0 aspect-square">
-                          <img 
-                            src={optimizeCloudinaryUrl(eq.foto_url || 'https://picsum.photos/seed/gear/100/100', index === 0)} 
-                            alt={eq.nombre}
-                            width={100}
-                            height={100}
-                            loading={index === 0 ? "eager" : "lazy"}
-                            {...(index === 0 ? { fetchPriority: "high" } : {})}
-                            decoding={index === 0 ? "sync" : "async"}
-                            crossOrigin="anonymous"
-                            referrerPolicy="no-referrer"
-                            className="w-full h-full object-cover" 
-                          />
+                        <div className="w-12 h-12 rounded-lg bg-slate-100 overflow-hidden shrink-0 aspect-square flex items-center justify-center">
+                          {eq.foto_url ? (
+                            <img 
+                              src={optimizeCloudinaryUrl(eq.foto_url, index === 0)} 
+                              alt={eq.nombre}
+                              width={100}
+                              height={100}
+                              loading={index === 0 ? "eager" : "lazy"}
+                              {...(index === 0 ? { fetchPriority: "high" } : {})}
+                              decoding={index === 0 ? "sync" : "async"}
+                              crossOrigin="anonymous"
+                              referrerPolicy="no-referrer"
+                              className="w-full h-full object-cover" 
+                            />
+                          ) : (
+                            <Package className="w-6 h-6 text-slate-300" />
+                          )}
                         </div>
                         <div className="flex-1 min-w-0">
                           <p className="font-bold text-slate-900 text-base truncate">{eq.nombre}</p>
@@ -868,18 +879,22 @@ export const Reservations: React.FC = () => {
                           </td>
                           <td className="p-4">
                             <div className="flex items-center gap-3">
-                              <div className="w-10 h-10 rounded-lg bg-slate-100 overflow-hidden shrink-0 aspect-square">
-                                <img 
-                                  src={optimizeCloudinaryUrl(eq.foto_url || 'https://picsum.photos/seed/gear/100/100')} 
-                                  alt={eq.nombre}
-                                  width={100}
-                                  height={100}
-                                  loading={index < 5 ? "eager" : "lazy"}
-                                  {...(index < 5 ? { fetchPriority: "high" } : {})}
-                                  crossOrigin="anonymous"
-                                  referrerPolicy="no-referrer"
-                                  className="w-full h-full object-cover" 
-                                />
+                              <div className="w-10 h-10 rounded-lg bg-slate-100 overflow-hidden shrink-0 aspect-square flex items-center justify-center">
+                                {eq.foto_url ? (
+                                  <img 
+                                    src={optimizeCloudinaryUrl(eq.foto_url)} 
+                                    alt={eq.nombre}
+                                    width={100}
+                                    height={100}
+                                    loading={index < 5 ? "eager" : "lazy"}
+                                    {...(index < 5 ? { fetchPriority: "high" } : {})}
+                                    crossOrigin="anonymous"
+                                    referrerPolicy="no-referrer"
+                                    className="w-full h-full object-cover" 
+                                  />
+                                ) : (
+                                  <Package className="w-5 h-5 text-slate-300" />
+                                )}
                               </div>
                               <div>
                                 <p className="font-bold text-slate-900 text-sm">{eq.nombre}</p>
@@ -1170,8 +1185,12 @@ export const Reservations: React.FC = () => {
                   {(cart || []).map(eq => (
                     <div key={eq.id} className="flex items-center justify-between bg-slate-50 p-2.5 rounded-xl border border-slate-100">
                       <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 rounded-lg bg-slate-200 overflow-hidden shrink-0">
-                          <img src={eq.foto_url || 'https://picsum.photos/seed/gear/50/50'} className="w-full h-full object-cover" crossOrigin="anonymous" referrerPolicy="no-referrer" />
+                        <div className="w-8 h-8 rounded-lg bg-slate-200 overflow-hidden shrink-0 flex items-center justify-center">
+                          {eq.foto_url ? (
+                            <img src={eq.foto_url} className="w-full h-full object-cover" crossOrigin="anonymous" referrerPolicy="no-referrer" />
+                          ) : (
+                            <Package className="w-4 h-4 text-slate-400" />
+                          )}
                         </div>
                         <span className="text-xs font-bold text-slate-700 truncate">{eq.nombre}</span>
                       </div>

@@ -12,7 +12,7 @@ export interface Pieza {
 export interface Equipment {
   id: string;
   nombre: string;
-  categoria: 'Cámaras' | 'Sonido' | 'Iluminación' | 'Grip' | 'Accesorios' | 'Espacio' | 'Otros';
+  categoria: 'Cámaras' | 'Sonido' | 'Iluminación' | 'Grip' | 'Accesorios' | 'Espacio' | 'Aulas' | 'Otros';
   modelo: string;
   numero_serie: string;
   ubicacion: string;
@@ -70,7 +70,7 @@ export interface Reservation {
   alumno_nombre?: string;
   fecha_inicio: string;
   fecha_fin: string;
-  estado: 'Pendiente' | 'Entregada' | 'Cancelada' | 'Activa' | 'Aprobada' | 'Rechazada';
+  estado: 'Pendiente' | 'Entregada' | 'Cancelada' | 'Activa' | 'Aprobada' | 'Rechazada' | 'Avalada' | 'Pendiente de Dirección';
   tipo_uso?: 'Uso en Escuela' | 'Uso Externo';
   created_at?: string;
 }

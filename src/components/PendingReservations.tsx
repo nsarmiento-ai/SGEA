@@ -42,7 +42,7 @@ export const PendingReservations: React.FC = () => {
     setLoading(true);
     try {
       const [resData, studentData, eqData] = await Promise.all([
-        supabase.from('reservas').select('id, equipos_ids, usuario_id, docente_nombre, materia, aula, alumno_nombre, fecha_inicio, fecha_fin, estado, tipo_uso, created_at').in('estado', ['Pendiente', 'Aprobada']).order('fecha_inicio', { ascending: true }),
+        supabase.from('reservas').select('id, equipos_ids, usuario_id, docente_nombre, materia, aula, alumno_nombre, fecha_inicio, fecha_fin, estado, created_at').in('estado', ['Pendiente', 'Aprobada', 'Avalada']).order('fecha_inicio', { ascending: true }),
         supabase.from('solicitudes_alumnos')
           .select('id, responsable, dni, integrantes, materia, docente_id, docente_nombre, tipo_uso, equipos, fecha_inicio, fecha_fin, estado, observaciones, created_at, autorizado_por_docente, autorizado_por_direccion')
           .in('estado', ['Pendiente de Aval Docente', 'Pendiente de Dirección', 'Autorizado para Despacho'])
@@ -256,12 +256,16 @@ export const PendingReservations: React.FC = () => {
                         const eq = (equipments || []).find(e => e.id === eqId);
                         return (
                           <div key={eqId} className="flex items-center gap-3 bg-slate-50 p-3 rounded-2xl border border-slate-100 group/item">
-                            <div className="w-10 h-10 rounded-xl bg-slate-200 overflow-hidden flex-shrink-0 shadow-sm">
-                              <img 
-                                src={eq?.foto_url || 'https://picsum.photos/seed/gear/50/50'} 
-                                className="w-full h-full object-cover grayscale-[0.3] group-hover/item:grayscale-0 transition-all" 
-                                referrerPolicy="no-referrer" 
-                              />
+                            <div className="w-10 h-10 rounded-xl bg-slate-200 overflow-hidden flex-shrink-0 shadow-sm flex items-center justify-center">
+                              {eq?.foto_url ? (
+                                <img 
+                                  src={eq.foto_url} 
+                                  className="w-full h-full object-cover grayscale-[0.3] group-hover/item:grayscale-0 transition-all" 
+                                  referrerPolicy="no-referrer" 
+                                />
+                              ) : (
+                                <Package className="w-5 h-5 text-slate-400" />
+                              )}
                             </div>
                             <span className="text-xs font-bold text-slate-700 truncate">{eq?.nombre || 'Equipo desconocido'}</span>
                           </div>

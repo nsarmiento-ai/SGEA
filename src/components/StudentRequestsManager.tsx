@@ -49,8 +49,7 @@ export const StudentRequestsManager: React.FC<{ filterDireccion?: boolean }> = (
         const { data: resData } = await supabase
           .from('reservas')
           .select('*')
-          .eq('estado', 'Pendiente')
-          .eq('tipo_uso', 'Uso Externo')
+          .eq('estado', 'Pendiente de Dirección')
           .order('created_at', { ascending: false });
 
         if (resData) {

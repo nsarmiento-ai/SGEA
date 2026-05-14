@@ -158,16 +158,25 @@ export const generateReservationPDF = (reservation: any, equipments: Equipment[]
   doc.text(`Fecha Desde: ${formatDate(reservation.fecha_inicio)}`, 20, 66);
   doc.text(`Fecha Hasta: ${formatDate(reservation.fecha_fin)}`, 20, 73);
   doc.text(`Estado: ${reservation.estado.toUpperCase()}`, 20, 80);
-  if (reservation.tipo_uso) {
-    doc.text(`Tipo de Uso: ${reservation.tipo_uso}`, 20, 87);
+  
+  // Extract tipo_uso from materia if it's encoded there
+  let displayUsage = reservation.tipo_uso;
+  if (!displayUsage && reservation.materia?.startsWith('[')) {
+    const match = reservation.materia.match(/^\[(.*?)\]/);
+    if (match) displayUsage = match[1];
   }
 
-  const statusMsg = reservation.estado === 'Aprobada' 
-    ? 'LISTA PARA DESPACHO (Aval Implícito)' 
+  if (displayUsage) {
+    doc.text(`Tipo de Uso: ${displayUsage}`, 20, 87);
+  }
+
+  const isReady = reservation.estado === 'Aprobada' || reservation.estado === 'Avalada' || reservation.estado === 'Activa';
+  const statusMsg = isReady 
+    ? 'LISTA PARA DESPACHO (Autorizado)' 
     : 'PENDIENTE DE AUTORIZACIÓN (Requiere Director)';
   
   doc.setFontSize(12);
-  if (reservation.estado === 'Aprobada') {
+  if (isReady) {
     doc.setTextColor(22, 163, 74);
   } else {
     doc.setTextColor(245, 158, 11);
