@@ -158,6 +158,24 @@ export const generateReservationPDF = (reservation: any, equipments: Equipment[]
   doc.text(`Fecha Desde: ${formatDate(reservation.fecha_inicio)}`, 20, 66);
   doc.text(`Fecha Hasta: ${formatDate(reservation.fecha_fin)}`, 20, 73);
   doc.text(`Estado: ${reservation.estado.toUpperCase()}`, 20, 80);
+  if (reservation.tipo_uso) {
+    doc.text(`Tipo de Uso: ${reservation.tipo_uso}`, 20, 87);
+  }
+
+  const statusMsg = reservation.estado === 'Aprobada' 
+    ? 'LISTA PARA DESPACHO (Aval Implícito)' 
+    : 'PENDIENTE DE AUTORIZACIÓN (Requiere Director)';
+  
+  doc.setFontSize(12);
+  if (reservation.estado === 'Aprobada') {
+    doc.setTextColor(22, 163, 74);
+  } else {
+    doc.setTextColor(245, 158, 11);
+  }
+  doc.setFont('helvetica', 'bold');
+  doc.text(statusMsg, pageWidth / 2, 38, { align: 'center' });
+  doc.setFont('helvetica', 'normal');
+  doc.setTextColor(15, 23, 42);
 
   // Equipment Table
   const tableData = equipments.map((eq, index) => [
@@ -168,7 +186,7 @@ export const generateReservationPDF = (reservation: any, equipments: Equipment[]
   ]);
 
   autoTable(doc, {
-    startY: 90,
+    startY: 95,
     head: [['#', 'Equipo', 'Modelo', 'Categoría']],
     body: tableData,
     headStyles: { fillColor: [15, 23, 42] },

@@ -53,7 +53,7 @@ const mapStatus = (status: string | null | undefined): EquipmentStatus => {
 };
 
 export const Reservations: React.FC = () => {
-  const { activeResponsable, toggleFavorite } = useApp();
+  const { activeResponsable, role, toggleFavorite } = useApp();
   const [equipments, setEquipments] = useState<Equipment[]>([]);
   const [reservations, setReservations] = useState<Reservation[]>([]);
   const [loading, setLoading] = useState(true);
@@ -74,11 +74,13 @@ export const Reservations: React.FC = () => {
   const [showDocenteSuggestions, setShowDocenteSuggestions] = useState(false);
   const [finishedReservation, setFinishedReservation] = useState<any>(null);
 
+  const isDocente = role === 'Docente';
+
   const [formData, setFormData] = useState({
     fecha_inicio: '',
     fecha_fin: '',
     materia: '',
-    aula: '',
+    tipo_uso: 'Uso en Escuela' as 'Uso en Escuela' | 'Uso Externo',
     alumno_nombre: '',
     docente_nombre: ''
   });
@@ -279,9 +281,11 @@ export const Reservations: React.FC = () => {
         fecha_fin: new Date(formData.fecha_fin).toISOString(),
         docente_nombre: formData.docente_nombre || activeResponsable || '',
         materia: formData.materia,
-        aula: formData.aula,
+        tipo_uso: formData.materia === 'Uso Personal' ? 'Uso Externo' : formData.tipo_uso,
         alumno_nombre: formData.alumno_nombre,
-        estado: 'Pendiente'
+        estado: isDocente 
+          ? (formData.tipo_uso === 'Uso en Escuela' ? 'Aprobada' : 'Pendiente')
+          : 'Pendiente'
       };
 
       const { data: insertedData, error: insertError } = await supabase.from('reservas').insert([newReservation]).select().single();
@@ -289,10 +293,15 @@ export const Reservations: React.FC = () => {
 
       console.log('Reserva guardada con éxito', insertedData);
 
-      await logAction(activeResponsable!, 'NUEVA_RESERVA_PENDIENTE', { 
+      const logMsg = isDocente && formData.tipo_uso === 'Uso en Escuela' 
+        ? 'Aval implícito por creación de reserva (Uso Interno)'
+        : 'NUEVA_RESERVA_PENDIENTE';
+
+      await logAction(activeResponsable!, logMsg, { 
         equipos: cart.map(eq => eq.nombre),
         inicio: newReservation.fecha_inicio,
-        fin: newReservation.fecha_fin
+        fin: newReservation.fecha_fin,
+        tipo_uso: newReservation.tipo_uso
       });
 
       // Generar PDF
@@ -311,7 +320,7 @@ export const Reservations: React.FC = () => {
         fecha_inicio: '', 
         fecha_fin: '', 
         materia: '',
-        aula: '',
+        tipo_uso: 'Uso en Escuela',
         alumno_nombre: '',
         docente_nombre: activeResponsable || ''
       });
@@ -355,7 +364,9 @@ export const Reservations: React.FC = () => {
           </div>
           <h2 className="text-2xl md:text-3xl font-display font-bold text-slate-900 mb-2">¡Reserva Solicitada!</h2>
           <p className="text-sm md:text-base text-slate-700 mb-8 max-w-md mx-auto">
-            Tu reserva ha sido registrada y está pendiente de aprobación. El comprobante PDF se ha descargado automáticamente.
+            {finishedReservation.reservation.estado === 'Aprobada' 
+              ? 'Tu reserva ha sido aprobada automáticamente (Uso Interno). El comprobante PDF se ha descargado.' 
+              : 'Tu reserva ha sido registrada y está pendiente de aprobación (Uso Externo requiere aval de Dirección).'}
           </p>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 w-full">
@@ -1008,111 +1019,119 @@ export const Reservations: React.FC = () => {
                 )}
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
-                  <div className="md:col-span-2">
-                    <label className="block text-[10px] md:text-xs font-black text-slate-700 mb-2 uppercase tracking-wider">Materia</label>
-                    <div className="relative">
-                      <BookOpen className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 w-5 h-5" />
-                      <select
-                        required
-                        value={formData.materia}
-                        onChange={e => setFormData({...formData, materia: e.target.value})}
-                        className="w-full pl-12 pr-4 py-3.5 md:py-4 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:ring-2 focus:ring-amber-500 font-medium appearance-none text-sm"
-                      >
-                        <option value="">Seleccione una materia...</option>
-                        {Object.entries(MATERIAS_CATEGORIES).map(([cat, materias]) => (
-                          <optgroup key={cat} label={cat}>
-                            {[...materias].sort((a, b) => a.localeCompare(b)).map(m => <option key={m} value={m}>{m}</option>)}
-                          </optgroup>
-                        ))}
-                      </select>
-                    </div>
-                  </div>
-
-                  <div>
-                    <label className="block text-[10px] md:text-xs font-black text-slate-700 mb-2 uppercase tracking-wider">Aula / Espacio</label>
-                    <div className="relative">
-                      <MapPin className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 w-5 h-5" />
-                      <select
-                        required
-                        value={formData.aula}
-                        onChange={e => setFormData({...formData, aula: e.target.value})}
-                        className="w-full pl-12 pr-4 py-3.5 md:py-4 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:ring-2 focus:ring-amber-500 font-medium appearance-none text-sm"
-                      >
-                        <option value="">Seleccione aula...</option>
-                        <option value="Aula A">Aula A</option>
-                        <option value="Aula B">Aula B</option>
-                        <option value="Aula C">Aula C</option>
-                        <option value="Aula D">Aula D</option>
-                        <option value="Aula E">Aula E</option>
-                        <option value="Aula F">Aula F</option>
-                        <option value="Aula G">Aula G</option>
-                        <option value="SET">SET</option>
-                        <option value="Exteriores">Exteriores</option>
-                      </select>
-                    </div>
-                  </div>
-
-                  <div>
-                    <label className="block text-[10px] md:text-xs font-black text-slate-700 mb-2 uppercase tracking-wider">Docente Responsable</label>
-                    <div className="relative">
-                      <User className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 w-5 h-5" />
-                      <input
-                        required
-                        type="text"
-                        placeholder="Buscar o ingresar docente..."
-                        value={formData.docente_nombre}
-                        onFocus={() => setShowDocenteSuggestions(true)}
-                        onChange={e => setFormData({...formData, docente_nombre: e.target.value})}
-                        className="w-full pl-12 pr-4 py-3.5 md:py-4 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:ring-2 focus:ring-amber-500 font-medium text-sm"
-                      />
-                      {showDocenteSuggestions && (
-                        <div className="absolute z-50 w-full mt-1 bg-white border border-slate-200 rounded-2xl shadow-xl max-h-60 overflow-y-auto">
-                          <div className="p-2 border-b border-slate-50 text-[10px] font-bold text-slate-400 uppercase tracking-widest">
-                            Sugerencias
-                          </div>
-                          {(docentes || [])
-                            .filter(d => d.nombre_completo.toLowerCase().includes((formData.docente_nombre || '').toLowerCase()))
-                            .sort((a, b) => a.nombre_completo.localeCompare(b.nombre_completo))
-                            .map(d => (
+                        <div className="md:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-4">
+                          <div>
+                            <label className="block text-[10px] md:text-xs font-black text-slate-700 mb-2 uppercase tracking-wider">Finalidad del Uso</label>
+                            <div className="flex bg-slate-100 p-1 rounded-2xl shadow-inner">
                               <button
-                                key={d.id}
                                 type="button"
-                                onClick={() => {
-                                  setFormData({...formData, docente_nombre: d.nombre_completo});
-                                  setShowDocenteSuggestions(false);
-                                }}
-                                className="w-full text-left px-4 py-3 hover:bg-amber-50 transition-colors border-b border-slate-50 last:border-0"
+                                onClick={() => setFormData({...formData, tipo_uso: 'Uso en Escuela'})}
+                                className={cn(
+                                  "flex-1 py-3 px-4 rounded-xl text-xs font-black uppercase tracking-widest transition-all",
+                                  formData.tipo_uso === 'Uso en Escuela' ? "bg-white text-slate-900 shadow-sm" : "text-slate-500 hover:text-slate-700"
+                                )}
                               >
-                                <p className="text-sm font-bold text-slate-700">{d.nombre_completo}</p>
-                                <p className="text-[10px] text-slate-400 font-medium">{d.email}</p>
+                                Interno
                               </button>
-                            ))}
-                          <button
-                            type="button"
-                            onClick={() => setShowDocenteSuggestions(false)}
-                            className="w-full text-center px-4 py-2 text-[10px] font-bold text-slate-400 hover:text-slate-600 uppercase tracking-widest bg-slate-50"
-                          >
-                            Cerrar
-                          </button>
+                              <button
+                                type="button"
+                                onClick={() => setFormData({...formData, tipo_uso: 'Uso Externo'})}
+                                className={cn(
+                                  "flex-1 py-3 px-4 rounded-xl text-xs font-black uppercase tracking-widest transition-all",
+                                  formData.tipo_uso === 'Uso Externo' ? "bg-white text-slate-900 shadow-sm" : "text-slate-500 hover:text-slate-700"
+                                )}
+                              >
+                                Externo
+                              </button>
+                            </div>
+                          </div>
+                          
+                          <div>
+                            <label className="block text-[10px] md:text-xs font-black text-slate-700 mb-2 uppercase tracking-wider">Materia</label>
+                            <div className="relative">
+                              <BookOpen className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 w-5 h-5" />
+                              <select
+                                required
+                                value={formData.materia}
+                                onChange={e => setFormData({...formData, materia: e.target.value})}
+                                className="w-full pl-12 pr-4 py-3.5 md:py-4 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:ring-2 focus:ring-amber-500 font-medium appearance-none text-sm"
+                              >
+                                <option value="">Seleccione una materia...</option>
+                                {Object.entries(MATERIAS_CATEGORIES).map(([cat, materias]) => (
+                                  <optgroup key={cat} label={cat}>
+                                    {[...materias].sort((a, b) => a.localeCompare(b)).map(m => <option key={m} value={m}>{m}</option>)}
+                                  </optgroup>
+                                ))}
+                              </select>
+                            </div>
+                          </div>
                         </div>
-                      )}
-                    </div>
-                  </div>
 
-                  <div>
-                    <label className="block text-[10px] md:text-xs font-black text-slate-500 mb-2 uppercase tracking-wider">Alumno Responsable</label>
-                    <div className="relative">
-                      <User className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 w-5 h-5" />
-                      <input
-                        required
-                        type="text"
-                        placeholder="Nombre del alumno"
-                        value={formData.alumno_nombre}
-                        onChange={e => setFormData({...formData, alumno_nombre: e.target.value})}
-                        className="w-full pl-12 pr-4 py-3.5 md:py-4 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:ring-2 focus:ring-amber-500 font-medium text-sm"
-                      />
-                    </div>
-                  </div>
+                        {!isDocente && (
+                          <div>
+                            <label className="block text-[10px] md:text-xs font-black text-slate-700 mb-2 uppercase tracking-wider">Docente Responsable</label>
+                            <div className="relative">
+                              <User className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 w-5 h-5" />
+                              <input
+                                required
+                                type="text"
+                                placeholder="Buscar o ingresar docente..."
+                                value={formData.docente_nombre}
+                                onFocus={() => setShowDocenteSuggestions(true)}
+                                onChange={e => setFormData({...formData, docente_nombre: e.target.value})}
+                                className="w-full pl-12 pr-4 py-3.5 md:py-4 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:ring-2 focus:ring-amber-500 font-medium text-sm"
+                              />
+                              {showDocenteSuggestions && (
+                                <div className="absolute z-50 w-full mt-1 bg-white border border-slate-200 rounded-2xl shadow-xl max-h-60 overflow-y-auto">
+                                  <div className="p-2 border-b border-slate-50 text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+                                    Sugerencias
+                                  </div>
+                                  {(docentes || [])
+                                    .filter(d => d.nombre_completo.toLowerCase().includes((formData.docente_nombre || '').toLowerCase()))
+                                    .sort((a, b) => a.nombre_completo.localeCompare(b.nombre_completo))
+                                    .map(d => (
+                                      <button
+                                        key={d.id}
+                                        type="button"
+                                        onClick={() => {
+                                          setFormData({...formData, docente_nombre: d.nombre_completo});
+                                          setShowDocenteSuggestions(false);
+                                        }}
+                                        className="w-full text-left px-4 py-3 hover:bg-amber-50 transition-colors border-b border-slate-50 last:border-0"
+                                      >
+                                        <p className="text-sm font-bold text-slate-700">{d.nombre_completo}</p>
+                                        <p className="text-[10px] text-slate-400 font-medium">{d.email}</p>
+                                      </button>
+                                    ))}
+                                  <button
+                                    type="button"
+                                    onClick={() => setShowDocenteSuggestions(false)}
+                                    className="w-full text-center px-4 py-2 text-[10px] font-bold text-slate-400 hover:text-slate-600 uppercase tracking-widest bg-slate-50"
+                                  >
+                                    Cerrar
+                                  </button>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        )}
+
+                        <div>
+                          <label className="block text-[10px] md:text-xs font-black text-slate-500 mb-2 uppercase tracking-wider">
+                            {isDocente ? 'Alumno / Integrante Responsable (Opcional)' : 'Alumno Responsable'}
+                          </label>
+                          <div className="relative">
+                            <User className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 w-5 h-5" />
+                            <input
+                              required={!isDocente}
+                              type="text"
+                              placeholder={isDocente ? "Nombre del alumno si aplica" : "Nombre del alumno"}
+                              value={formData.alumno_nombre}
+                              onChange={e => setFormData({...formData, alumno_nombre: e.target.value})}
+                              className="w-full pl-12 pr-4 py-3.5 md:py-4 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:ring-2 focus:ring-amber-500 font-medium text-sm"
+                            />
+                          </div>
+                        </div>
 
                   <div className="grid grid-cols-1 gap-4 md:col-span-2">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

@@ -27,20 +27,58 @@ export const StudentRequestsManager: React.FC<{ filterDireccion?: boolean }> = (
 
   const fetchRequests = async () => {
     setLoading(true);
-    let query = supabase.from('solicitudes_alumnos').select('id, responsable, dni, integrantes, materia, docente_id, docente_nombre, tipo_uso, equipos, fecha_inicio, fecha_fin, estado, observaciones, created_at, autorizado_por_docente, autorizado_por_direccion');
-    
-    if (filterDireccion) {
-      query = query.eq('estado', 'Pendiente de Dirección');
-    } else {
-      query = query.eq('estado', 'Pendiente de Aval Docente');
-      if (role === 'Docente' && userEmail) {
-        query = query.eq('docente_id', userEmail);
+    try {
+      // 1. Fetch Student Requests
+      let studentQuery = supabase.from('solicitudes_alumnos').select('*');
+      
+      if (filterDireccion) {
+        studentQuery = studentQuery.eq('estado', 'Pendiente de Dirección');
+      } else {
+        studentQuery = studentQuery.eq('estado', 'Pendiente de Aval Docente');
+        if (role === 'Docente' && userEmail) {
+          studentQuery = studentQuery.eq('docente_id', userEmail);
+        }
       }
-    }
 
-    const { data } = await query.order('created_at', { ascending: false });
-    if (data) setRequests(data);
-    setLoading(false);
+      const { data: studentData } = await studentQuery.order('created_at', { ascending: false });
+      
+      let unified: StudentRequest[] = (studentData || []).map(s => ({ ...s, _table: 'solicitudes_alumnos' }));
+
+      // 2. Fetch Docente Reservations if for Director
+      if (filterDireccion) {
+        const { data: resData } = await supabase
+          .from('reservas')
+          .select('*')
+          .eq('estado', 'Pendiente')
+          .eq('tipo_uso', 'Uso Externo')
+          .order('created_at', { ascending: false });
+
+        if (resData) {
+          const mappedRes: StudentRequest[] = resData.map(r => ({
+            id: r.id,
+            responsable: r.docente_nombre,
+            dni: 'N/A',
+            materia: r.materia || 'S/M',
+            docente_id: r.usuario_id, // Might not be email, but used as ref
+            docente_nombre: r.docente_nombre,
+            tipo_uso: 'Uso Externo',
+            equipos: r.equipos_ids,
+            fecha_inicio: r.fecha_inicio,
+            fecha_fin: r.fecha_fin,
+            estado: 'Pendiente de Dirección' as any,
+            created_at: r.created_at,
+            _table: 'reservas'
+          } as any));
+          unified = [...unified, ...mappedRes];
+        }
+      }
+
+      setRequests(unified);
+    } catch (err) {
+      console.error('Error fetching unified requests:', err);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const fetchEquipment = async () => {
@@ -75,7 +113,7 @@ export const StudentRequestsManager: React.FC<{ filterDireccion?: boolean }> = (
 
     try {
       const updateData: any = { 
-        estado: nextStatus
+        estado: (request as any)._table === 'reservas' ? 'Aprobada' : nextStatus
       };
 
       if (filterDireccion) {
@@ -85,7 +123,7 @@ export const StudentRequestsManager: React.FC<{ filterDireccion?: boolean }> = (
       }
 
       const { error } = await supabase
-        .from('solicitudes_alumnos')
+        .from((request as any)._table || 'solicitudes_alumnos')
         .update(updateData)
         .eq('id', request.id);
 
@@ -99,7 +137,8 @@ export const StudentRequestsManager: React.FC<{ filterDireccion?: boolean }> = (
           requestId: request.id, 
           alumno: request.responsable,
           materia: request.materia,
-          status: nextStatus
+          status: updateData.estado,
+          source: (request as any)._table
         }
       );
 
@@ -112,14 +151,14 @@ export const StudentRequestsManager: React.FC<{ filterDireccion?: boolean }> = (
     }
   };
 
-  const handleReject = async (id: string) => {
+  const handleReject = async (request: StudentRequest) => {
     if (!window.confirm('¿Está seguro de que desea rechazar esta solicitud?')) return;
-    setProcessingId(id);
+    setProcessingId(request.id);
     try {
       const { error } = await supabase
-        .from('solicitudes_alumnos')
-        .update({ estado: 'Rechazado' })
-        .eq('id', id);
+        .from((request as any)._table || 'solicitudes_alumnos')
+        .update({ estado: (request as any)._table === 'reservas' ? 'Rechazada' : 'Rechazado' })
+        .eq('id', request.id);
 
       if (error) throw error;
 
@@ -127,10 +166,10 @@ export const StudentRequestsManager: React.FC<{ filterDireccion?: boolean }> = (
       await logAction(
         activeResponsable || userEmail, 
         'RECHAZO_SOLICITUD', 
-        { requestId: id }
+        { requestId: request.id, source: (request as any)._table }
       );
 
-      setRequests(prev => prev.filter(r => r.id !== id));
+      setRequests(prev => prev.filter(r => r.id !== request.id));
     } catch (err) {
       console.error('Error rejecting request:', err);
     } finally {
@@ -307,7 +346,7 @@ export const StudentRequestsManager: React.FC<{ filterDireccion?: boolean }> = (
 
                     <div className="grid grid-cols-2 gap-3 mt-6">
                       <button
-                        onClick={() => handleReject(req.id)}
+                        onClick={() => handleReject(req)}
                         disabled={processingId === req.id}
                         className="flex items-center justify-center gap-2 py-3 bg-white border border-slate-200 text-slate-500 font-bold rounded-xl hover:bg-red-50 hover:text-red-600 hover:border-red-200 transition-all disabled:opacity-50"
                       >

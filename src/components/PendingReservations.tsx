@@ -42,7 +42,7 @@ export const PendingReservations: React.FC = () => {
     setLoading(true);
     try {
       const [resData, studentData, eqData] = await Promise.all([
-        supabase.from('reservas').select('id, equipos_ids, usuario_id, docente_nombre, materia, aula, alumno_nombre, fecha_inicio, fecha_fin, estado, created_at').eq('estado', 'Pendiente').order('fecha_inicio', { ascending: true }),
+        supabase.from('reservas').select('id, equipos_ids, usuario_id, docente_nombre, materia, aula, alumno_nombre, fecha_inicio, fecha_fin, estado, tipo_uso, created_at').in('estado', ['Pendiente', 'Aprobada']).order('fecha_inicio', { ascending: true }),
         supabase.from('solicitudes_alumnos')
           .select('id, responsable, dni, integrantes, materia, docente_id, docente_nombre, tipo_uso, equipos, fecha_inicio, fecha_fin, estado, observaciones, created_at, autorizado_por_docente, autorizado_por_direccion')
           .in('estado', ['Pendiente de Aval Docente', 'Pendiente de Dirección', 'Autorizado para Despacho'])
@@ -192,6 +192,24 @@ export const PendingReservations: React.FC = () => {
                         )}>
                           {status}
                         </span>
+                      </div>
+                    )}
+                    {!isStudent && (
+                      <div className="absolute top-4 right-4 flex flex-col gap-2 items-end">
+                        <span className="bg-slate-900 text-white px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-widest border border-slate-800 shadow-sm">
+                          Docente
+                        </span>
+                        <span className={cn(
+                          "px-2 py-0.5 rounded-full text-[8px] font-black uppercase tracking-widest border shadow-sm",
+                          (req.data as Reservation).estado === 'Aprobada' ? "bg-green-50 text-green-700 border-green-200" : "bg-amber-50 text-amber-700 border-amber-200"
+                        )}>
+                          {(req.data as Reservation).estado}
+                        </span>
+                        {(req.data as Reservation).tipo_uso && (
+                          <span className="bg-slate-100 text-slate-600 px-2 py-0.5 rounded-full text-[8px] font-black uppercase tracking-widest border border-slate-200">
+                            {(req.data as Reservation).tipo_uso}
+                          </span>
+                        )}
                       </div>
                     )}
                     
