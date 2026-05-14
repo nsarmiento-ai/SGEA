@@ -42,7 +42,7 @@ export const ActiveLoans: React.FC<{ filterMora?: boolean }> = ({ filterMora = f
     const [loansRes] = await Promise.all([
       supabase
         .from('prestamos')
-        .select('id, alumno_nombre, alumno_dni, materia, docente_responsable, responsable_nombre, fecha_salida, fecha_devolucion_estimada, estado, equipos_ids, piezas_prestadas, "pañolero_entrega", autorizacion_parcial')
+        .select('id, alumno_nombre, alumno_dni, materia, docente_responsable, responsable_nombre, fecha_salida, fecha_devolucion_estimada, estado, equipos_ids')
         .in('estado', ['Activo', 'Despachado', 'En Mora'])
         .order('fecha_devolucion_estimada', { ascending: true })
     ]);

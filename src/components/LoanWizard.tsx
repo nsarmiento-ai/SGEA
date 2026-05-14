@@ -274,47 +274,46 @@ export const LoanWizard: React.FC = () => {
         return;
       }
 
+      // Proceso atómico
       let createdLoanId: string | null = null;
-      let equipmentsUpdated = false;
+      let equipmentsToRevert: string[] = [];
 
       try {
-        // 1. Create Loan
-        const loanData: any = {
-          alumno_nombre: formData.alumno_nombre,
-          alumno_dni: formData.alumno_dni,
-          materia: formData.materia,
-          docente_responsable: formData.docente_responsable,
-          responsable_nombre: activeResponsable!,
-          fecha_salida: new Date().toISOString(),
-          fecha_devolucion_estimada: new Date(formData.fechaDevolucion).toISOString(),
-          estado: 'Activo',
-          equipos_ids: selectedIds,
-          comentarios: formData.comentarios,
-          equipos_autorizados: equipos_autorizados,
-          equipos_adicionales: equipos_adicionales,
-          autorizacion_parcial: autorizacion_parcial
-        };
+        // A. Crear registro de préstamo
+      const loanData: any = {
+        alumno_nombre: formData.alumno_nombre,
+        alumno_dni: formData.alumno_dni,
+        materia: formData.materia,
+        docente_responsable: formData.docente_responsable,
+        responsable_nombre: activeResponsable!,
+        fecha_salida: new Date().toISOString(),
+        fecha_devolucion_estimada: new Date(formData.fechaDevolucion).toISOString(),
+        estado: 'Activo',
+        equipos_ids: selectedIds,
+        comentarios: autorizacion_parcial 
+          ? `[RESPONSABILIDAD PARCIAL] ${formData.comentarios}`.trim() 
+          : formData.comentarios
+      };
 
-        const { data: loan, error: loanError } = await supabase
-          .from('prestamos')
-          .insert([loanData])
-          .select()
-          .single();
+      const { data: loan, error: loanError } = await supabase
+        .from('prestamos')
+        .insert([loanData])
+        .select()
+        .single();
 
-        if (loanError || !loan) {
-          throw new Error(loanError?.message || 'No se pudo crear el registro del préstamo.');
-        }
-        createdLoanId = loan.id;
+      if (loanError || !loan) {
+        throw new Error(loanError?.message || 'No se pudo crear el registro del préstamo.');
+      }
+      createdLoanId = loan.id;
 
-        // 2. Update Equipments
-        console.log('Actualizando equipos a "Prestado". IDs:', selectedIds);
-        const { error: eqError } = await supabase
-          .from('equipamiento')
-          .update({ estado: 'Prestado' })
-          .in('id', selectedIds);
+      // B. Actualizar estados de equipos
+      const { error: eqError } = await supabase
+        .from('equipamiento')
+        .update({ estado: 'Prestado' })
+        .in('id', selectedIds);
 
-        if (eqError) throw eqError;
-        equipmentsUpdated = true;
+      if (eqError) throw eqError;
+      equipmentsToRevert = [...selectedIds];
 
         // 2.5 Update Reservation if exists
         if (reservationId) {
@@ -368,17 +367,20 @@ export const LoanWizard: React.FC = () => {
         // 4. Generate PDF
         const selectedEquipments = (equipments || []).filter(e => (selectedIds || []).includes(e.id));
         const targetDocente = docentes.find(d => d.nombre_completo === formData.docente_responsable);
-        generateLoanPDF(loan as Loan, selectedEquipments, targetDocente?.email, authorizedEquipmentsIds);
+        
+        // Pass temporary metadata to PDF even if not persisted to separate columns
+        const loanForPdf = { ...loan, autorizacion_parcial };
+        generateLoanPDF(loanForPdf as any, selectedEquipments, targetDocente?.email, authorizedEquipmentsIds);
 
         // 5. Success State
-        setFinishedLoan({ loan, equipments: selectedEquipments, docenteEmail: targetDocente?.email, authorizedIds: authorizedEquipmentsIds });
+        setFinishedLoan({ loan: loanForPdf, equipments: selectedEquipments, docenteEmail: targetDocente?.email, authorizedIds: authorizedEquipmentsIds });
 
       } catch (innerError) {
         // Rollback block
         console.error("Initiating rollback due to error:", innerError);
         
-        if (equipmentsUpdated) {
-          await supabase.from('equipamiento').update({ estado: 'Disponible' }).in('id', selectedIds);
+        if (equipmentsToRevert.length > 0) {
+          await supabase.from('equipamiento').update({ estado: 'Disponible' }).in('id', equipmentsToRevert);
         }
         if (createdLoanId) {
           await supabase.from('prestamos').delete().eq('id', createdLoanId);
@@ -681,7 +683,7 @@ export const LoanWizard: React.FC = () => {
                         onClick={() => !isDisabled && toggleSelect(eq.id)}
                       >
                         <div className="w-10 h-10 rounded-xl bg-slate-100 overflow-hidden flex-shrink-0 border border-slate-200">
-                          <img src={eq.foto_url || 'https://picsum.photos/seed/gear/100/100'} className="w-full h-full object-cover" referrerPolicy="no-referrer" alt={eq.nombre} />
+                          <img src={eq.foto_url || 'https://images.unsplash.com/photo-1516035069371-29a1b244cc32?w=100&h=100&fit=crop&q=80'} className="w-full h-full object-cover" referrerPolicy="no-referrer" alt={eq.nombre} />
                         </div>
                         
                         <div className="flex-1 min-w-0">
