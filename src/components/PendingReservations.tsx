@@ -147,13 +147,20 @@ export const PendingReservations: React.FC = () => {
       ) : (
         <div className="grid grid-cols-1 gap-6">
           <AnimatePresence>
-            {unifiedRequests.map((req) => {
-              const id = req.type === 'standard' ? req.data.id : req.data.id;
-              const isStudent = req.type === 'student';
-              const status = isStudent ? (req.data as StudentRequest).estado : 'Pendiente';
-              const canDeliver = !isStudent || status === 'Autorizado para Despacho';
-              
-              const displayName = isStudent ? (req.data as StudentRequest).responsable : (req.data as Reservation).docente_nombre;
+                {unifiedRequests.map((req) => {
+                  const id = req.type === 'standard' ? req.data.id : req.data.id;
+                  const isStudent = req.type === 'student';
+                  const studentData = isStudent ? (req.data as StudentRequest) : null;
+                  const status = isStudent ? studentData?.estado : 'Pendiente';
+                  
+                  // Authorization logic following instructions:
+                  // 1. Standard reservations are ready.
+                  // 2. Student requests: Authorized if explicitly approved or if "Uso en Escuela" has teacher approval.
+                  const canDeliver = !isStudent || 
+                    status === 'Autorizado para Despacho' || 
+                    (studentData?.tipo_uso === 'Uso en Escuela' && !!studentData?.autorizado_por_docente);
+                  
+                  const displayName = isStudent ? studentData?.responsable : (req.data as Reservation).docente_nombre;
               const displaySub = isStudent ? `DNI: ${(req.data as StudentRequest).dni}` : (req.data as Reservation).alumno_nombre ? `Para: ${(req.data as Reservation).alumno_nombre}` : 'Reserva Docente';
               const fechaInicio = isStudent ? (req.data as StudentRequest).fecha_inicio : (req.data as Reservation).fecha_inicio;
               const fechaFin = isStudent ? (req.data as StudentRequest).fecha_fin : (req.data as Reservation).fecha_fin;

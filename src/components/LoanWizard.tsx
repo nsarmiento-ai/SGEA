@@ -111,7 +111,7 @@ export const LoanWizard: React.FC = () => {
     try {
       const { data, error } = await supabase
         .from('solicitudes_alumnos')
-        .select('id, responsable, docente_nombre, materia, equipos, fecha_fin, dni, observaciones')
+        .select('id, responsable, docente_nombre, materia, equipos, fecha_fin, dni, observaciones, estado, tipo_uso, autorizado_por_docente, autorizado_por_direccion')
         .neq('estado', 'Entregado')
         .neq('estado', 'Rechazado')
         .neq('estado', 'Cancelado');
@@ -138,7 +138,9 @@ export const LoanWizard: React.FC = () => {
   };
 
   const currentStudentRequest = studentRequests.find(r => r.id === selectedStudentRequestId);
-  const isAuthorized = !selectedStudentRequestId || currentStudentRequest?.estado === 'Autorizado para Despacho';
+  const isAuthorized = !selectedStudentRequestId || 
+    currentStudentRequest?.estado === 'Autorizado para Despacho' ||
+    (currentStudentRequest?.tipo_uso === 'Uso en Escuela' && !!currentStudentRequest?.autorizado_por_docente);
 
   const fetchDocentes = async () => {
     // We use CONTACTS_DATA now for consistency
@@ -848,9 +850,11 @@ export const LoanWizard: React.FC = () => {
                   <div>
                     <p className="font-black uppercase tracking-wider mb-1">No se puede entregar</p>
                     <p className="font-medium">
-                      {currentStudentRequest?.estado === 'Pendiente de Aval Docente' 
+                      {!currentStudentRequest?.autorizado_por_docente 
                         ? 'Pendiente de aprobación del docente' 
-                        : 'Pendiente de aprobación de Dirección'}
+                        : currentStudentRequest?.tipo_uso === 'Uso Externo' && !currentStudentRequest?.autorizado_por_direccion
+                          ? 'Reserva Externa: Requiere aval de Dirección'
+                          : 'Procesando autorización...'}
                     </p>
                   </div>
                 </div>

@@ -57,6 +57,10 @@ export const PublicView: React.FC = () => {
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [reservations, setReservations] = useState<Reservation[]>([]);
   const [loans, setLoans] = useState<Loan[]>([]);
+  const [selectedDayEvents, setSelectedDayEvents] = useState<{
+    date: Date;
+    events: { type: 'reserva' | 'prestamo', equipmentNames: string[], time: string }[]
+  } | null>(null);
 
   useEffect(() => {
     fetchData();
@@ -73,12 +77,12 @@ export const PublicView: React.FC = () => {
 
       const { data: resData } = await supabase
         .from('reservas')
-        .select('fecha_inicio, fecha_fin, equipos_ids, estado')
-        .in('estado', ['Pendiente', 'Aprobada']);
+        .select('id, fecha_inicio, fecha_fin, equipos_ids, estado')
+        .in('estado', ['Pendiente', 'Aprobada', 'Activa']);
 
       const { data: loanData } = await supabase
         .from('prestamos')
-        .select('fecha_salida, fecha_devolucion_estimada, equipos_ids, estado')
+        .select('id, fecha_salida, fecha_devolucion_estimada, equipos_ids, estado')
         .eq('estado', 'Activo');
 
       if (eqData) setEquipments(eqData as any);
@@ -88,6 +92,37 @@ export const PublicView: React.FC = () => {
       console.error('Error fetching public data:', error);
     }
     setLoading(false);
+  };
+
+  const handleDayClick = (day: Date) => {
+    const dayReservations = reservations.filter(r => {
+      const start = startOfDay(parseISO(r.fecha_inicio));
+      const end = endOfDay(parseISO(r.fecha_fin));
+      return isWithinInterval(day, { start, end });
+    });
+
+    const dayLoans = loans.filter(l => {
+      const start = startOfDay(parseISO(l.fecha_salida));
+      const end = endOfDay(parseISO(l.fecha_devolucion_estimada));
+      return isWithinInterval(day, { start, end });
+    });
+
+    const events = [
+      ...dayReservations.map(r => ({
+        type: 'reserva' as const,
+        equipmentNames: r.equipos_ids.map(id => equipments.find(e => e.id === id)?.nombre || 'Equipo no identificado'),
+        time: `${format(parseISO(r.fecha_inicio), 'HH:mm')} - ${format(parseISO(r.fecha_fin), 'HH:mm')}`
+      })),
+      ...dayLoans.map(l => ({
+        type: 'prestamo' as const,
+        equipmentNames: l.equipos_ids.map(id => equipments.find(e => e.id === id)?.nombre || 'Equipo no identificado'),
+        time: `${format(parseISO(l.fecha_salida), 'HH:mm')} - ${format(parseISO(l.fecha_devolucion_estimada), 'HH:mm')}`
+      }))
+    ];
+
+    if (events.length > 0) {
+      setSelectedDayEvents({ date: day, events });
+    }
   };
 
   const toggleSelection = (id: string) => {
@@ -335,7 +370,7 @@ export const PublicView: React.FC = () => {
                     {d}
                   </div>
                 ))}
-                {renderCalendarCells(currentMonth, reservations, loans)}
+                {renderCalendarCells(currentMonth, reservations, loans, handleDayClick)}
               </div>
               
               <div className="p-4 bg-blue-50 border border-blue-100 rounded-2xl flex items-start gap-3">
@@ -383,11 +418,77 @@ export const PublicView: React.FC = () => {
           Panel Administrativo
         </button>
       </footer>
+
+      {/* Event Detail Modal (Public) */}
+      <AnimatePresence>
+        {selectedDayEvents && (
+          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.95, opacity: 0 }}
+              className="bg-white w-full max-w-lg rounded-3xl shadow-2xl overflow-hidden"
+            >
+              <div className="p-6 border-b border-slate-100 flex items-center justify-between">
+                <div>
+                  <h3 className="text-xl font-bold text-slate-900">Agenda del día</h3>
+                  <p className="text-xs font-bold text-slate-500 uppercase tracking-widest mt-1">
+                    {format(selectedDayEvents.date, "EEEE d 'de' MMMM", { locale: es })}
+                  </p>
+                </div>
+                <button 
+                  onClick={() => setSelectedDayEvents(null)}
+                  className="p-2 hover:bg-slate-100 rounded-xl transition-colors"
+                >
+                  <XCircle className="w-6 h-6 text-slate-400" />
+                </button>
+              </div>
+
+              <div className="p-6 space-y-4 max-h-[60vh] overflow-y-auto">
+                {selectedDayEvents.events.map((ev, i) => (
+                  <div key={i} className="flex gap-4 items-start p-4 bg-slate-50 rounded-2xl border border-slate-100">
+                    <div className={cn(
+                      "w-10 h-10 rounded-xl flex items-center justify-center shrink-0 shadow-sm",
+                      ev.type === 'reserva' ? "bg-amber-100 text-amber-600" : "bg-emerald-100 text-emerald-600"
+                    )}>
+                      {ev.type === 'reserva' ? <CalendarIcon className="w-5 h-5" /> : <Clock className="w-5 h-5" />}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">
+                          Reserva Confirmada
+                        </span>
+                        <span className="text-[10px] font-black text-slate-900 bg-white px-2 py-0.5 rounded border border-slate-200">
+                          {ev.time}
+                        </span>
+                      </div>
+                      <div className="space-y-1">
+                        {ev.equipmentNames.map((name, j) => (
+                          <div key={j} className="flex items-center gap-2 text-xs font-bold text-slate-700">
+                            <div className="w-1.5 h-1.5 rounded-full bg-slate-300" />
+                            {name}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              <div className="p-6 bg-slate-50 border-t border-slate-100 text-center">
+                <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">
+                  Escuela Universitaria de Cine, Video y TV
+                </p>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </div>
   );
 };
 
-const renderCalendarCells = (currentMonth: Date, reservations: any[], loans: any[]) => {
+const renderCalendarCells = (currentMonth: Date, reservations: any[], loans: any[], onDayClick: (day: Date) => void) => {
   const monthStart = startOfMonth(currentMonth);
   const monthEnd = endOfMonth(monthStart);
   const startDate = startOfWeek(monthStart);
@@ -412,16 +513,21 @@ const renderCalendarCells = (currentMonth: Date, reservations: any[], loans: any
       return isWithinInterval(cloneDay, { start, end });
     });
 
+    const isInteractable = hasReservation || hasLoan;
+
     days.push(
-      <div
+      <button
         key={day.toString()}
+        onClick={() => isInteractable && onDayClick(cloneDay)}
+        disabled={!isInteractable}
         className={cn(
-          "min-h-[60px] md:min-h-[100px] bg-white border border-slate-100 p-2 transition-all relative flex flex-col",
-          !isSameMonth(day, monthStart) ? "bg-slate-50/50 text-slate-200" : "text-slate-900"
+          "min-h-[60px] md:min-h-[100px] bg-white border border-slate-100 p-2 transition-all relative flex flex-col items-start w-full text-left",
+          !isSameMonth(day, monthStart) ? "bg-slate-50/50 text-slate-200" : "text-slate-900",
+          isInteractable ? "hover:bg-amber-50/30 cursor-pointer" : "cursor-default"
         )}
       >
         <span className="text-[10px] font-bold mb-1">{format(day, 'd')}</span>
-        <div className="flex-1 flex flex-col gap-1 overflow-hidden">
+        <div className="w-full flex-1 flex flex-col gap-1 overflow-hidden pointer-events-none">
           {hasLoan && (
              <div className="h-1.5 md:h-5 bg-emerald-500 bg-opacity-10 border border-emerald-500/20 rounded flex items-center px-1.5">
                <span className="hidden md:inline text-[9px] font-bold text-emerald-700 uppercase tracking-tighter">Ocupado</span>
@@ -433,7 +539,7 @@ const renderCalendarCells = (currentMonth: Date, reservations: any[], loans: any
              </div>
           )}
         </div>
-      </div>
+      </button>
     );
     day = addDays(day, 1);
   }
