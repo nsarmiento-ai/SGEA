@@ -19,14 +19,16 @@ export const generateLoanPDF = (
   loan: any, 
   equipments: Equipment[], 
   docenteEmail?: string,
-  authorizedIds: string[] = []
+  authorizedIds: string[] | null = null
 ) => {
   const doc = new jsPDF();
   const pageWidth = doc.internal.pageSize.getWidth();
 
   // Use DB fields if available, otherwise fallback to authorizedIds passed
-  // We check for equipos_autorizados in the loan object - this might be in a 'metadata' field too
-  const dbAuthorized = (loan.metadata?.equipos_autorizados || loan.equipos_autorizados || authorizedIds || []).map(String);
+  // If we don't have any record of authorized IDs (direct loan), we shouldn't mark anything as "SIN AVAL"
+  const requestedIds = loan.metadata?.equipos_autorizados || loan.equipos_autorizados || authorizedIds;
+  const isDirectLoan = !requestedIds; 
+  const dbAuthorized = (requestedIds || []).map(String);
   
   // Header Icon/Logo (Simple Circle for logo)
   doc.setFillColor(245, 158, 11);
@@ -62,9 +64,9 @@ export const generateLoanPDF = (
   const nonAuthorizedNames: string[] = [];
 
   equipments.forEach(eq => {
-    // Check if authorized. If it's a direct loan (authorizedIds is empty), everything is marked as not authorized.
-    // If it's from a request, only the ones in authorizedIds are marked as OK.
-    const isActuallyAuthorized = dbAuthorized.includes(String(eq.id));
+    // If it's a direct loan (no prior search for auth), consider items as authorized.
+    // If we have a list of authorized IDs, check if it's there.
+    const isActuallyAuthorized = isDirectLoan || dbAuthorized.includes(String(eq.id));
     if (!isActuallyAuthorized) nonAuthorizedNames.push(eq.nombre);
     
     // Main equipment row

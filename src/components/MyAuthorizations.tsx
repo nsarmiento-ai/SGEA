@@ -36,20 +36,65 @@ export const MyAuthorizations: React.FC = () => {
     if (!userEmail) return;
     setLoading(true);
     
-    let query = supabase.from('solicitudes_alumnos').select('*');
-    
-    // Director sees everything that was directed to them or all (depending on scope)
-    // Teacher sees only their own
-    if (role === 'Director') {
-       // Director looks at all external usage requests
-       query = query.eq('tipo_uso', 'Uso Externo');
-    } else {
-       query = query.eq('docente_id', userEmail);
-    }
+    try {
+      // I will refactor to fetch both and unify.
+      const [studentRes, reservationsRes] = await Promise.all([
+        (async () => {
+          let q = supabase.from('solicitudes_alumnos').select('*');
+          if (role === 'Director') {
+            q = q.eq('tipo_uso', 'Uso Externo');
+          } else {
+             q = q.eq('docente_id', userEmail);
+          }
+          return q.order('created_at', { ascending: false });
+        })(),
+        (async () => {
+          // Director also sees Docente reservations requiring evaluation or already evaluated
+          if (role === 'Director') {
+            return supabase
+              .from('reservas')
+              .select('*')
+              .or('estado.eq.Pendiente Aval,materia.ilike.%[Uso Externo]%')
+              .order('created_at', { ascending: false });
+          }
+          return { data: [] };
+        })()
+      ]);
 
-    const { data } = await query.order('created_at', { ascending: false });
-    if (data) setRequests(data as StudentRequest[]);
-    setLoading(false);
+      const studentData = studentRes.data || [];
+      const resData = reservationsRes.data || [];
+
+      const unified: StudentRequest[] = [
+        ...studentData.map(s => ({ ...s, _table: 'solicitudes_alumnos' })),
+        ...resData.filter(r => {
+          // Include Pendiente Aval OR [Uso Externo] reservations that were handled
+          const isExternal = r.materia?.includes('[Uso Externo]');
+          return r.estado === 'Pendiente Aval' || (isExternal && (r.estado === 'Aprobada' || r.estado === 'Entregada'));
+        }).map(r => ({
+          id: r.id,
+          responsable: r.docente_nombre,
+          dni: 'N/A',
+          materia: r.materia || 'S/M',
+          docente_id: r.usuario_id,
+          docente_nombre: r.docente_nombre,
+          tipo_uso: 'Uso Externo',
+          equipos: r.equipos_ids,
+          fecha_inicio: r.fecha_inicio,
+          fecha_fin: r.fecha_fin,
+          estado: r.estado as any,
+          created_at: r.created_at,
+          _table: 'reservas'
+        } as any))
+      ];
+
+      setRequests(unified.sort((a, b) => 
+        new Date(b.created_at!).getTime() - new Date(a.created_at!).getTime()
+      ));
+    } catch (err) {
+      console.error('Error fetching authorizations:', err);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const fetchEquipment = async () => {

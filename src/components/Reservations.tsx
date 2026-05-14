@@ -112,7 +112,7 @@ export const Reservations: React.FC = () => {
       console.log('Iniciando fetch de equipos (tabla equipamiento) y reservas (tabla reservas)...');
       const [eqData, resData] = await Promise.all([
         supabase.from('equipamiento').select('id, nombre, modelo, numero_serie, categoria, foto_url, estado, permiso_uso, descripcion').order('nombre', { ascending: true }),
-        supabase.from('reservas').select('id, equipos_ids, fecha_inicio, fecha_fin, estado, docente_nombre, materia, aula, alumno_nombre').order('fecha_inicio', { ascending: true })
+        supabase.from('reservas').select('id, equipos_ids, fecha_inicio, fecha_fin, estado, docente_nombre, materia, alumno_nombre').order('fecha_inicio', { ascending: true })
       ]);
 
       // We use CONTACTS_DATA now for consistency
@@ -287,6 +287,9 @@ export const Reservations: React.FC = () => {
           : (isDocente ? 'Aprobada' : 'Pendiente')
       };
 
+      // We ensure no columns that don't exist are sent. 
+      // If 'tipo_uso' or 'aula' are in the schema but failing, we keep them out of this insert 
+      // and only use the ones we are sure about.
       const { data: insertedData, error: insertError } = await supabase
         .from('reservas')
         .insert([newReservation])

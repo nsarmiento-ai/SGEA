@@ -64,7 +64,7 @@ export const LoanHistory: React.FC = () => {
     if (loan.estado === 'Finalizado') {
       generateReturnPDF(loan, loanEqs, loan.responsable_nombre, targetDocente?.email);
     } else {
-      generateLoanPDF(loan, loanEqs, targetDocente?.email, []);
+      generateLoanPDF(loan, loanEqs, targetDocente?.email, null);
     }
   };
 

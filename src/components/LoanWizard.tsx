@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { supabase, logAction } from '../lib/supabase';
 import { Equipment, Loan, Reservation, Responsable, StudentRequest } from '../types';
 import { useApp } from '../context/AppContext';
@@ -47,7 +47,7 @@ export const LoanWizard: React.FC = () => {
   const [showDocenteSuggestions, setShowDocenteSuggestions] = useState(false);
   const [finishedLoan, setFinishedLoan] = useState<any>(null);
   const [selectedStudentRequestId, setSelectedStudentRequestId] = useState<string | null>(null);
-  const [authorizedEquipmentsIds, setAuthorizedEquipmentsIds] = useState<string[]>([]);
+  const [authorizedEquipmentsIds, setAuthorizedEquipmentsIds] = useState<string[] | null>(null);
   const [syncConflict, setSyncConflict] = useState<{ nombre: string, estado: string, id: string }[] | null>(null);
   
   const [formData, setFormData] = useState({
@@ -139,11 +139,12 @@ export const LoanWizard: React.FC = () => {
 
   const currentStudentRequest = studentRequests.find(r => r.id === selectedStudentRequestId);
   const isAuthorized = !selectedStudentRequestId || 
-    currentStudentRequest?.estado === 'Autorizado para Despacho' ||
-    (currentStudentRequest?.tipo_uso === 'Uso en Escuela' && !!currentStudentRequest?.autorizado_por_docente);
+    (currentStudentRequest?.estado === 'Autorizado para Despacho' ||
+    (currentStudentRequest?.tipo_uso === 'Uso en Escuela' && !!currentStudentRequest?.autorizado_por_docente));
+
+  const equipmentsToRevertState = useRef<string[]>([]); // Using ref to track for rollback
 
   const fetchDocentes = async () => {
-    // We use CONTACTS_DATA now for consistency
     const formatted = CONTACTS_DATA.map(c => ({
       id: c.email,
       nombre_completo: c.nombre,
@@ -157,22 +158,14 @@ export const LoanWizard: React.FC = () => {
   const fetchAvailable = async () => {
     setLoading(true);
     try {
-      console.log('LoanWizard: Fetching available equipment...');
       const [eqRes, resRes] = await Promise.all([
         supabase.from('equipamiento').select('id, nombre, modelo, categoria, numero_serie, foto_url, estado, piezas, permiso_uso'),
         supabase.from('reservas').select('id, docente_nombre, alumno_nombre, equipos_ids, fecha_fin, materia')
       ]);
-      
-      if (eqRes.error) throw eqRes.error;
-      
-      if (eqRes.data) {
-        console.log(`LoanWizard: Fetched ${eqRes.data.length} total items.`);
-        setEquipments(eqRes.data);
-      }
-      
-      if (resRes.data) setReservations(resRes.data);
+      if (eqRes.data) setEquipments(eqRes.data);
+      if (resRes.data) setReservations(resRes.data || []);
     } catch (err) {
-      console.error('LoanWizard: Error fetching available equipment:', err);
+      console.error('Error fetching data:', err);
     } finally {
       setLoading(false);
     }
@@ -198,28 +191,24 @@ export const LoanWizard: React.FC = () => {
         isAfter(returnDate, parseISO(r.fecha_inicio)) &&
         isAfter(parseISO(r.fecha_fin), salidaDate)
       );
-      
-      if (conflictRes) {
-        newConflicts[id] = conflictRes;
-      }
+      if (conflictRes) newConflicts[id] = conflictRes;
     });
-
     setConflicts(newConflicts);
   }, [selectedIds, formData.fechaDevolucion, reservations]);
 
   const isFormValid = () => {
-    const valid = !!(
+    return !!(
       formData.alumno_nombre && 
       formData.alumno_dni && 
       formData.materia &&
       formData.docente_responsable &&
       selectedIds.length > 0 && 
       activeResponsable &&
-      // isAuthorized && // Remove this requirement as requested
       Object.keys(conflicts).length === 0
     );
-    return valid;
   };
+
+  const equiposAutorizadosIdsArray = authorizedEquipmentsIds || [];
 
   const handleFinish = async () => {
     const returnDate = parseISO(formData.fechaDevolucion);
@@ -245,8 +234,8 @@ export const LoanWizard: React.FC = () => {
 
     try {
       // Logic for tracking added equipment
-      const equipos_autorizados = selectedIds.filter(id => authorizedEquipmentsIds.includes(id));
-      const equipos_adicionales = selectedIds.filter(id => !authorizedEquipmentsIds.includes(id));
+      const equipos_autorizados = selectedIds.filter(id => equiposAutorizadosIdsArray.includes(id));
+      const equipos_adicionales = selectedIds.filter(id => !equiposAutorizadosIdsArray.includes(id));
       const hasAddedEquipment = equipos_adicionales.length > 0;
       
       // Global partial authorization flag
