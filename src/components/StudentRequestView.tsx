@@ -93,7 +93,12 @@ export const StudentRequestView: React.FC = () => {
         .insert([newRequest])
         .select();
 
-      if (insertError) throw insertError;
+      if (insertError) {
+        if (insertError.code === 'PGRST303' || insertError.status === 401) {
+          throw new Error('SGEA_SESSION_EXPIRED');
+        }
+        throw insertError;
+      }
       console.log('Solicitud enviada con éxito:', data);
       
       // Auto-generate voucher
@@ -104,6 +109,11 @@ export const StudentRequestView: React.FC = () => {
       setSubmitted(true);
     } catch (err: any) {
       console.error('Error submitting request:', err);
+      if (err.message === 'SGEA_SESSION_EXPIRED') {
+        alert('Su sesión ha expirado. Por favor, vuelva a cargar la página o iniciar sesión.');
+        window.location.reload();
+        return;
+      }
       setError('Hubo un error al enviar la solicitud. Por favor, intente nuevamente.');
     } finally {
       setLoading(false);

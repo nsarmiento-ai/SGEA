@@ -411,6 +411,11 @@ export const LoanWizard: React.FC = () => {
 
     } catch (error: any) {
       console.error('Error al registrar el préstamo:', error);
+      if (error.code === 'PGRST303' || error.status === 401) {
+        alert('Su sesión ha expirado. Por favor, vuelva a iniciar sesión para continuar.');
+        window.location.reload();
+        return;
+      }
       alert(`Error al registrar el préstamo: ${error.message || 'Revisa la consola'}`);
     } finally {
       setSubmitting(false);

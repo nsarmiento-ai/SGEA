@@ -464,8 +464,13 @@ const ReceiveModal: React.FC<{ loan: Loan, equipmentsMap: Record<string, Equipme
         responsableRecibe: activeResponsable!, 
         docenteEmail: targetDocente?.email 
       });
-    } catch (error) {
+    } catch (error: any) {
       console.error(error);
+      if (error.code === 'PGRST303' || error.status === 401) {
+        alert('Su sesión ha expirado. Por favor, vuelva a iniciar sesión para continuar.');
+        window.location.reload();
+        return;
+      }
       alert('Error al procesar la devolución.');
     } finally {
       setLoading(false);

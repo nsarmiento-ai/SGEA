@@ -131,7 +131,12 @@ export const StudentRequestsManager: React.FC<{ filterDireccion?: boolean }> = (
         .update(updateData)
         .eq('id', request.id);
 
-      if (error) throw error;
+      if (error) {
+        if (error.code === 'PGRST303' || error.status === 401) {
+          throw new Error('SGEA_SESSION_EXPIRED');
+        }
+        throw error;
+      }
       
       // Log historical operation
       await logAction(
@@ -147,9 +152,14 @@ export const StudentRequestsManager: React.FC<{ filterDireccion?: boolean }> = (
       );
 
       setRequests(prev => prev.filter(r => r.id !== request.id));
-    } catch (err) {
+    } catch (err: any) {
       console.error('Error authorizing request:', err);
-      alert('Error en la autorización. Verifique la consola.');
+      if (err.message === 'SGEA_SESSION_EXPIRED') {
+        alert('Su sesión ha expirado. Por favor, vuelva a iniciar sesión para continuar.');
+        window.location.reload();
+      } else {
+        alert('Error en la autorización. Verifique su conexión o intente nuevamente.');
+      }
     } finally {
       setProcessingId(null);
     }
@@ -164,7 +174,12 @@ export const StudentRequestsManager: React.FC<{ filterDireccion?: boolean }> = (
         .update({ estado: (request as any)._table === 'reservas' ? 'Rechazada' : 'Rechazado' })
         .eq('id', request.id);
 
-      if (error) throw error;
+      if (error) {
+        if (error.code === 'PGRST303' || error.status === 401) {
+          throw new Error('SGEA_SESSION_EXPIRED');
+        }
+        throw error;
+      }
 
       // Log rejection
       await logAction(
@@ -174,8 +189,12 @@ export const StudentRequestsManager: React.FC<{ filterDireccion?: boolean }> = (
       );
 
       setRequests(prev => prev.filter(r => r.id !== request.id));
-    } catch (err) {
+    } catch (err: any) {
       console.error('Error rejecting request:', err);
+      if (err.message === 'SGEA_SESSION_EXPIRED') {
+        alert('Su sesión ha expirado. Por favor, vuelva a iniciar sesión para continuar.');
+        window.location.reload();
+      }
     } finally {
       setProcessingId(null);
     }

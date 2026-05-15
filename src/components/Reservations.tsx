@@ -297,7 +297,12 @@ export const Reservations: React.FC = () => {
         .insert([newReservation])
         .select()
         .single();
-      if (insertError) throw insertError;
+      if (insertError) {
+        if (insertError.code === 'PGRST303' || insertError.status === 401) {
+          throw new Error('SGEA_SESSION_EXPIRED');
+        }
+        throw insertError;
+      }
 
       console.log('Reserva guardada con éxito', insertedData);
 
@@ -334,6 +339,11 @@ export const Reservations: React.FC = () => {
       await fetchData();
     } catch (err: any) {
       console.error('ERROR DE SUPABASE:', err);
+      if (err.message === 'SGEA_SESSION_EXPIRED') {
+        alert('Su sesión ha expirado. Por favor, vuelva a iniciar sesión para continuar.');
+        window.location.reload();
+        return;
+      }
       const errorMsg = err.message || JSON.stringify(err);
       setError(errorMsg);
       alert(`Error al guardar la reserva: ${errorMsg}`);
