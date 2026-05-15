@@ -70,7 +70,8 @@ export const MyAuthorizations: React.FC = () => {
         ...resData.filter(r => {
           // Include Pendiente Aval OR [Uso Externo] reservations that were handled
           const isExternal = r.materia?.includes('[Uso Externo]');
-          return r.estado === 'Pendiente Aval' || (isExternal && (r.estado === 'Aprobada' || r.estado === 'Entregada'));
+          const needsDirector = r.materia?.includes('[Requiere Aval de Dirección]');
+          return r.estado === 'Pendiente Aval' || (isExternal && (r.estado === 'Avalada' || r.estado === 'Aprobada' || r.estado === 'Entregada' || (r.estado === 'Pendiente' && needsDirector)));
         }).map(r => ({
           id: r.id,
           responsable: r.docente_nombre,
@@ -163,7 +164,12 @@ export const MyAuthorizations: React.FC = () => {
             >
               <div className="p-5 border-b border-slate-100 flex justify-between items-start gap-3">
                 <div className="min-w-0">
-                  <h3 className="text-sm font-bold text-slate-900 truncate">{req.responsable}</h3>
+                  <h3 className="text-sm font-bold text-slate-900 truncate flex items-center gap-2">
+                    {req.responsable}
+                    {(req as any)._table === 'reservas' && (
+                       <ShieldCheck className="w-3 h-3 text-green-600" title="Aval Docente Incluido" />
+                    )}
+                  </h3>
                   <p className="text-[10px] font-bold text-slate-400 uppercase tracking-tight truncate">{req.materia}</p>
                 </div>
                 <span className={cn(

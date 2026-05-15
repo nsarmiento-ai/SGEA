@@ -83,11 +83,18 @@ export const LoanWizard: React.FC = () => {
       const equiposArray = resEquipos.split(',');
       setSelectedIds(equiposArray);
       setAuthorizedEquipmentsIds(equiposArray);
+      const cleanMateria = (resMateria || '')
+        .replace(/\[Requiere Aval de Dirección\]/g, '')
+        .replace(/\[Uso Externo\]/g, '')
+        .replace(/\[Uso Interno\]/g, '')
+        .replace(/\[Auto-Aval Docente\]/g, '')
+        .trim();
+        
       setFormData(prev => ({
         ...prev,
         docente_responsable: resDocente || '',
         alumno_nombre: resAlumno || '',
-        materia: resMateria || '',
+        materia: cleanMateria || prev.materia,
         fechaDevolucion: resFin ? format(parseISO(resFin), "yyyy-MM-dd'T'HH:mm") : prev.fechaDevolucion
       }));
       setReservationId(resId);
@@ -126,13 +133,20 @@ export const LoanWizard: React.FC = () => {
   };
 
   const selectStudentRequest = (req: StudentRequest) => {
+    const cleanMateria = (req.materia || '')
+      .replace(/\[Requiere Aval de Dirección\]/g, '')
+      .replace(/\[Uso Externo\]/g, '')
+      .replace(/\[Uso Interno\]/g, '')
+      .replace(/\[Auto-Aval Docente\]/g, '')
+      .trim();
+
     setSelectedStudentRequestId(req.id);
     setSelectedIds(req.equipos);
     setAuthorizedEquipmentsIds(req.equipos);
     setFormData({
       alumno_nombre: req.responsable,
       alumno_dni: req.dni,
-      materia: req.materia,
+      materia: cleanMateria || req.materia,
       docente_responsable: req.docente_nombre,
       fechaDevolucion: format(parseISO(req.fecha_fin), "yyyy-MM-dd'T'HH:mm"),
       comentarios: req.observaciones || ''

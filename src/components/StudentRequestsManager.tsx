@@ -114,7 +114,7 @@ export const StudentRequestsManager: React.FC<{ filterDireccion?: boolean }> = (
     try {
       const isReserva = (request as any)._table === 'reservas';
       const updateData: any = { 
-        estado: isReserva ? 'Aprobada' : nextStatus
+        estado: isReserva ? 'Avalada' : nextStatus
       };
 
       // Only add authorization fields for student requests (solicitudes_alumnos)
@@ -268,11 +268,17 @@ export const StudentRequestsManager: React.FC<{ filterDireccion?: boolean }> = (
                       </span>
                     </div>
 
-                    <h3 className="text-xl font-black text-slate-900 mb-6 flex items-center gap-3">
-                      <User className="w-5 h-5 text-amber-500" />
-                      {req.responsable} 
-                      <span className="text-slate-400 text-sm font-bold">DNI: {req.dni}</span>
-                    </h3>
+                      <h3 className="text-xl font-black text-slate-900 mb-6 flex items-center gap-3">
+                        <User className="w-5 h-5 text-amber-500" />
+                        {req.responsable} 
+                        <span className="text-slate-400 text-sm font-bold">DNI: {req.dni}</span>
+                        {(req as any)._table === 'reservas' && (
+                          <span className="ml-auto bg-green-50 text-green-700 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest border border-green-200 flex items-center gap-1">
+                            <ShieldCheck className="w-3 h-3" />
+                            ✅ Aval Docente Incluido
+                          </span>
+                        )}
+                      </h3>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
                       <div className="space-y-1">
@@ -335,7 +341,7 @@ export const StudentRequestsManager: React.FC<{ filterDireccion?: boolean }> = (
                         </div>
                         <ul className="space-y-2">
                           <li className="text-xs font-bold text-slate-600 flex items-center gap-2">
-                            <CheckCircle className={`w-3.3 h-3.3 ${(req.autorizado_por_docente || (req as any).estado_docente === 'aprobado') ? 'text-green-500' : 'text-slate-300'}`} />
+                            <CheckCircle className={`w-3.3 h-3.3 ${(req.autorizado_por_docente || (req as any)._table === 'reservas' || (req.materia || '').includes('[Auto-Aval Docente]')) ? 'text-green-500' : 'text-slate-300'}`} />
                             Aval Docente {(req as any)._table === 'reservas' && ' (Autor)'}
                           </li>
                           {req.tipo_uso === 'Uso Externo' && (
