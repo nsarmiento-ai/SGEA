@@ -160,9 +160,11 @@ export const PendingReservations: React.FC = () => {
                   const rawData = req.data as any;
                   const isExterno = (rawData.materia || '').toLowerCase().includes('externo') || rawData.tipo_uso === 'Uso Externo';
                   
-                  // estado_docente === 'aprobado' (implicit for teachers)
+                  // rawData.estado_docente is gone, we check for presence of Auto-Aval or state
+                  const isAutoAvalDocente = (rawData.materia || '').includes('[Auto-Aval Docente]') || rawData.estado === 'Avalada' || rawData.estado === 'Pendiente de Dirección';
+                  
                   // For students, autorizado_por_docente is the flag
-                  const hasDocenteAval = isStudent ? !!studentData?.autorizado_por_docente : (rawData.estado_docente === 'aprobado');
+                  const hasDocenteAval = isStudent ? !!studentData?.autorizado_por_docente : isAutoAvalDocente;
                   // For students, autorizado_por_direccion is the flag
                   // For reservas, reaching 'Aprobada' means Director ok (if it was external) or automatic ok (if internal)
                   const hasDirectorAval = isStudent ? !!studentData?.autorizado_por_direccion : (rawData.estado === 'Aprobada');
@@ -209,15 +211,10 @@ export const PendingReservations: React.FC = () => {
                         </span>
                         <span className={cn(
                           "px-2 py-0.5 rounded-full text-[8px] font-black uppercase tracking-widest border shadow-sm",
-                          (req.data as Reservation).estado === 'Aprobada' ? "bg-green-50 text-green-700 border-green-200" : "bg-amber-50 text-amber-700 border-amber-200"
+                          (req.data as Reservation).estado === 'Aprobada' || (req.data as Reservation).estado === 'Avalada' ? "bg-green-50 text-green-700 border-green-200" : "bg-amber-50 text-amber-700 border-amber-200"
                         )}>
                           {(req.data as Reservation).estado}
                         </span>
-                        {(req.data as Reservation).tipo_uso && (
-                          <span className="bg-slate-100 text-slate-600 px-2 py-0.5 rounded-full text-[8px] font-black uppercase tracking-widest border border-slate-200">
-                            {(req.data as Reservation).tipo_uso}
-                          </span>
-                        )}
                       </div>
                     )}
                     

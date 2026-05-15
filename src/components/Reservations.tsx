@@ -272,7 +272,7 @@ export const Reservations: React.FC = () => {
         return;
       }
 
-      console.log('Intentando reserva con:', { user, carrito: cart });
+      console.log('Intentando reserva con:', { usuario: user.email, carrito: cart.map(c => c.nombre) });
 
       const isExterno = formData.tipo_uso === 'Uso Externo';
       
@@ -282,15 +282,11 @@ export const Reservations: React.FC = () => {
         fecha_inicio: new Date(formData.fecha_inicio).toISOString(),
         fecha_fin: new Date(formData.fecha_fin).toISOString(),
         docente_nombre: formData.docente_nombre || activeResponsable || '',
-        materia: `[${formData.tipo_uso}] ${formData.materia}`.trim(),
+        materia: `[${formData.tipo_uso}]${isDocente ? ' [Auto-Aval Docente]' : ''} ${formData.materia}`.trim(),
         alumno_nombre: formData.alumno_nombre,
         estado: isExterno
           ? (isDocente ? 'Pendiente de Dirección' : 'Pendiente Aval')
-          : (isDocente ? 'Aprobada' : 'Pendiente'),
-        // Implicitly approved if created by a Teacher
-        estado_docente: isDocente ? 'aprobado' : 'pendiente',
-        docente_aval_id: isDocente ? user.email : null,
-        tipo_uso: formData.tipo_uso
+          : (isDocente ? 'Avalada' : 'Pendiente')
       };
 
       // We ensure no columns that don't exist are sent. 
@@ -312,8 +308,7 @@ export const Reservations: React.FC = () => {
       await logAction(activeResponsable!, logMsg, { 
         equipos: cart.map(eq => eq.nombre),
         inicio: newReservation.fecha_inicio,
-        fin: newReservation.fecha_fin,
-        tipo_uso: newReservation.tipo_uso
+        fin: newReservation.fecha_fin
       });
 
       // Generar PDF

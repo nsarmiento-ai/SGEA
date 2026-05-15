@@ -31,9 +31,8 @@ export const generateLoanPDF = (
   const isDirectLoan = !requestedIds; 
   const dbAuthorized = (requestedIds || []).map(String);
   
-  // Teacher implicit approval: if the docente is the one who avaled (implied for teacher reserves)
-  // we consider all requestedIds as fully authorized.
-  const isTeacherReserva = loan.estado_docente === 'aprobado' || !!loan.docente_aval_id;
+  // Teacher implicit approval: detected via marker in materia or state
+  const isTeacherReserva = (loan.materia || '').includes('[Auto-Aval Docente]') || loan.estado === 'Avalada';
 
   // Header Icon/Logo (Simple Circle for logo)
   doc.setFillColor(245, 158, 11);
@@ -123,8 +122,7 @@ export const generateLoanPDF = (
     doc.setTextColor(180, 0, 0); // Bold red for warnings
     doc.setFont('helvetica', 'bold');
     
-    const names = nonAuthorizedNames.join(', ');
-    const disclaimerText = `IMPORTANTE - RESPONSABILIDAD PARCIAL: Los equipos [${names}] NO contaban con aval previo al momento del despacho. De acuerdo al Reglamento de Pañol, la responsabilidad total por el cuidado, integridad y devolución de dichos elementos recae exclusivamente en el solicitante que suscribe.`;
+    const disclaimerText = `IMPORTANTE - RESPONSABILIDAD PARCIAL: Los equipos [${nonAuthorizedNames.join(', ')}] NO contaban con aval previo al momento del despacho. De acuerdo al Reglamento de Pañol, la responsabilidad total por el cuidado, integridad y devolución de dichos elementos recae exclusivamente en el solicitante que suscribe.`;
     
     const splitText = doc.splitTextToSize(disclaimerText, pageWidth - 40);
     doc.text(splitText, 20, tableFinalY + 10);
@@ -167,7 +165,10 @@ export const generateReservationPDF = (reservation: any, equipments: Equipment[]
   doc.text(`Nro de Operación: ${reservation.id?.slice(0, 8).toUpperCase() || 'N/A'}`, 20, 45);
   doc.text(`Docente: ${reservation.docente_nombre}`, 20, 52);
   doc.text(`Email Docente: ${docenteEmail || 'N/A'}`, 20, 59);
-  doc.text(`Aval Docente: ${reservation.estado_docente === 'aprobado' ? (reservation.docente_aval_id || reservation.docente_nombre) : (reservation.autorizado_por_docente || 'Pendiente')}`, 20, 66);
+  
+  const isAutoAval = (reservation.materia || '').includes('[Auto-Aval Docente]');
+  doc.text(`Aval Docente: ${isAutoAval ? `${reservation.docente_nombre} (Auto-Aval)` : (reservation.autorizado_por_docente || 'Pendiente')}`, 20, 66);
+  
   doc.text(`Fecha Desde: ${formatDate(reservation.fecha_inicio)}`, 20, 73);
   doc.text(`Fecha Hasta: ${formatDate(reservation.fecha_fin)}`, 20, 80);
   doc.text(`Estado: ${reservation.estado.toUpperCase()}`, 20, 87);

@@ -160,7 +160,7 @@ export const LoanWizard: React.FC = () => {
     try {
       const [eqRes, resRes] = await Promise.all([
         supabase.from('equipamiento').select('id, nombre, modelo, categoria, numero_serie, foto_url, estado, piezas, permiso_uso'),
-        supabase.from('reservas').select('id, docente_nombre, alumno_nombre, equipos_ids, fecha_fin, materia, estado_docente, docente_aval_id')
+        supabase.from('reservas').select('id, docente_nombre, alumno_nombre, equipos_ids, fecha_fin, materia')
       ]);
       if (eqRes.data) setEquipments(eqRes.data);
       if (resRes.data) setReservations(resRes.data || []);
@@ -276,9 +276,7 @@ export const LoanWizard: React.FC = () => {
           equipos_autorizados,
           equipos_adicionales,
           fecha_devolucion_real: formData.fechaDevolucion,
-          authorized_by_request: selectedStudentRequestId || null,
-          estado_docente: originRes?.estado_docente || (selectedStudentRequestId ? (currentStudentRequest as any).estado_docente : null),
-          docente_aval_id: originRes?.docente_aval_id || (selectedStudentRequestId ? (currentStudentRequest as any).docente_aval_id : null)
+          authorized_by_request: selectedStudentRequestId || null
         };
 
         // A. Crear registro de préstamo
@@ -295,36 +293,11 @@ export const LoanWizard: React.FC = () => {
           comentarios: `${autorizacion_parcial ? '[AUTORIZACIÓN PARCIAL] ' : ''}${formData.comentarios}\n\nDetalle Técnico: Autorizados: ${equipos_autorizados.length}, Adicionales: ${equipos_adicionales.length}`.trim()
         };
 
-        // Inherit teacher approval fields to the loan record
-        if (metadata.estado_docente) loanData.estado_docente = metadata.estado_docente;
-        if (metadata.docente_aval_id) loanData.docente_aval_id = metadata.docente_aval_id;
-
-        // Attempt to save metadata if possible, otherwise rely on comments
-        // We add metadata to the object. If the column doesn't exist, Supabase returns 400.
-        // So we'll try with it first.
-        let loan: any;
-        let loanError: any;
-        
-        const { data, error } = await supabase
+        const { data: loan, error: loanError } = await supabase
           .from('prestamos')
-          .insert([{ ...loanData, metadata }]) // Try with metadata
+          .insert([loanData])
           .select()
           .single();
-        
-        loan = data;
-        loanError = error;
-
-        // Fallback if metadata column doesn't exist (Error 400)
-        if (loanError && (loanError.code === '42703' || loanError.status === 400)) {
-          console.warn('Metadata column likely missing, falling back to basic insert');
-          const { data: fallbackData, error: fallbackError } = await supabase
-            .from('prestamos')
-            .insert([loanData])
-            .select()
-            .single();
-          loan = fallbackData;
-          loanError = fallbackError;
-        }
 
         if (loanError || !loan) {
           throw new Error(loanError?.message || 'No se pudo crear el registro del préstamo.');
@@ -332,7 +305,7 @@ export const LoanWizard: React.FC = () => {
         createdLoanId = loan.id;
         
         // Ensure loan object passed to PDF has the metadata context
-        const loanWithContext = { ...loan, ...loanData, metadata: loan.metadata || metadata };
+        const loanWithContext = { ...loan, ...loanData, metadata };
 
       // B. Actualizar estados de equipos
       const { error: eqError } = await supabase
