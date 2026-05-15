@@ -181,7 +181,7 @@ export const generateReservationPDF = (reservation: any, equipments: Equipment[]
   }
 
   if (displayUsage) {
-    doc.text(`Tipo de Uso: ${displayUsage}`, 20, 87);
+    doc.text(`Tipo de Uso: ${displayUsage}`, 20, 94);
   }
 
   const isReady = reservation.estado === 'Aprobada' || reservation.estado === 'Avalada' || reservation.estado === 'Activa';

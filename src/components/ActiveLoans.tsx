@@ -313,16 +313,27 @@ export const ActiveLoans: React.FC<{ filterMora?: boolean }> = ({ filterMora = f
 const ReceiveModal: React.FC<{ loan: Loan, equipmentsMap: Record<string, Equipment>, docentes: Responsable[], onClose: () => void, onSuccess: (details: any) => void }> = ({ loan, equipmentsMap, docentes, onClose, onSuccess }) => {
   const { activeResponsable } = useApp();
   const [loading, setLoading] = useState(false);
-  const [observaciones, setObservaciones] = useState('');
+  const [observacionesGenerales, setObservacionesGenerales] = useState('');
   
-  const [checkedItems, setCheckedItems] = useState<Record<string, boolean>>(() => {
-    const initial: Record<string, boolean> = {};
+  // Track status per item: 'ok' or 'problem'
+  const [itemConditions, setItemConditions] = useState<Record<string, 'ok' | 'problem' | null>>(() => {
+    const initial: Record<string, 'ok' | 'problem' | null> = {};
     (loan.equipos_ids || []).forEach(id => {
-      initial[id] = true;
+      initial[id] = null;
     });
     return initial;
   });
 
+  // Track notes per item (only shown if status is 'problem')
+  const [itemNotes, setItemNotes] = useState<Record<string, string>>(() => {
+    const initial: Record<string, string> = {};
+    (loan.equipos_ids || []).forEach(id => {
+      initial[id] = '';
+    });
+    return initial;
+  });
+
+  // Handle equipment returned status (for the database field 'estado')
   const [itemStatuses, setItemStatuses] = useState<Record<string, string>>(() => {
     const initial: Record<string, string> = {};
     (loan.equipos_ids || []).forEach(id => {
@@ -331,14 +342,11 @@ const ReceiveModal: React.FC<{ loan: Loan, equipmentsMap: Record<string, Equipme
     return initial;
   });
   
-  // State to track the status of each equipment for piece details if needed
   const [equipmentStates, setEquipmentStates] = useState<Record<string, Equipment>>(() => {
     const initialState: Record<string, Equipment> = {};
     (loan.equipos_ids || []).forEach(id => {
       if (equipmentsMap && equipmentsMap[id]) {
         const eq = { ...equipmentsMap[id] };
-        
-        // Safeguard: If piezas comes as a string from DB, parse it
         if (typeof eq.piezas === 'string') {
           try {
             eq.piezas = JSON.parse(eq.piezas || '[]');
@@ -346,47 +354,47 @@ const ReceiveModal: React.FC<{ loan: Loan, equipmentsMap: Record<string, Equipme
             eq.piezas = [];
           }
         }
-        
-        // Ensure it's at least an empty array
         if (!eq.piezas) eq.piezas = [];
-        
         initialState[id] = eq;
       }
     });
     return initialState;
   });
 
+  const isReadyToSubmit = Object.values(itemConditions).every(condition => condition !== null);
+
   const handleConfirm = async () => {
-    if (!observaciones.trim()) {
-      alert('Por favor, ingrese las observaciones de la devolución.');
+    if (!isReadyToSubmit) {
+      alert('Por favor, verifique todos los artículos antes de finalizar.');
       return;
     }
-
-    const loanItems = (loan.equipos_ids || []);
-    const checkedIds = loanItems.filter(id => !!checkedItems[id]);
-    const missingIds = loanItems.filter(id => !checkedItems[id]);
-    const isAllReturned = missingIds.length === 0;
 
     setLoading(true);
     try {
       const returnedEquipmentsData: Equipment[] = [];
+      const loanItems = (loan.equipos_ids || []);
+      
+      let compositeNotes = observacionesGenerales ? `[General] ${observacionesGenerales}\n` : '';
 
-      // PATH A: Process Returned Items
-      for (const eqId of checkedIds) {
+      for (const eqId of loanItems) {
         const eq = equipmentStates[eqId];
-        const status = itemStatuses[eqId] || 'Disponible';
+        const condition = itemConditions[eqId];
+        const note = itemNotes[eqId];
+        const dbStatus = itemStatuses[eqId] || 'Disponible';
         
-        // 1. Update equipment in DB
-        const updateData: any = { estado: status };
-        if (eq && eq.piezas) updateData.piezas = eq.piezas;
+        if (condition === 'problem') {
+          compositeNotes += `- ${eq.nombre}: ${note || 'Sin detalles'}\n`;
+        }
 
+        // Update equipment in DB
         const { error: eqErr } = await supabase
           .from('equipamiento')
-          .update(updateData)
+          .update({ estado: dbStatus, piezas: eq.piezas })
           .eq('id', eqId);
+        
         if (eqErr) throw eqErr;
 
-        // 2. Log History for returned items
+        // Log History for each item
         await supabase.from('historial_recursos').insert([{
           recurso_id: eqId,
           docente_nombre: loan.docente_responsable,
@@ -397,44 +405,23 @@ const ReceiveModal: React.FC<{ loan: Loan, equipmentsMap: Record<string, Equipme
           fecha_entrada: new Date().toISOString(),
           alumno_nombre: loan.alumno_nombre,
           estado_salida: 'Bueno', 
-          estado_entrada: status === 'Disponible' ? 'Bueno' : 'Con Incidencias',
-          observaciones_entrada: observaciones,
+          estado_entrada: condition === 'ok' ? 'Bueno' : 'Con Incidencias',
+          observaciones_entrada: note || observacionesGenerales || 'Recibido',
           prestamo_id: loan.id,
           tipo_accion: 'Devolución'
         }]);
 
         if (eq) {
-          returnedEquipmentsData.push({ ...eq, estado: status as any });
+          returnedEquipmentsData.push({ ...eq, estado: dbStatus as any });
         }
       }
 
-      // PATH B: Process Missing Items (Mora)
-      for (const eqId of missingIds) {
-        // Enforce 'En Mora' status for anything not checked
-        const { error: moraErr } = await supabase
-          .from('equipamiento')
-          .update({ estado: 'En Mora' })
-          .eq('id', eqId);
-        
-        if (moraErr) {
-          console.error(`Error updating missing item ${eqId}:`, moraErr);
-        }
-      }
-
-      // 3. Update loan record
+      // Update loan record
       const loanUpdate: any = {
-        observaciones_recepcion: `${isAllReturned ? '' : '[DEVOLUCIÓN PARCIAL] '}${observaciones}`,
+        estado: 'Finalizado',
+        observaciones_recepcion: compositeNotes.trim() || 'Recibido OK',
         fecha_devolucion_real: new Date().toISOString()
       };
-
-      if (isAllReturned) {
-        loanUpdate.estado = 'Finalizado';
-        loanUpdate.equipos_ids = loan.equipos_ids; // Keep all IDs for history
-      } else {
-        // Persistence of Responsibility: Keep active but only with missing IDs
-        loanUpdate.equipos_ids = missingIds;
-        loanUpdate.estado = 'Activo';
-      }
 
       const { error: loanError } = await supabase
         .from('prestamos') 
@@ -443,20 +430,15 @@ const ReceiveModal: React.FC<{ loan: Loan, equipmentsMap: Record<string, Equipme
 
       if (loanError) throw loanError;
 
-      // 4. Activity Log
-      await logAction(activeResponsable!, 'DEVOLUCION_PRESTAMO', { 
+      // Activity Log
+      await logAction(activeResponsable!, 'DEVOLUCION_PRESTAMO_DETALLADA', { 
         loanId: loan.id, 
-        alumno: `${loan.alumno_nombre} (${loan.alumno_dni})`,
-        itemsDevueltos: checkedIds.length,
-        itemsMora: missingIds.length,
-        isParcial: !isAllReturned,
-        observaciones 
+        alumno: loan.alumno_nombre,
+        compositeNotes: loanUpdate.observaciones_recepcion
       });
 
       const targetDocente = docentes.find(d => d.nombre_completo === loan.docente_responsable);
-      if (returnedEquipmentsData.length > 0) {
-        generateReturnPDF(loan, returnedEquipmentsData, activeResponsable!, targetDocente?.email);
-      }
+      generateReturnPDF(loan, returnedEquipmentsData, activeResponsable!, targetDocente?.email);
 
       onSuccess({ 
         loan: { ...loan, ...loanUpdate }, 
@@ -466,11 +448,6 @@ const ReceiveModal: React.FC<{ loan: Loan, equipmentsMap: Record<string, Equipme
       });
     } catch (error: any) {
       console.error(error);
-      if (error.code === 'PGRST303' || error.status === 401) {
-        alert('Su sesión ha expirado. Por favor, vuelva a iniciar sesión para continuar.');
-        window.location.reload();
-        return;
-      }
       alert('Error al procesar la devolución.');
     } finally {
       setLoading(false);
@@ -482,117 +459,136 @@ const ReceiveModal: React.FC<{ loan: Loan, equipmentsMap: Record<string, Equipme
       <div className="bg-white rounded-2xl md:rounded-3xl shadow-xl w-full max-w-2xl my-auto flex flex-col overflow-hidden">
         <div className="p-4 md:p-6 border-b border-slate-100 flex justify-between items-center shrink-0 bg-slate-50">
           <div>
-            <h2 className="text-lg md:text-xl font-bold text-slate-900">Checklist de Recepción</h2>
-            <p className="text-xs md:text-sm text-slate-500 font-medium">Verifique el estado de los equipos.</p>
+            <h2 className="text-lg md:text-xl font-bold text-slate-900">Recepción Detallada</h2>
+            <p className="text-xs md:text-sm text-slate-500 font-medium">Verifique artículo por artículo.</p>
           </div>
           <button onClick={onClose} className="text-slate-400 hover:text-slate-600 p-2">
             <XCircle className="w-6 h-6" />
           </button>
         </div>
         
-        <div className="p-4 md:p-6 overflow-y-auto flex-1 space-y-4 max-h-[60vh] custom-scrollbar">
+        <div className="p-4 md:p-6 overflow-y-auto flex-1 space-y-4 max-h-[65vh] custom-scrollbar">
           {(loan.equipos_ids || []).map(eqId => {
             const eq = equipmentStates && equipmentStates[eqId];
             if (!eq) return null;
-            const isChecked = checkedItems[eqId];
+            const condition = itemConditions[eqId];
 
             return (
               <div key={eqId} className={cn(
-                "border rounded-xl md:rounded-2xl overflow-hidden transition-all duration-300 shadow-sm",
-                isChecked ? "border-slate-200 bg-white" : "border-amber-200 bg-amber-50"
+                "border rounded-2xl overflow-hidden transition-all duration-300 shadow-sm",
+                condition === 'ok' ? "border-green-100 bg-green-50/20" : 
+                condition === 'problem' ? "border-red-100 bg-red-50/20" : "border-slate-200 bg-white"
               )}>
-                <div className="px-4 py-3 flex items-center justify-between gap-4 border-b border-inherit bg-inherit">
+                <div className="px-4 py-3 flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-inherit bg-inherit">
                   <div className="flex items-center gap-3">
-                    <input 
-                      type="checkbox"
-                      checked={isChecked}
-                      onChange={(e) => setCheckedItems({...checkedItems, [eqId]: e.target.checked})}
-                      className="w-5 h-5 rounded border-slate-300 text-slate-900 focus:ring-slate-900"
-                    />
+                    <div className={cn(
+                      "w-10 h-10 rounded-xl flex items-center justify-center shrink-0 border",
+                      condition === 'ok' ? "bg-green-100 text-green-600 border-green-200" :
+                      condition === 'problem' ? "bg-red-100 text-red-600 border-red-200" : "bg-slate-100 text-slate-400 border-slate-200"
+                    )}>
+                      <Package className="w-5 h-5" />
+                    </div>
                     <div>
                       <h4 className="text-sm font-bold text-slate-900">{eq.nombre}</h4>
-                      <p className="text-[10px] text-slate-700 font-medium">{eq.modelo}</p>
+                      <p className="text-[10px] text-slate-500 font-medium">{eq.modelo} | SN: {eq.numero_serie}</p>
                     </div>
                   </div>
 
-                  {isChecked ? (
-                    <select
-                      value={itemStatuses[eqId]}
-                      onChange={(e) => setItemStatuses({...itemStatuses, [eqId]: e.target.value})}
-                      className="text-xs font-bold bg-white border border-slate-200 rounded-lg px-2 py-1.5 outline-none focus:ring-2 focus:ring-amber-500"
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => setItemConditions({...itemConditions, [eqId]: 'ok'})}
+                      className={cn(
+                        "flex-1 sm:flex-none px-3 py-1.5 rounded-lg text-[10px] font-black uppercase transition-all flex items-center gap-1.5",
+                        condition === 'ok' ? "bg-green-600 text-white" : "bg-white text-slate-600 border border-slate-200 hover:border-green-500"
+                      )}
                     >
-                      <option value="Disponible">Disponible</option>
-                      <option value="En Mantenimiento">Mantenimiento</option>
-                      <option value="Fuera de Servicio">Fuera de Servicio</option>
-                    </select>
-                  ) : (
-                    <span className="text-[10px] font-black uppercase text-amber-950 bg-amber-100 px-2 py-1 rounded-full flex items-center gap-1">
-                      <Clock className="w-3 h-3" />
-                      Faltante
-                    </span>
-                  )}
+                      <CheckCircle className="w-3 h-3" />
+                      OK
+                    </button>
+                    <button
+                      onClick={() => setItemConditions({...itemConditions, [eqId]: 'problem'})}
+                      className={cn(
+                        "flex-1 sm:flex-none px-3 py-1.5 rounded-lg text-[10px] font-black uppercase transition-all flex items-center gap-1.5",
+                        condition === 'problem' ? "bg-red-600 text-white" : "bg-white text-slate-600 border border-slate-200 hover:border-red-500"
+                      )}
+                    >
+                      <AlertCircle className="w-3 h-3" />
+                      Problema
+                    </button>
+                  </div>
                 </div>
 
-                {isChecked && eq.piezas && eq.piezas.length > 0 && (
-                  <div className="p-3 bg-slate-50/50">
-                    <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1.5 p-1">Piezas del Kit</p>
-                    <div className="flex flex-wrap gap-1.5">
-                      {eq.piezas.map((pieza, idx) => (
-                        <span key={idx} className="px-2 py-1 bg-white border border-slate-100 rounded-md text-[9px] font-bold text-slate-600 flex items-center gap-1.5">
-                          <div className="w-1 h-1 rounded-full bg-amber-400" />
-                          {typeof pieza === 'string' ? pieza : (pieza as any).nombre}
-                        </span>
-                      ))}
+                {condition === 'problem' && (
+                  <div className="p-4 space-y-4 animate-in fade-in slide-in-from-top-2">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <div>
+                        <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest block mb-1">Estado en Panel</label>
+                        <select
+                          value={itemStatuses[eqId]}
+                          onChange={(e) => setItemStatuses({...itemStatuses, [eqId]: e.target.value})}
+                          className="w-full text-xs font-bold bg-white border border-slate-200 rounded-lg px-2 py-2 outline-none focus:ring-2 focus:ring-red-500"
+                        >
+                          <option value="En Mantenimiento">Mantenimiento (Leve)</option>
+                          <option value="Fuera de Servicio">Fuera de Servicio (Grave/Roto)</option>
+                          <option value="Disponible">Disponible (Igual Reportar)</option>
+                        </select>
+                      </div>
+                      <div>
+                        <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest block mb-1">Nota del Artículo</label>
+                        <input 
+                          type="text"
+                          value={itemNotes[eqId]}
+                          onChange={(e) => setItemNotes({...itemNotes, [eqId]: e.target.value})}
+                          placeholder="Ej: Cable pelado, falta tornillo..."
+                          className="w-full text-xs bg-white border border-slate-200 rounded-lg px-3 py-2 outline-none focus:ring-2 focus:ring-red-500"
+                        />
+                      </div>
                     </div>
+                  </div>
+                )}
+                
+                {condition === 'ok' && eq.piezas && eq.piezas.length > 0 && (
+                  <div className="px-4 py-2 bg-green-50/30 flex flex-wrap gap-1.5">
+                    {eq.piezas.map((pieza, idx) => (
+                      <span key={idx} className="text-[8px] font-bold text-green-600 uppercase">
+                        • {typeof pieza === 'string' ? pieza : (pieza as any).nombre}
+                      </span>
+                    ))}
                   </div>
                 )}
               </div>
             );
           })}
 
-          <div className="pt-4 space-y-4">
-            <div>
-              <label className="flex items-center gap-2 text-[10px] font-black text-slate-700 mb-2 uppercase tracking-wider">
-                <AlertCircle className="w-3.5 h-3.5 text-amber-500" />
-                Observaciones Generales
-              </label>
-              <textarea
-                required
-                value={observaciones}
-                onChange={e => setObservaciones(e.target.value)}
-                className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:ring-2 focus:ring-slate-900 transition-all resize-none text-sm placeholder:text-slate-400"
-                placeholder="Indique novedades de esta devolución..."
-                rows={3}
-              />
-            </div>
-            {!Object.values(checkedItems).every(v => v) && (
-              <div className="p-4 bg-amber-600/10 border border-amber-600/20 rounded-2xl flex items-start gap-4">
-                <AlertCircle className="w-5 h-5 text-amber-950 shrink-0 mt-0.5" />
-                <div>
-                  <p className="text-xs font-bold text-amber-700">Devolución Parcial</p>
-                  <p className="text-[10px] text-amber-950 leading-relaxed">
-                    Los equipos no marcados cambiarán su estado a <strong>En Mora</strong> y seguirán apareciendo como activos para este alumno.
-                  </p>
-                </div>
-              </div>
-            )}
+          <div className="mt-6">
+            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-2">Comentarios Generales (Opcional)</label>
+            <textarea
+              value={observacionesGenerales}
+              onChange={e => setObservacionesGenerales(e.target.value)}
+              placeholder="Notas generales sobre la recepción..."
+              rows={2}
+              className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:ring-2 focus:ring-slate-900 transition-all text-sm"
+            />
           </div>
         </div>
 
         <div className="p-4 md:p-6 border-t border-slate-100 flex flex-col sm:flex-row justify-end gap-3 shrink-0 bg-slate-50">
           <button 
             onClick={onClose} 
-            className="order-2 sm:order-1 px-6 py-3 text-slate-600 font-black uppercase tracking-wider text-xs hover:bg-slate-200 rounded-xl transition-all"
+            className="order-2 sm:order-1 px-6 py-3 text-slate-500 font-bold text-xs uppercase tracking-widest hover:bg-slate-200 rounded-xl transition-all"
           >
-            Cancelar
+            Cerrar
           </button>
           <button 
             onClick={handleConfirm} 
-            disabled={loading} 
-            className="order-1 sm:order-2 bg-slate-900 text-white px-8 py-3.5 rounded-xl font-black uppercase tracking-wider text-xs flex items-center justify-center gap-2 hover:bg-amber-500 transition-all shadow-lg shadow-slate-200 disabled:opacity-50"
+            disabled={loading || !isReadyToSubmit} 
+            className={cn(
+              "order-1 sm:order-2 px-8 py-3.5 rounded-xl font-black uppercase tracking-wider text-xs flex items-center justify-center gap-2 transition-all shadow-lg",
+              isReadyToSubmit ? "bg-slate-900 text-white hover:bg-green-600 shadow-slate-200" : "bg-slate-200 text-slate-400 shadow-none cursor-not-allowed"
+            )}
           >
             {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : <CheckCircle className="w-5 h-5" />}
-            Confirmar Entrega a Administración
+            Finalizar Recepción
           </button>
         </div>
       </div>
