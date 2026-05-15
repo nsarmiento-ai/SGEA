@@ -49,7 +49,8 @@ export const StudentRequestsManager: React.FC<{ filterDireccion?: boolean }> = (
         const { data: resData } = await supabase
           .from('reservas')
           .select('*')
-          .or('estado.eq.Pendiente Aval,estado.eq.Pendiente de Dirección')
+          .eq('estado', 'Pendiente')
+          .ilike('materia', '%[Requiere Aval de Dirección]%')
           .order('created_at', { ascending: false });
 
         if (resData) {
@@ -64,7 +65,7 @@ export const StudentRequestsManager: React.FC<{ filterDireccion?: boolean }> = (
             equipos: r.equipos_ids,
             fecha_inicio: r.fecha_inicio,
             fecha_fin: r.fecha_fin,
-            estado: 'Pendiente Aval' as any,
+            estado: 'Pendiente Aval' as any, // Label for UI display in the manager
             created_at: r.created_at,
             _table: 'reservas'
           } as any));

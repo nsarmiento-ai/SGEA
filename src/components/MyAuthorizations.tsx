@@ -54,7 +54,8 @@ export const MyAuthorizations: React.FC = () => {
             return supabase
               .from('reservas')
               .select('*')
-              .or('estado.eq.Pendiente Aval,materia.ilike.%[Uso Externo]%')
+              .eq('estado', 'Pendiente')
+              .ilike('materia', '%[Requiere Aval de Dirección]%')
               .order('created_at', { ascending: false });
           }
           return { data: [] };

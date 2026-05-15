@@ -282,10 +282,10 @@ export const Reservations: React.FC = () => {
         fecha_inicio: new Date(formData.fecha_inicio).toISOString(),
         fecha_fin: new Date(formData.fecha_fin).toISOString(),
         docente_nombre: formData.docente_nombre || activeResponsable || '',
-        materia: `[${formData.tipo_uso}]${isDocente ? ' [Auto-Aval Docente]' : ''} ${formData.materia}`.trim(),
-        alumno_nombre: formData.alumno_nombre,
+        materia: `[${formData.tipo_uso}]${isDocente ? ' [Auto-Aval Docente]' : ''}${isExterno && isDocente ? ' [Requiere Aval de Dirección]' : ''} ${formData.materia}`.trim(),
+        alumno_nombre: formData.alumno_nombre || (isDocente ? (formData.docente_nombre || activeResponsable || '') : ''),
         estado: isExterno
-          ? (isDocente ? 'Pendiente de Dirección' : 'Pendiente Aval')
+          ? 'Pendiente'
           : (isDocente ? 'Avalada' : 'Pendiente')
       };
 

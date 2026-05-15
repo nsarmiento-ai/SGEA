@@ -80,7 +80,9 @@ export const LoanWizard: React.FC = () => {
     }
 
     if (resId && resEquipos) {
-      setSelectedIds(resEquipos.split(','));
+      const equiposArray = resEquipos.split(',');
+      setSelectedIds(equiposArray);
+      setAuthorizedEquipmentsIds(equiposArray);
       setFormData(prev => ({
         ...prev,
         docente_responsable: resDocente || '',

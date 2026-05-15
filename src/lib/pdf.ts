@@ -169,8 +169,8 @@ export const generateReservationPDF = (reservation: any, equipments: Equipment[]
   const isAutoAval = (reservation.materia || '').includes('[Auto-Aval Docente]');
   doc.text(`Aval Docente: ${isAutoAval ? `${reservation.docente_nombre} (Auto-Aval)` : (reservation.autorizado_por_docente || 'Pendiente')}`, 20, 66);
   
-  doc.text(`Fecha Desde: ${formatDate(reservation.fecha_inicio)}`, 20, 73);
-  doc.text(`Fecha Hasta: ${formatDate(reservation.fecha_fin)}`, 20, 80);
+  doc.text(`Fecha Desde: ${formatDateTime(reservation.fecha_inicio)}`, 20, 73);
+  doc.text(`Fecha Hasta: ${formatDateTime(reservation.fecha_fin)}`, 20, 80);
   doc.text(`Estado: ${reservation.estado.toUpperCase()}`, 20, 87);
   
   // Extract tipo_uso from materia if it's encoded there
