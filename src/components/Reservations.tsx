@@ -274,6 +274,8 @@ export const Reservations: React.FC = () => {
 
       console.log('Intentando reserva con:', { user, carrito: cart });
 
+      const isExterno = formData.tipo_uso === 'Uso Externo';
+      
       const newReservation: any = {
         equipos_ids: equiposIds,
         usuario_id: user.id,
@@ -282,9 +284,13 @@ export const Reservations: React.FC = () => {
         docente_nombre: formData.docente_nombre || activeResponsable || '',
         materia: `[${formData.tipo_uso}] ${formData.materia}`.trim(),
         alumno_nombre: formData.alumno_nombre,
-        estado: formData.tipo_uso === 'Uso Externo'
-          ? 'Pendiente Aval'
-          : (isDocente ? 'Aprobada' : 'Pendiente')
+        estado: isExterno
+          ? (isDocente ? 'Pendiente de Dirección' : 'Pendiente Aval')
+          : (isDocente ? 'Aprobada' : 'Pendiente'),
+        // Implicitly approved if created by a Teacher
+        estado_docente: isDocente ? 'aprobado' : 'pendiente',
+        docente_aval_id: isDocente ? user.email : null,
+        tipo_uso: formData.tipo_uso
       };
 
       // We ensure no columns that don't exist are sent. 

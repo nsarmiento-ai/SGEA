@@ -49,7 +49,7 @@ export const StudentRequestsManager: React.FC<{ filterDireccion?: boolean }> = (
         const { data: resData } = await supabase
           .from('reservas')
           .select('*')
-          .eq('estado', 'Pendiente Aval')
+          .or('estado.eq.Pendiente Aval,estado.eq.Pendiente de Dirección')
           .order('created_at', { ascending: false });
 
         if (resData) {
@@ -334,8 +334,8 @@ export const StudentRequestsManager: React.FC<{ filterDireccion?: boolean }> = (
                         </div>
                         <ul className="space-y-2">
                           <li className="text-xs font-bold text-slate-600 flex items-center gap-2">
-                            <CheckCircle className={`w-3.3 h-3.3 ${req.autorizado_por_docente ? 'text-green-500' : 'text-slate-300'}`} />
-                            Aval Docente
+                            <CheckCircle className={`w-3.3 h-3.3 ${(req.autorizado_por_docente || (req as any).estado_docente === 'aprobado') ? 'text-green-500' : 'text-slate-300'}`} />
+                            Aval Docente {(req as any)._table === 'reservas' && ' (Autor)'}
                           </li>
                           {req.tipo_uso === 'Uso Externo' && (
                             <li className="text-xs font-bold text-slate-600 flex items-center gap-2">

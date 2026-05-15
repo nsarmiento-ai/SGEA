@@ -52,10 +52,11 @@ export const generateLoanPDF = (
   doc.setFontSize(12);
   doc.setTextColor(0);
   doc.text(`Docente: ${loan.docente_responsable || 'N/A'}`, 20, 70);
-  doc.text(`Email Docente: ${docenteEmail || 'N/A'}`, 20, 77);
-  doc.text(`Alumno: ${loan.alumno_nombre} (DNI: ${loan.alumno_dni})`, 20, 84);
-  doc.text(`Materia: ${loan.materia || 'N/A'}`, 20, 91);
-  doc.text(`Devolución Estimada: ${formatDateTime(loan.fecha_devolucion_estimada)}`, 20, 98);
+  doc.text(`Docente que Avala: ${loan.docente_aval_id || loan.docente_responsable || 'N/A'}`, 20, 77);
+  doc.text(`Email Docente: ${docenteEmail || 'N/A'}`, 20, 84);
+  doc.text(`Alumno: ${loan.alumno_nombre} (DNI: ${loan.alumno_dni})`, 20, 91);
+  doc.text(`Materia: ${loan.materia || 'N/A'}`, 20, 98);
+  doc.text(`Devolución Estimada: ${formatDateTime(loan.fecha_devolucion_estimada)}`, 20, 105);
 
   // Equipment Table
   const tableData: any[][] = [];
@@ -93,7 +94,7 @@ export const generateLoanPDF = (
   });
 
   autoTable(doc, {
-    startY: 105,
+    startY: 112,
     head: [['#', 'Equipo / Kit', 'Modelo', 'Nº Serie', 'Categoría']],
     body: tableData,
     headStyles: { fillColor: [245, 158, 11] }, // Amber 500
@@ -157,9 +158,10 @@ export const generateReservationPDF = (reservation: any, equipments: Equipment[]
   doc.text(`Nro de Operación: ${reservation.id?.slice(0, 8).toUpperCase() || 'N/A'}`, 20, 45);
   doc.text(`Docente: ${reservation.docente_nombre}`, 20, 52);
   doc.text(`Email Docente: ${docenteEmail || 'N/A'}`, 20, 59);
-  doc.text(`Fecha Desde: ${formatDate(reservation.fecha_inicio)}`, 20, 66);
-  doc.text(`Fecha Hasta: ${formatDate(reservation.fecha_fin)}`, 20, 73);
-  doc.text(`Estado: ${reservation.estado.toUpperCase()}`, 20, 80);
+  doc.text(`Aval Docente: ${reservation.estado_docente === 'aprobado' ? (reservation.docente_aval_id || reservation.docente_nombre) : (reservation.autorizado_por_docente || 'Pendiente')}`, 20, 66);
+  doc.text(`Fecha Desde: ${formatDate(reservation.fecha_inicio)}`, 20, 73);
+  doc.text(`Fecha Hasta: ${formatDate(reservation.fecha_fin)}`, 20, 80);
+  doc.text(`Estado: ${reservation.estado.toUpperCase()}`, 20, 87);
   
   // Extract tipo_uso from materia if it's encoded there
   let displayUsage = reservation.tipo_uso;
@@ -197,7 +199,7 @@ export const generateReservationPDF = (reservation: any, equipments: Equipment[]
   ]);
 
   autoTable(doc, {
-    startY: 95,
+    startY: 102,
     head: [['#', 'Equipo', 'Modelo', 'Categoría']],
     body: tableData,
     headStyles: { fillColor: [15, 23, 42] },

@@ -42,7 +42,7 @@ export const PendingReservations: React.FC = () => {
     setLoading(true);
     try {
       const [resData, studentData, eqData] = await Promise.all([
-        supabase.from('reservas').select('id, equipos_ids, usuario_id, docente_nombre, materia, aula, alumno_nombre, fecha_inicio, fecha_fin, estado, created_at').in('estado', ['Pendiente', 'Aprobada', 'Avalada', 'Pendiente Aval']).order('fecha_inicio', { ascending: true }),
+        supabase.from('reservas').select('*').in('estado', ['Pendiente', 'Aprobada', 'Avalada', 'Pendiente Aval', 'Pendiente de Dirección']).order('fecha_inicio', { ascending: true }),
         supabase.from('solicitudes_alumnos')
           .select('id, responsable, dni, integrantes, materia, docente_id, docente_nombre, tipo_uso, equipos, fecha_inicio, fecha_fin, estado, observaciones, created_at, autorizado_por_docente, autorizado_por_direccion')
           .in('estado', ['Pendiente de Aval Docente', 'Pendiente de Dirección', 'Autorizado para Despacho'])
@@ -154,13 +154,20 @@ export const PendingReservations: React.FC = () => {
                   const status = isStudent ? studentData?.estado : 'Pendiente';
                   
                   // Authorization logic following instructions:
-                  // 1. Standard reservations are ready.
-                  // 2. Student requests: Authorized if explicitly approved or if "Uso en Escuela" has teacher approval.
-                  // 3. Administration can always proceed (as requested to allow resolving contingencies)
-                  const canDeliver = !isStudent || 
-                    role === 'Administración' ||
-                    status === 'Autorizado para Despacho' || 
-                    (studentData?.tipo_uso === 'Uso en Escuela' && !!studentData?.autorizado_por_docente);
+                  // 1. Administration can always proceed.
+                  // 2. Docente Internal (Uso en Escuela) is usually "Aprobada" automatically.
+                  // 3. Status-based checks for both types.
+                  const rawData = req.data as any;
+                  const isExterno = (rawData.materia || '').includes('[Uso Externo]') || rawData.tipo_uso === 'Uso Externo';
+                  
+                  const canDeliver = role === 'Administración' || 
+                    (isStudent ? (
+                      status === 'Autorizado para Despacho' || 
+                      (!isExterno && !!studentData?.autorizado_por_docente)
+                    ) : (
+                      rawData.estado === 'Aprobada' || 
+                      (!isExterno && rawData.estado_docente === 'aprobado')
+                    ));
                   
                   const displayName = isStudent ? studentData?.responsable : (req.data as Reservation).docente_nombre;
               const displaySub = isStudent ? `DNI: ${(req.data as StudentRequest).dni}` : (req.data as Reservation).alumno_nombre ? `Para: ${(req.data as Reservation).alumno_nombre}` : 'Reserva Docente';
