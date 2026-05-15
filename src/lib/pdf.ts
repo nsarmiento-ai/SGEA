@@ -32,7 +32,7 @@ export const generateLoanPDF = (
   const dbAuthorized = (requestedIds || []).map(String);
   
   // Teacher implicit approval: detected via marker in materia or state
-  const isTeacherReserva = (loan.materia || '').includes('[Auto-Aval Docente]') || loan.estado === 'Avalada';
+  const isTeacherReserva = (loan.materia || '').includes('[Auto-Aval Docente]') || loan.estado === 'Avalada' || loan.estado === 'Aprobada';
 
   // Header Icon/Logo (Simple Circle for logo)
   doc.setFillColor(245, 158, 11);

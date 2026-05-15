@@ -286,7 +286,7 @@ export const Reservations: React.FC = () => {
         alumno_nombre: formData.alumno_nombre || (isDocente ? (formData.docente_nombre || activeResponsable || '') : ''),
         estado: isExterno
           ? 'Pendiente'
-          : (isDocente ? 'Avalada' : 'Pendiente')
+          : (isDocente ? 'Aprobada' : 'Pendiente')
       };
 
       // We ensure no columns that don't exist are sent. 

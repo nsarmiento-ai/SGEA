@@ -65,7 +65,7 @@ export const DirectorDashboard: React.FC = () => {
         supabase.from('solicitudes_alumnos').select('id').eq('estado', 'Pendiente de Dirección'),
         supabase.from('equipamiento').select('id, nombre, estado'),
         supabase.from('solicitudes_alumnos').select('tipo_uso'),
-        supabase.from('reservas').select('id').eq('estado', 'Pendiente Aval')
+        supabase.from('reservas').select('id, materia').eq('estado', 'Pendiente').ilike('materia', '%[Requiere Aval de Dirección]%')
       ]);
 
       // Calculate Top Equipment

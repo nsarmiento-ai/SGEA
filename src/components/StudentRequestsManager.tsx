@@ -116,8 +116,13 @@ export const StudentRequestsManager: React.FC<{ filterDireccion?: boolean }> = (
       
       // Standardize states for the PATCH call
       const updateData: any = { 
-        estado: isReserva ? 'Avalada' : nextStatus
+        estado: isReserva ? 'Aprobada' : nextStatus
       };
+
+      // Cleaning materia if it's a reservation to remove the direction requirement tag
+      if (isReserva && request.materia) {
+        updateData.materia = request.materia.replace(/\[Requiere Aval de Dirección\]/g, '').trim();
+      }
 
       // Ensure we don't try to send columns that might not exist in the 'reservas' table (like docente_aval_id or tipo_uso)
       // For solicitudes_alumnos, we keep the authorization audit fields
@@ -127,11 +132,6 @@ export const StudentRequestsManager: React.FC<{ filterDireccion?: boolean }> = (
         } else {
           updateData.autorizado_por_docente = userEmail;
         }
-      } else {
-        // For reservations, if it's the Director, we can add a note in materia if needed, 
-        // but user asked to keep materia clean. We'll stick to just 'Avalada'.
-        // If we need to track director approval, we'll append to comments if it were a field, 
-        // but since we want to be safe with 23514, we only send 'estado'.
       }
 
       const { error } = await supabase

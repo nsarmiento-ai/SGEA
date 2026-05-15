@@ -161,7 +161,7 @@ export const PendingReservations: React.FC = () => {
                   const isExterno = (rawData.materia || '').toLowerCase().includes('externo') || rawData.tipo_uso === 'Uso Externo';
                   
                   // rawData.estado_docente is gone, we check for presence of Auto-Aval or state
-                  const isAutoAvalDocente = (rawData.materia || '').includes('[Auto-Aval Docente]') || rawData.estado === 'Avalada' || rawData.estado === 'Pendiente de Dirección';
+                  const isAutoAvalDocente = (rawData.materia || '').includes('[Auto-Aval Docente]') || rawData.estado === 'Avalada' || rawData.estado === 'Aprobada' || rawData.estado === 'Pendiente de Dirección';
                   
                   // For students, autorizado_por_docente is the flag
                   const hasDocenteAval = isStudent ? !!studentData?.autorizado_por_docente : isAutoAvalDocente;
