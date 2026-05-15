@@ -71,7 +71,7 @@ export const ActiveLoans: React.FC<{ filterMora?: boolean }> = ({ filterMora = f
 
       const eqIds = Array.from(new Set((finalLoans || []).flatMap(l => l.equipos_ids || [])));
       if (eqIds.length > 0) {
-        const { data: eqData } = await supabase.from('equipamiento').select('id, nombre, foto_url, categoria, piezas, estado, modelo, numero_serie').in('id', eqIds);
+        const { data: eqData } = await supabase.from('equipamiento').select('id, nombre, foto_url, categoria, piezas, estado, modelo, numero_serie, descripcion').in('id', eqIds);
         if (eqData) {
           const eqMap = eqData.reduce((acc, eq) => {
             let parsedPiezas = eq.piezas;
@@ -142,7 +142,14 @@ export const ActiveLoans: React.FC<{ filterMora?: boolean }> = ({ filterMora = f
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 w-full">
             <button
-              onClick={() => generateReturnPDF(finishedReturn.loan, finishedReturn.equipments, finishedReturn.responsableRecibe, finishedReturn.docenteEmail)}
+              onClick={() => generateReturnPDF(
+                finishedReturn.loan, 
+                finishedReturn.equipments, 
+                finishedReturn.responsableRecibe, 
+                finishedReturn.docenteEmail,
+                finishedReturn.itemConditions,
+                finishedReturn.itemNotes
+              )}
               className="flex items-center justify-center gap-2 px-6 py-4 border border-slate-200 text-slate-700 rounded-2xl font-bold hover:bg-slate-50 transition-all text-sm"
             >
               <Download className="w-5 h-5" />
@@ -387,10 +394,21 @@ const ReceiveModal: React.FC<{ loan: Loan, equipmentsMap: Record<string, Equipme
         }
 
         // Update equipment in DB
+        // Persist specific report note in the equipment's description (Hoja de Vida)
+        let updatedDescription = eq.descripcion || '';
+        if (condition === 'problem') {
+          const reportDate = new Date().toLocaleDateString();
+          updatedDescription = `[Reporte ${reportDate}]: ${note || 'Falla reportada'}\n---\n${updatedDescription}`;
+        }
+
         console.log(`[DEBUG] Actualizando equipo ID ${eqId} (${eq.nombre}) a estado: ${dbStatus}`);
         const { error: eqErr } = await supabase
           .from('equipamiento')
-          .update({ estado: dbStatus, piezas: eq.piezas })
+          .update({ 
+            estado: dbStatus, 
+            piezas: eq.piezas,
+            descripcion: updatedDescription
+          })
           .eq('id', eqId);
         
         if (eqErr) throw eqErr;
@@ -413,7 +431,7 @@ const ReceiveModal: React.FC<{ loan: Loan, equipmentsMap: Record<string, Equipme
         }]);
 
         if (eq) {
-          returnedEquipmentsData.push({ ...eq, estado: dbStatus as any });
+          returnedEquipmentsData.push({ ...eq, estado: dbStatus as any, descripcion: updatedDescription });
         }
       }
 
@@ -439,13 +457,22 @@ const ReceiveModal: React.FC<{ loan: Loan, equipmentsMap: Record<string, Equipme
       });
 
       const targetDocente = docentes.find(d => d.nombre_completo === loan.docente_responsable);
-      generateReturnPDF(loan, returnedEquipmentsData, activeResponsable!, targetDocente?.email);
+      generateReturnPDF(
+        loan, 
+        returnedEquipmentsData, 
+        activeResponsable!, 
+        targetDocente?.email,
+        itemConditions,
+        itemNotes
+      );
 
       onSuccess({ 
         loan: { ...loan, ...loanUpdate }, 
         equipments: returnedEquipmentsData, 
         responsableRecibe: activeResponsable!, 
-        docenteEmail: targetDocente?.email 
+        docenteEmail: targetDocente?.email,
+        itemConditions,
+        itemNotes
       });
     } catch (error: any) {
       console.error(error);

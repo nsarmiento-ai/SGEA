@@ -220,7 +220,14 @@ export const generateReservationPDF = (reservation: any, equipments: Equipment[]
   doc.save(`reserva_${reservation.docente_nombre.replace(/\s+/g, '_')}_${new Date().getTime()}.pdf`);
 };
 
-export const generateReturnPDF = (loan: Loan, equipments: Equipment[], responsableRecibe: string, docenteEmail?: string) => {
+export const generateReturnPDF = (
+  loan: Loan, 
+  equipments: Equipment[], 
+  responsableRecibe: string, 
+  docenteEmail?: string,
+  itemConditions?: Record<string, 'ok' | 'problem' | null>,
+  itemNotes?: Record<string, string>
+) => {
   const doc = new jsPDF();
   const pageWidth = doc.internal.pageSize.getWidth();
 
@@ -251,13 +258,20 @@ export const generateReturnPDF = (loan: Loan, equipments: Equipment[], responsab
 
   // Equipment Table
   const tableData = equipments.map((eq, index) => {
-    let status = 'RECIBIDO OK';
+    const condition = itemConditions?.[eq.id] || 'ok';
+    const note = itemNotes?.[eq.id] || '';
+    
+    let statusText = condition === 'ok' ? 'RECIBIDO OK' : 'REPORTADO CON PROBLEMA';
+    if (note && condition === 'problem') {
+      statusText = `PROBLEMA: ${note}`;
+    }
+
     return [
       index + 1,
       eq.nombre,
       eq.modelo,
       eq.numero_serie,
-      status
+      statusText
     ];
   });
 
@@ -267,10 +281,28 @@ export const generateReturnPDF = (loan: Loan, equipments: Equipment[], responsab
     body: tableData,
     headStyles: { fillColor: [15, 23, 42] },
     theme: 'grid',
+    didParseCell: (data) => {
+      if (data.section === 'body' && data.column.index === 4) {
+        if (data.cell.text[0].includes('PROBLEMA:')) {
+          data.cell.styles.textColor = [185, 28, 28]; // Red 700
+          data.cell.styles.fontStyle = 'bold';
+        } else if (data.cell.text[0] === 'RECIBIDO OK') {
+          data.cell.styles.textColor = [21, 128, 61]; // Green 700
+        }
+      }
+    }
   });
 
+  // Disclaimer / Notes
+  const tableFinalY = (doc as any).lastAutoTable.finalY || 95;
+  if (loan.observaciones_recepcion && loan.observaciones_recepcion !== 'Recibido OK') {
+    doc.setFontSize(9);
+    doc.setTextColor(100);
+    doc.text(`Observaciones Generales: ${loan.observaciones_recepcion}`, 20, tableFinalY + 10);
+  }
+
   // Signature
-  const finalY = (doc as any).lastAutoTable.finalY + 30;
+  const finalY = tableFinalY + 40;
   doc.line(pageWidth / 2 - 30, finalY, pageWidth / 2 + 30, finalY);
   doc.text('Firma Digital (Administrador)', pageWidth / 2, finalY + 5, { align: 'center' });
   doc.setFontSize(8);
