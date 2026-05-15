@@ -44,7 +44,7 @@ const mapStatus = (status: string | null | undefined): EquipmentStatus => {
   if (s === 'roto' || s === 'en reparación' || s === 'perdido' || s === 'incompleto' || s === 'fuera de servicio') {
     return 'Fuera de Servicio';
   }
-  if (s === 'mantenimiento' || s === 'en mantenimiento') return 'En Mantenimiento';
+  if (s === 'mantenimiento' || s === 'en mantenimiento') return 'Mantenimiento';
   if (s === 'en mora' || s === 'mora') return 'En Mora';
   if (s === 'eliminado' || s === 'archivado') return 'Archivado';
   if (s === 'disponible') return 'Disponible';

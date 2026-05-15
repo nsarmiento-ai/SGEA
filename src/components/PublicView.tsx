@@ -40,7 +40,7 @@ const statusConfig: Record<EquipmentStatus, { color: string, icon: any, label: s
   'Prestado': { color: 'text-blue-600 bg-blue-50 border-blue-200', icon: Clock, label: 'En uso' },
   'Fuera de Servicio': { color: 'text-red-600 bg-red-50 border-red-200', icon: XCircle, label: 'Mantenimiento' },
   'Archivado': { color: 'text-slate-500 bg-slate-50 border-slate-200', icon: XCircle, label: 'No disponible' },
-  'En Mantenimiento': { color: 'text-amber-950 bg-amber-50 border-amber-200', icon: AlertCircle, label: 'Mantenimiento' },
+  'Mantenimiento': { color: 'text-amber-950 bg-amber-50 border-amber-200', icon: AlertCircle, label: 'Mantenimiento' },
   'En Mora': { color: 'text-purple-600 bg-purple-50 border-purple-200', icon: AlertCircle, label: 'Retrasado' },
 };
 

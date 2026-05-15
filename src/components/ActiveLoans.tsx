@@ -93,7 +93,7 @@ export const ActiveLoans: React.FC<{ filterMora?: boolean }> = ({ filterMora = f
                          String(eq.estado || '').toLowerCase() === 'incompleto' ||
                          String(eq.estado || '').toLowerCase() === 'fuera de servicio') 
                          ? 'Fuera de Servicio' 
-                         : (String(eq.estado || '').toLowerCase() === 'mantenimiento' || String(eq.estado || '').toLowerCase() === 'en mantenimiento') ? 'En Mantenimiento' :
+                         : (String(eq.estado || '').toLowerCase() === 'mantenimiento' || String(eq.estado || '').toLowerCase() === 'en mantenimiento') ? 'Mantenimiento' :
                          (String(eq.estado || '').toLowerCase() === 'en mora' || String(eq.estado || '').toLowerCase() === 'mora') ? 'En Mora' :
                          (String(eq.estado || '').toLowerCase() === 'eliminado' || String(eq.estado || '').toLowerCase() === 'archivado' ? 'Archivado' : 
                           String(eq.estado || '').toLowerCase() === 'disponible' ? 'Disponible' :
@@ -406,7 +406,6 @@ const ReceiveModal: React.FC<{ loan: Loan, equipmentsMap: Record<string, Equipme
           .from('equipamiento')
           .update({ 
             estado: dbStatus, 
-            piezas: eq.piezas,
             descripcion: updatedDescription
           })
           .eq('id', eqId);
@@ -556,7 +555,7 @@ const ReceiveModal: React.FC<{ loan: Loan, equipmentsMap: Record<string, Equipme
                           onChange={(e) => setItemStatuses({...itemStatuses, [eqId]: e.target.value})}
                           className="w-full text-xs font-bold bg-white border border-slate-200 rounded-lg px-2 py-2 outline-none focus:ring-2 focus:ring-red-500"
                         >
-                          <option value="En Mantenimiento">Mantenimiento (Leve)</option>
+                          <option value="Mantenimiento">Mantenimiento (Leve)</option>
                           <option value="Fuera de Servicio">Fuera de Servicio (Grave/Roto)</option>
                           <option value="Disponible">Disponible (Igual Reportar)</option>
                         </select>
