@@ -298,7 +298,7 @@ export const Reservations: React.FC = () => {
         .select()
         .single();
       if (insertError) {
-        if (insertError.code === 'PGRST303' || insertError.status === 401) {
+        if (insertError.code === 'PGRST303' || (insertError as any).status === 401) {
           throw new Error('SGEA_SESSION_EXPIRED');
         }
         throw insertError;

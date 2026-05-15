@@ -113,17 +113,25 @@ export const StudentRequestsManager: React.FC<{ filterDireccion?: boolean }> = (
 
     try {
       const isReserva = (request as any)._table === 'reservas';
+      
+      // Standardize states for the PATCH call
       const updateData: any = { 
         estado: isReserva ? 'Avalada' : nextStatus
       };
 
-      // Only add authorization fields for student requests (solicitudes_alumnos)
+      // Ensure we don't try to send columns that might not exist in the 'reservas' table (like docente_aval_id or tipo_uso)
+      // For solicitudes_alumnos, we keep the authorization audit fields
       if (!isReserva) {
         if (filterDireccion) {
           updateData.autorizado_por_direccion = userEmail;
         } else {
           updateData.autorizado_por_docente = userEmail;
         }
+      } else {
+        // For reservations, if it's the Director, we can add a note in materia if needed, 
+        // but user asked to keep materia clean. We'll stick to just 'Avalada'.
+        // If we need to track director approval, we'll append to comments if it were a field, 
+        // but since we want to be safe with 23514, we only send 'estado'.
       }
 
       const { error } = await supabase
@@ -132,7 +140,8 @@ export const StudentRequestsManager: React.FC<{ filterDireccion?: boolean }> = (
         .eq('id', request.id);
 
       if (error) {
-        if (error.code === 'PGRST303' || error.status === 401) {
+        // Detect PGRST303 (JWT Expired) or 401 Unauthorized
+        if (error.code === 'PGRST303' || (error as any).status === 401 || (error as any).message?.includes('JWT expired')) {
           throw new Error('SGEA_SESSION_EXPIRED');
         }
         throw error;
@@ -156,7 +165,7 @@ export const StudentRequestsManager: React.FC<{ filterDireccion?: boolean }> = (
       console.error('Error authorizing request:', err);
       if (err.message === 'SGEA_SESSION_EXPIRED') {
         alert('Su sesión ha expirado. Por favor, vuelva a iniciar sesión para continuar.');
-        window.location.reload();
+        window.location.href = '/login'; // Force redirect if login exists, or just reload
       } else {
         alert('Error en la autorización. Verifique su conexión o intente nuevamente.');
       }
@@ -175,7 +184,7 @@ export const StudentRequestsManager: React.FC<{ filterDireccion?: boolean }> = (
         .eq('id', request.id);
 
       if (error) {
-        if (error.code === 'PGRST303' || error.status === 401) {
+        if (error.code === 'PGRST303' || (error as any).status === 401) {
           throw new Error('SGEA_SESSION_EXPIRED');
         }
         throw error;

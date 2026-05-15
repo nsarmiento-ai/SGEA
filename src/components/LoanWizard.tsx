@@ -83,6 +83,7 @@ export const LoanWizard: React.FC = () => {
       const equiposArray = resEquipos.split(',');
       setSelectedIds(equiposArray);
       setAuthorizedEquipmentsIds(equiposArray);
+      
       const cleanMateria = (resMateria || '')
         .replace(/\[Requiere Aval de Dirección\]/g, '')
         .replace(/\[Uso Externo\]/g, '')
@@ -90,11 +91,17 @@ export const LoanWizard: React.FC = () => {
         .replace(/\[Auto-Aval Docente\]/g, '')
         .trim();
         
+      const allPossibleMaterias = Object.values(MATERIAS_CATEGORIES).flat();
+      const finalMateria = allPossibleMaterias.find(m => 
+        m.toLowerCase() === cleanMateria.toLowerCase() || 
+        m.toLowerCase() === (resMateria || '').toLowerCase()
+      ) || '';
+
       setFormData(prev => ({
         ...prev,
         docente_responsable: resDocente || '',
         alumno_nombre: resAlumno || '',
-        materia: cleanMateria || prev.materia,
+        materia: finalMateria || prev.materia,
         fechaDevolucion: resFin ? format(parseISO(resFin), "yyyy-MM-dd'T'HH:mm") : prev.fechaDevolucion
       }));
       setReservationId(resId);
@@ -103,12 +110,26 @@ export const LoanWizard: React.FC = () => {
     if (studentReqId) {
       setSelectedStudentRequestId(studentReqId);
       if (resEquipos) setSelectedIds(resEquipos.split(','));
+      
+      const cleanMateria = (resMateria || '')
+        .replace(/\[Requiere Aval de Dirección\]/g, '')
+        .replace(/\[Uso Externo\]/g, '')
+        .replace(/\[Uso Interno\]/g, '')
+        .replace(/\[Auto-Aval Docente\]/g, '')
+        .trim();
+
+      const allPossibleMaterias = Object.values(MATERIAS_CATEGORIES).flat();
+      const finalMateria = allPossibleMaterias.find(m => 
+        m.toLowerCase() === cleanMateria.toLowerCase() || 
+        m.toLowerCase() === (resMateria || '').toLowerCase()
+      ) || '';
+
       setFormData(prev => ({
         ...prev,
         alumno_nombre: resAlumno || '',
         alumno_dni: resDni || '',
         docente_responsable: resDocente || '',
-        materia: resMateria || '',
+        materia: finalMateria || prev.materia,
         fechaDevolucion: resFin ? format(parseISO(resFin), "yyyy-MM-dd'T'HH:mm") : prev.fechaDevolucion
       }));
     }
@@ -143,14 +164,23 @@ export const LoanWizard: React.FC = () => {
     setSelectedStudentRequestId(req.id);
     setSelectedIds(req.equipos);
     setAuthorizedEquipmentsIds(req.equipos);
-    setFormData({
+    
+    // Find the closest match in our predefined list if possible
+    const allPossibleMaterias = Object.values(MATERIAS_CATEGORIES).flat();
+    const finalMateria = allPossibleMaterias.find(m => 
+      m.toLowerCase() === cleanMateria.toLowerCase() || 
+      m.toLowerCase() === req.materia.toLowerCase()
+    ) || '';
+
+    setFormData(prev => ({
+      ...prev,
       alumno_nombre: req.responsable,
       alumno_dni: req.dni,
-      materia: cleanMateria || req.materia,
+      materia: finalMateria,
       docente_responsable: req.docente_nombre,
       fechaDevolucion: format(parseISO(req.fecha_fin), "yyyy-MM-dd'T'HH:mm"),
       comentarios: req.observaciones || ''
-    });
+    }));
   };
 
   const currentStudentRequest = studentRequests.find(r => r.id === selectedStudentRequestId);
