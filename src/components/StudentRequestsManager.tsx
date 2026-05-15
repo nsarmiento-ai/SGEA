@@ -157,7 +157,10 @@ export const StudentRequestsManager: React.FC<{ filterDireccion?: boolean }> = (
           materia: request.materia,
           status: updateData.estado,
           source: (request as any)._table,
-          tag: filterDireccion ? '[Uso Externo - Docente]' : undefined
+          tag: filterDireccion ? '[Uso Externo - Docente]' : undefined,
+          director_id: filterDireccion ? userEmail : undefined,
+          fecha_autorizacion: new Date().toISOString(),
+          accion: 'Aprobado'
         }
       );
 

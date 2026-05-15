@@ -387,6 +387,7 @@ const ReceiveModal: React.FC<{ loan: Loan, equipmentsMap: Record<string, Equipme
         }
 
         // Update equipment in DB
+        console.log(`[DEBUG] Actualizando equipo ID ${eqId} (${eq.nombre}) a estado: ${dbStatus}`);
         const { error: eqErr } = await supabase
           .from('equipamiento')
           .update({ estado: dbStatus, piezas: eq.piezas })
