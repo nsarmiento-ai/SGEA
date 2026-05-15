@@ -158,16 +158,17 @@ export const PendingReservations: React.FC = () => {
                   // 2. Docente Internal (Uso en Escuela) is usually "Aprobada" automatically.
                   // 3. Status-based checks for both types.
                   const rawData = req.data as any;
-                  const isExterno = (rawData.materia || '').includes('[Uso Externo]') || rawData.tipo_uso === 'Uso Externo';
+                  const isExterno = (rawData.materia || '').toLowerCase().includes('externo') || rawData.tipo_uso === 'Uso Externo';
                   
+                  // estado_docente === 'aprobado' (implicit for teachers)
+                  // For students, autorizado_por_docente is the flag
+                  const hasDocenteAval = isStudent ? !!studentData?.autorizado_por_docente : (rawData.estado_docente === 'aprobado');
+                  // For students, autorizado_por_direccion is the flag
+                  // For reservas, reaching 'Aprobada' means Director ok (if it was external) or automatic ok (if internal)
+                  const hasDirectorAval = isStudent ? !!studentData?.autorizado_por_direccion : (rawData.estado === 'Aprobada');
+
                   const canDeliver = role === 'Administración' || 
-                    (isStudent ? (
-                      status === 'Autorizado para Despacho' || 
-                      (!isExterno && !!studentData?.autorizado_por_docente)
-                    ) : (
-                      rawData.estado === 'Aprobada' || 
-                      (!isExterno && rawData.estado_docente === 'aprobado')
-                    ));
+                    (hasDocenteAval && (!isExterno || (isExterno && hasDirectorAval)));
                   
                   const displayName = isStudent ? studentData?.responsable : (req.data as Reservation).docente_nombre;
               const displaySub = isStudent ? `DNI: ${(req.data as StudentRequest).dni}` : (req.data as Reservation).alumno_nombre ? `Para: ${(req.data as Reservation).alumno_nombre}` : 'Reserva Docente';

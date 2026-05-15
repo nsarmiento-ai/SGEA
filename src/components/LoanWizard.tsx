@@ -160,7 +160,7 @@ export const LoanWizard: React.FC = () => {
     try {
       const [eqRes, resRes] = await Promise.all([
         supabase.from('equipamiento').select('id, nombre, modelo, categoria, numero_serie, foto_url, estado, piezas, permiso_uso'),
-        supabase.from('reservas').select('id, docente_nombre, alumno_nombre, equipos_ids, fecha_fin, materia')
+        supabase.from('reservas').select('id, docente_nombre, alumno_nombre, equipos_ids, fecha_fin, materia, estado_docente, docente_aval_id')
       ]);
       if (eqRes.data) setEquipments(eqRes.data);
       if (resRes.data) setReservations(resRes.data || []);
@@ -233,6 +233,9 @@ export const LoanWizard: React.FC = () => {
     setSubmitting(true);
 
     try {
+      // Find the source reservation to inherit teacher approval if any
+      const originRes = (reservations || []).find(r => r.id === reservationId);
+
       // Logic for tracking added equipment
       const equipos_autorizados = selectedIds.filter(id => equiposAutorizadosIdsArray.includes(id));
       const equipos_adicionales = selectedIds.filter(id => !equiposAutorizadosIdsArray.includes(id));
@@ -273,7 +276,9 @@ export const LoanWizard: React.FC = () => {
           equipos_autorizados,
           equipos_adicionales,
           fecha_devolucion_real: formData.fechaDevolucion,
-          authorized_by_request: selectedStudentRequestId || null
+          authorized_by_request: selectedStudentRequestId || null,
+          estado_docente: originRes?.estado_docente || (selectedStudentRequestId ? (currentStudentRequest as any).estado_docente : null),
+          docente_aval_id: originRes?.docente_aval_id || (selectedStudentRequestId ? (currentStudentRequest as any).docente_aval_id : null)
         };
 
         // A. Crear registro de préstamo
@@ -289,6 +294,10 @@ export const LoanWizard: React.FC = () => {
           equipos_ids: selectedIds,
           comentarios: `${autorizacion_parcial ? '[AUTORIZACIÓN PARCIAL] ' : ''}${formData.comentarios}\n\nDetalle Técnico: Autorizados: ${equipos_autorizados.length}, Adicionales: ${equipos_adicionales.length}`.trim()
         };
+
+        // Inherit teacher approval fields to the loan record
+        if (metadata.estado_docente) loanData.estado_docente = metadata.estado_docente;
+        if (metadata.docente_aval_id) loanData.docente_aval_id = metadata.docente_aval_id;
 
         // Attempt to save metadata if possible, otherwise rely on comments
         // We add metadata to the object. If the column doesn't exist, Supabase returns 400.
@@ -322,8 +331,8 @@ export const LoanWizard: React.FC = () => {
         }
         createdLoanId = loan.id;
         
-        // Ensure loan object passed to PDF has the metadata even if not saved to DB
-        const loanWithContext = { ...loan, metadata: loan.metadata || metadata };
+        // Ensure loan object passed to PDF has the metadata context
+        const loanWithContext = { ...loan, ...loanData, metadata: loan.metadata || metadata };
 
       // B. Actualizar estados de equipos
       const { error: eqError } = await supabase

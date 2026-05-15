@@ -26,10 +26,15 @@ export const generateLoanPDF = (
 
   // Use DB fields if available, otherwise fallback to authorizedIds passed
   // If we don't have any record of authorized IDs (direct loan), we shouldn't mark anything as "SIN AVAL"
+  // If the user role is Docente or loan shows implicit approval, everything from original list is authorized
   const requestedIds = loan.metadata?.equipos_autorizados || loan.equipos_autorizados || authorizedIds;
   const isDirectLoan = !requestedIds; 
   const dbAuthorized = (requestedIds || []).map(String);
   
+  // Teacher implicit approval: if the docente is the one who avaled (implied for teacher reserves)
+  // we consider all requestedIds as fully authorized.
+  const isTeacherReserva = loan.estado_docente === 'aprobado' || !!loan.docente_aval_id;
+
   // Header Icon/Logo (Simple Circle for logo)
   doc.setFillColor(245, 158, 11);
   doc.circle(20, 20, 5, 'F');
@@ -65,18 +70,22 @@ export const generateLoanPDF = (
   const nonAuthorizedNames: string[] = [];
 
   equipments.forEach(eq => {
-    // If it's a direct loan (no prior search for auth), consider items as authorized.
-    // If we have a list of authorized IDs, check if it's there.
-    const isActuallyAuthorized = isDirectLoan || dbAuthorized.includes(String(eq.id));
+    // Logic: 
+    // 1. Direct Loans (no previous request/auth) -> everything is considered OK
+    // 2. Teacher reserves (implicit auth) -> requested items are OK
+    // 3. Student requests -> only requestedIds are OK
+    const isOriginalItem = dbAuthorized.includes(String(eq.id));
+    const isActuallyAuthorized = isDirectLoan || (isTeacherReserva && isOriginalItem) || isOriginalItem;
+    
     if (!isActuallyAuthorized) nonAuthorizedNames.push(eq.nombre);
     
     // Main equipment row
     tableData.push([
       counter++,
       !isActuallyAuthorized ? `${eq.nombre} (* SIN AVAL)` : eq.nombre,
-      eq.modelo,
-      eq.numero_serie,
-      eq.categoria
+      eq.modelo || 'N/A',
+      eq.numero_serie || 'N/A',
+      eq.categoria || 'N/A'
     ]);
 
     // Pieces rows
