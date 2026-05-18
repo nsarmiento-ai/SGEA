@@ -184,13 +184,19 @@ export const generateReservationPDF = (reservation: any, equipments: Equipment[]
     doc.text(`Tipo de Uso: ${displayUsage}`, 110, 87);
   }
 
+  const isAdminInterno = (reservation.materia || '').includes('[Uso Interno - Admin]');
   const isReady = reservation.estado === 'Aprobada' || reservation.estado === 'Avalada' || reservation.estado === 'Activa';
-  const statusMsg = isReady 
+  
+  let statusMsg = isReady 
     ? 'LISTA PARA DESPACHO (Autorizado)' 
     : 'PENDIENTE DE AUTORIZACIÓN (Requiere Director)';
   
+  if (isAdminInterno) {
+    statusMsg = 'LISTA PARA DESPACHO (Uso Interno Administración)';
+  }
+  
   doc.setFontSize(12);
-  if (isReady) {
+  if (isReady || isAdminInterno) {
     doc.setTextColor(22, 163, 74);
   } else {
     doc.setTextColor(245, 158, 11);
@@ -215,6 +221,24 @@ export const generateReservationPDF = (reservation: any, equipments: Equipment[]
     headStyles: { fillColor: [15, 23, 42] },
     theme: 'grid',
   });
+
+  // Footnote / Signatures
+  const finalY = (doc as any).lastAutoTable.finalY + 25;
+  
+  if (!isAdminInterno) {
+    doc.setFontSize(8);
+    doc.setTextColor(150);
+    doc.line(20, finalY, 80, finalY);
+    doc.text('Firma Docente / Responsable', 20, finalY + 5);
+    
+    doc.line(pageWidth - 80, finalY, pageWidth - 20, finalY);
+    doc.text('Firma Autoridad (Director)', pageWidth - 80, finalY + 5);
+  } else {
+    doc.setFontSize(9);
+    doc.setTextColor(100);
+    doc.setFont('helvetica', 'italic');
+    doc.text('Reserva de uso interno generada por Administración. No requiere avales adicionales.', 20, finalY);
+  }
 
   // Save
   doc.save(`reserva_${reservation.docente_nombre.replace(/\s+/g, '_')}_${new Date().getTime()}.pdf`);

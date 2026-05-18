@@ -274,19 +274,23 @@ export const Reservations: React.FC = () => {
 
       console.log('Intentando reserva con:', { usuario: user.email, carrito: cart.map(c => c.nombre) });
 
+      const isAdmin = role === 'Administración';
+      const isInterno = formData.tipo_uso === 'Uso en Escuela';
       const isExterno = formData.tipo_uso === 'Uso Externo';
-      
+
       const newReservation: any = {
         equipos_ids: equiposIds,
         usuario_id: user.id,
         fecha_inicio: new Date(formData.fecha_inicio).toISOString(),
         fecha_fin: new Date(formData.fecha_fin).toISOString(),
         docente_nombre: formData.docente_nombre || activeResponsable || '',
-        materia: `[${formData.tipo_uso}]${isDocente ? ' [Auto-Aval Docente]' : ''}${isExterno && isDocente ? ' [Requiere Aval de Dirección]' : ''} ${formData.materia}`.trim(),
-        alumno_nombre: formData.alumno_nombre || (isDocente ? (formData.docente_nombre || activeResponsable || '') : ''),
-        estado: isExterno
-          ? 'Pendiente'
-          : (isDocente ? 'Aprobada' : 'Pendiente')
+        materia: (isAdmin && isInterno) 
+          ? `[Uso Interno - Admin] ${formData.materia}`.trim()
+          : `[${formData.tipo_uso}]${isDocente ? ' [Auto-Aval Docente]' : ''}${isExterno && isDocente ? ' [Requiere Aval de Dirección]' : ''} ${formData.materia}`.trim(),
+        alumno_nombre: formData.alumno_nombre || (isDocente || isAdmin ? (formData.docente_nombre || activeResponsable || '') : ''),
+        estado: (isAdmin && isInterno) 
+          ? 'Aprobada' 
+          : (isExterno ? 'Pendiente' : (isDocente ? 'Aprobada' : 'Pendiente'))
       };
 
       // We ensure no columns that don't exist are sent. 

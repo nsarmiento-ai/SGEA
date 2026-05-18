@@ -139,16 +139,42 @@ export const LoanWizard: React.FC = () => {
 
   const fetchStudentRequests = async () => {
     try {
-      const { data, error } = await supabase
-        .from('solicitudes_alumnos')
-        .select('id, responsable, docente_nombre, materia, equipos, fecha_fin, dni, integrantes, observaciones, estado, tipo_uso, autorizado_por_docente, autorizado_por_direccion')
-        .neq('estado', 'Entregado')
-        .neq('estado', 'Rechazado')
-        .neq('estado', 'Cancelado');
-      if (error) throw error;
-      if (data) setStudentRequests(data);
+      const [studentRes, reserveRes] = await Promise.all([
+        supabase
+          .from('solicitudes_alumnos')
+          .select('id, responsable, docente_nombre, materia, equipos, fecha_fin, dni, integrantes, observaciones, estado, tipo_uso, autorizado_por_docente, autorizado_por_direccion')
+          .neq('estado', 'Entregado')
+          .neq('estado', 'Rechazado')
+          .neq('estado', 'Cancelado'),
+        supabase
+          .from('reservas')
+          .select('id, docente_nombre, alumno_nombre, materia, equipos_ids, fecha_fin, estado')
+          .in('estado', ['Aprobada', 'Avalada'])
+      ]);
+
+      if (studentRes.error) throw studentRes.error;
+      
+      const students = (studentRes.data || []).map(s => ({ ...s, _table: 'solicitudes_alumnos' }));
+      const reserves = (reserveRes.data || []).map(r => ({
+        id: r.id,
+        responsable: r.alumno_nombre || r.docente_nombre,
+        docente_nombre: r.docente_nombre,
+        docente_id: '', // Added to satisfy type
+        materia: r.materia || '',
+        equipos: r.equipos_ids || [],
+        fecha_inicio: (r as any).fecha_inicio || '', // Added to satisfy type
+        fecha_fin: r.fecha_fin,
+        dni: 'S/D', // Normal reservation might not have DNI in the record directly
+        integrantes: '',
+        observaciones: '',
+        estado: r.estado === 'Aprobada' || r.estado === 'Avalada' ? 'Autorizado para Despacho' : 'Pendiente',
+        tipo_uso: (r.materia || '').includes('[Uso Externo]') ? 'Uso Externo' : 'Uso en Escuela',
+        _table: 'reservas'
+      })) as any[];
+
+      setStudentRequests([...students, ...reserves] as StudentRequest[]);
     } catch (e) {
-      console.warn('Error fetching solicitudes_alumnos:', e);
+      console.warn('Error fetching unified requests for dispatch:', e);
       setStudentRequests([]);
     }
   };
@@ -159,6 +185,11 @@ export const LoanWizard: React.FC = () => {
       .trim();
 
     setSelectedStudentRequestId(req.id);
+    if ((req as any)._table === 'reservas') {
+      setReservationId(req.id);
+    } else {
+      setReservationId(null);
+    }
     setSelectedIds(req.equipos);
     setAuthorizedEquipmentsIds(req.equipos);
     
