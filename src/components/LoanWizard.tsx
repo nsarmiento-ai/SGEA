@@ -155,10 +155,7 @@ export const LoanWizard: React.FC = () => {
 
   const selectStudentRequest = (req: StudentRequest) => {
     const cleanMateria = (req.materia || '')
-      .replace(/\[Requiere Aval de Dirección\]/g, '')
-      .replace(/\[Uso Externo\]/g, '')
-      .replace(/\[Uso Interno\]/g, '')
-      .replace(/\[Auto-Aval Docente\]/g, '')
+      .replace(/\[.*?\]/g, '')
       .trim();
 
     setSelectedStudentRequestId(req.id);
@@ -167,16 +164,15 @@ export const LoanWizard: React.FC = () => {
     
     // Find the closest match in our predefined list if possible
     const allPossibleMaterias = Object.values(MATERIAS_CATEGORIES).flat();
-    const finalMateria = allPossibleMaterias.find(m => 
-      m.toLowerCase() === cleanMateria.toLowerCase() || 
-      m.toLowerCase() === req.materia.toLowerCase()
-    ) || '';
+    const matchedMateria = allPossibleMaterias.find(m => 
+      m.toLowerCase() === cleanMateria.toLowerCase()
+    );
 
     setFormData(prev => ({
       ...prev,
       alumno_nombre: req.responsable,
       alumno_dni: req.dni,
-      materia: finalMateria,
+      materia: matchedMateria || cleanMateria,
       docente_responsable: req.docente_nombre,
       fechaDevolucion: format(parseISO(req.fecha_fin), "yyyy-MM-dd'T'HH:mm"),
       comentarios: req.observaciones || ''
