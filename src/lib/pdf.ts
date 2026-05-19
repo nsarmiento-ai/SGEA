@@ -69,14 +69,33 @@ export const generateLoanPDF = (
   const nonAuthorizedNames: string[] = [];
 
   equipments.forEach(eq => {
-    // Logic: 
-    // 1. Direct Loans (no previous request/auth) -> everything is considered OK
-    // 2. Teacher reserves (implicit auth) -> requested items are OK
-    // 3. Student requests -> only requestedIds are OK
-    const itemId = String(eq.id).trim().toLowerCase();
-    const isOriginalItem = dbAuthorized.includes(itemId);
+    // 1. Extract the ID more robustly (check different possible field names)
+    // Some components might pass objects with different key names for the ID
+    const rawEqId = (eq as any).id || (eq as any).recurso_id || (eq as any).equipo_id || (eq as any).id_equipo || '';
+    const itemId = String(rawEqId).trim().toLowerCase();
+    
+    // 2. Kit Check: If the item belongs to a kit, and the KIT was authorized, the item is authorized.
+    const kitId = (eq as any).kit_id || (eq as any).pertenece_a_kit || null;
+    const kitIdNormalized = kitId ? String(kitId).trim().toLowerCase() : null;
+
+    // 3. Last resort: Name matching (if IDs are completely lost but name matches authorized list)
+    // This is useful for edge cases where IDs might change but names are consistent
+    // We'd need the names of authorized items, which we don't have easily here unless we fetch them
+    
+    const isOriginalItem = dbAuthorized.includes(itemId) || (kitIdNormalized && dbAuthorized.includes(kitIdNormalized));
+    
     const isActuallyAuthorized = isDirectLoan || (isTeacherReserva && isOriginalItem) || isOriginalItem;
     
+    // Debug Log as requested
+    console.log('[PDF Debug] Item Check:', { 
+      nombre: eq.nombre, 
+      idEncontrado: itemId, 
+      kitId: kitIdNormalized,
+      estaEnListaOriginal: isOriginalItem, 
+      autorizadoFinal: isActuallyAuthorized,
+      listaAutorizados: dbAuthorized.slice(0, 5) // Show first 5 for brevity
+    });
+
     if (!isActuallyAuthorized) nonAuthorizedNames.push(eq.nombre);
     
     // Main equipment row
