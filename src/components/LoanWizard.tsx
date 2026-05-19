@@ -49,6 +49,16 @@ export const LoanWizard: React.FC = () => {
   const [selectedStudentRequestId, setSelectedStudentRequestId] = useState<string | null>(null);
   const [authorizedEquipmentsIds, setAuthorizedEquipmentsIds] = useState<string[] | null>(null);
   const [syncConflict, setSyncConflict] = useState<{ nombre: string, estado: string, id: string }[] | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  const getCleanMateria = (rawMateria: string | null | undefined) => {
+    const text = rawMateria || '';
+    if (text.includes('[Uso Interno - Admin]')) {
+      return { clean: 'Uso Interno - Administración', isInternal: true };
+    }
+    const clean = text.replace(/\[.*?\]/g, '').trim();
+    return { clean, isInternal: false };
+  };
   
   const [formData, setFormData] = useState({
     alumno_nombre: '',
@@ -84,54 +94,46 @@ export const LoanWizard: React.FC = () => {
       setSelectedIds(equiposArray);
       setAuthorizedEquipmentsIds(equiposArray);
       
-      const cleanMateria = (resMateria || '')
-        .replace(/\[Requiere Aval de Dirección\]/g, '')
-        .replace(/\[Uso Externo\]/g, '')
-        .replace(/\[Uso Interno\]/g, '')
-        .replace(/\[Auto-Aval Docente\]/g, '')
-        .trim();
+      const { clean: cleanMateria, isInternal } = getCleanMateria(resMateria);
         
       const allPossibleMaterias = Object.values(MATERIAS_CATEGORIES).flat();
-      const finalMateria = allPossibleMaterias.find(m => 
+      const matchedMateria = isInternal ? null : allPossibleMaterias.find(m => 
         m.toLowerCase() === cleanMateria.toLowerCase() || 
         m.toLowerCase() === (resMateria || '').toLowerCase()
-      ) || '';
+      );
 
       setFormData(prev => ({
         ...prev,
         docente_responsable: resDocente || '',
         alumno_nombre: resAlumno || '',
-        materia: finalMateria || prev.materia,
+        materia: matchedMateria || cleanMateria,
         fechaDevolucion: resFin ? format(parseISO(resFin), "yyyy-MM-dd'T'HH:mm") : prev.fechaDevolucion
       }));
       setReservationId(resId);
+      setStep(2);
     }
 
     if (studentReqId) {
       setSelectedStudentRequestId(studentReqId);
       if (resEquipos) setSelectedIds(resEquipos.split(','));
       
-      const cleanMateria = (resMateria || '')
-        .replace(/\[Requiere Aval de Dirección\]/g, '')
-        .replace(/\[Uso Externo\]/g, '')
-        .replace(/\[Uso Interno\]/g, '')
-        .replace(/\[Auto-Aval Docente\]/g, '')
-        .trim();
+      const { clean: cleanMateria, isInternal } = getCleanMateria(resMateria);
 
       const allPossibleMaterias = Object.values(MATERIAS_CATEGORIES).flat();
-      const finalMateria = allPossibleMaterias.find(m => 
+      const matchedMateria = isInternal ? null : allPossibleMaterias.find(m => 
         m.toLowerCase() === cleanMateria.toLowerCase() || 
         m.toLowerCase() === (resMateria || '').toLowerCase()
-      ) || '';
+      );
 
       setFormData(prev => ({
         ...prev,
         alumno_nombre: resAlumno || '',
         alumno_dni: resDni || '',
         docente_responsable: resDocente || '',
-        materia: finalMateria || prev.materia,
+        materia: matchedMateria || cleanMateria,
         fechaDevolucion: resFin ? format(parseISO(resFin), "yyyy-MM-dd'T'HH:mm") : prev.fechaDevolucion
       }));
+      setStep(2);
     }
   }, []);
 
@@ -180,34 +182,45 @@ export const LoanWizard: React.FC = () => {
   };
 
   const selectStudentRequest = (req: StudentRequest) => {
-    const cleanMateria = (req.materia || '')
-      .replace(/\[.*?\]/g, '')
-      .trim();
+    try {
+      setError(null);
+      const { clean: cleanMateria, isInternal } = getCleanMateria(req.materia);
 
-    setSelectedStudentRequestId(req.id);
-    if ((req as any)._table === 'reservas') {
-      setReservationId(req.id);
-    } else {
-      setReservationId(null);
+      setSelectedStudentRequestId(req.id);
+      if ((req as any)._table === 'reservas') {
+        setReservationId(req.id);
+      } else {
+        setReservationId(null);
+      }
+      
+      // Ensure equipments array exists
+      const equipmentsArray = req.equipos || [];
+      setSelectedIds(equipmentsArray);
+      setAuthorizedEquipmentsIds(equipmentsArray);
+      
+      // Find matching category only if it's not a special admin internal use 
+      const allPossibleMaterias = Object.values(MATERIAS_CATEGORIES).flat();
+      const matchedMateria = isInternal 
+        ? null 
+        : allPossibleMaterias.find(m => m.toLowerCase() === cleanMateria.toLowerCase());
+
+      const safeFechaFin = req.fecha_fin ? format(parseISO(req.fecha_fin), "yyyy-MM-dd'T'HH:mm") : '';
+
+      setFormData(prev => ({
+        ...prev,
+        alumno_nombre: req.responsable || '',
+        alumno_dni: req.dni || 'S/D',
+        materia: matchedMateria || cleanMateria,
+        docente_responsable: req.docente_nombre || '',
+        fechaDevolucion: safeFechaFin,
+        comentarios: req.observaciones || ''
+      }));
+
+      setStep(2);
+    } catch (err: any) {
+      console.error('Error selecting student request:', err);
+      setError('Error al procesar la solicitud seleccionada.');
     }
-    setSelectedIds(req.equipos);
-    setAuthorizedEquipmentsIds(req.equipos);
-    
-    // Find the closest match in our predefined list if possible
-    const allPossibleMaterias = Object.values(MATERIAS_CATEGORIES).flat();
-    const matchedMateria = allPossibleMaterias.find(m => 
-      m.toLowerCase() === cleanMateria.toLowerCase()
-    );
-
-    setFormData(prev => ({
-      ...prev,
-      alumno_nombre: req.responsable,
-      alumno_dni: req.dni,
-      materia: matchedMateria || cleanMateria,
-      docente_responsable: req.docente_nombre,
-      fechaDevolucion: format(parseISO(req.fecha_fin), "yyyy-MM-dd'T'HH:mm"),
-      comentarios: req.observaciones || ''
-    }));
   };
 
   const currentStudentRequest = studentRequests.find(r => r.id === selectedStudentRequestId);
@@ -576,6 +589,16 @@ export const LoanWizard: React.FC = () => {
         <h1 className="text-2xl md:text-3xl font-display font-bold text-slate-900 min-h-[32px] md:min-h-[40px]">Despacho de Equipos</h1>
         <p className="text-sm md:text-base text-slate-700">Complete la información del préstamo.</p>
       </header>
+
+      {error && (
+        <div className="mb-6 p-4 bg-red-50 border border-red-100 rounded-2xl flex items-center gap-3 text-red-600 animate-in fade-in slide-in-from-top-4">
+          <AlertCircle className="w-5 h-5 flex-shrink-0" />
+          <p className="text-sm font-bold">{error}</p>
+          <button onClick={() => setError(null)} className="ml-auto p-1 hover:bg-red-100 rounded-lg transition-colors">
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+      )}
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 md:gap-8 relative">
         <AnimatePresence>
