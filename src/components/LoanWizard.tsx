@@ -362,7 +362,8 @@ export const LoanWizard: React.FC = () => {
           equipos_autorizados,
           equipos_adicionales,
           fecha_devolucion_real: formData.fechaDevolucion,
-          authorized_by_request: selectedStudentRequestId || null
+          authorized_by_request: selectedStudentRequestId || null,
+          authorized_by_reservation: reservationId || null
         };
 
         // A. Crear registro de préstamo

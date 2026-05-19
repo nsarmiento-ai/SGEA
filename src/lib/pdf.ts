@@ -21,18 +21,41 @@ export const generateLoanPDF = (
   docenteEmail?: string,
   authorizedIds: string[] | null = null
 ) => {
+  console.log('=== [PDF Debug] INICIO GENERACIÓN PDF ===');
+  console.log('1. Equipos a despachar:', equipments.map(e => ({ id: e.id, nombre: e.nombre })));
+  console.log('2. Datos del préstamo:', loan);
+  console.log('3. authorizedIds (argumento):', authorizedIds);
+
   const doc = new jsPDF();
   const pageWidth = doc.internal.pageSize.getWidth();
 
-  // Use DB fields if available, otherwise fallback to authorizedIds passed
-  // If we don't have any record of authorized IDs (direct loan), we shouldn't mark anything as "SIN AVAL"
-  // If the user role is Docente or loan shows implicit approval, everything from original list is authorized
-  const requestedIds = loan.metadata?.equipos_autorizados || loan.equipos_autorizados || authorizedIds;
-  const isDirectLoan = !requestedIds; 
+  // Robust detection of authorized items
+  // Prefer metadata if available (from LoanWizard context), then authorizedIds argument
+  const metadata = loan.metadata || {};
+  const requestedIds = metadata.equipos_autorizados !== undefined 
+    ? metadata.equipos_autorizados 
+    : (loan.equipos_autorizados || authorizedIds);
+
+  // A loan is "Direct" (all items OK) if there was no original student request or reservation to compare against
+  const isDirectLoan = !requestedIds || 
+    (requestedIds === null) || 
+    (!metadata.authorized_by_request && !metadata.authorized_by_reservation && !authorizedIds && !loan.equipos_autorizados);
+
+  console.log('4. requestedIds detectados:', requestedIds);
+  console.log('5. ¿Es Préstamo Directo?:', isDirectLoan);
+  console.log('5b. Debug Source:', { 
+    authReq: metadata.authorized_by_request, 
+    authRes: metadata.authorized_by_reservation, 
+    argAuth: authorizedIds,
+    loanAuth: loan.equipos_autorizados 
+  });
+
   const dbAuthorized = (requestedIds || []).map((id: any) => String(id).trim().toLowerCase());
+  console.log('6. dbAuthorized (normalizado):', dbAuthorized);
   
   // Teacher implicit approval: detected via marker in materia or state
   const isTeacherReserva = (loan.materia || '').includes('[Auto-Aval Docente]') || loan.estado === 'Avalada' || loan.estado === 'Aprobada';
+  console.log('7. ¿Es Reserva de Docente?:', isTeacherReserva);
 
   // Header Icon/Logo (Simple Circle for logo)
   doc.setFillColor(245, 158, 11);
