@@ -115,7 +115,11 @@ export const LoanWizard: React.FC = () => {
 
     if (studentReqId) {
       setSelectedStudentRequestId(studentReqId);
-      if (resEquipos) setSelectedIds(resEquipos.split(','));
+      if (resEquipos) {
+        const eqs = resEquipos.split(',');
+        setSelectedIds(eqs);
+        setAuthorizedEquipmentsIds(eqs);
+      }
       
       const { clean: cleanMateria, isInternal } = getCleanMateria(resMateria, params.get('tipo_uso') || undefined);
 
@@ -193,8 +197,14 @@ export const LoanWizard: React.FC = () => {
         setReservationId(null);
       }
       
-      // Ensure equipments array exists
-      const equipmentsArray = req.equipos || [];
+      // Ensure equipments array exists and handle potential string format from legacy records
+      const rawEquipos = req.equipos;
+      const equipmentsArray = Array.isArray(rawEquipos) 
+        ? rawEquipos 
+        : (typeof rawEquipos === 'string' && rawEquipos.length > 0 
+            ? (rawEquipos as string).split(',').map(s => s.trim()).filter(Boolean) 
+            : []);
+
       setSelectedIds(equipmentsArray);
       setAuthorizedEquipmentsIds(equipmentsArray);
       
@@ -323,8 +333,9 @@ export const LoanWizard: React.FC = () => {
       const originRes = (reservations || []).find(r => r.id === reservationId);
 
       // Logic for tracking added equipment
-      const equipos_autorizados = selectedIds.filter(id => equiposAutorizadosIdsArray.includes(id));
-      const equipos_adicionales = selectedIds.filter(id => !equiposAutorizadosIdsArray.includes(id));
+      const currentAuthorizedBatch = currentStudentRequest?.equipos || authorizedEquipmentsIds || [];
+      const equipos_autorizados = selectedIds.filter(id => currentAuthorizedBatch.includes(id));
+      const equipos_adicionales = selectedIds.filter(id => !currentAuthorizedBatch.includes(id));
       const hasAddedEquipment = equipos_adicionales.length > 0;
       
       // Global partial authorization flag
@@ -458,15 +469,16 @@ export const LoanWizard: React.FC = () => {
         // 4. Generate PDF
         const selectedEquipments = (equipments || []).filter(e => (selectedIds || []).includes(e.id));
         const targetDocente = docentes.find(d => d.nombre_completo === formData.docente_responsable);
+        const finalAuthIds = currentStudentRequest?.equipos || authorizedEquipmentsIds;
         
-        generateLoanPDF(loanWithContext as any, selectedEquipments, targetDocente?.email, authorizedEquipmentsIds);
+        generateLoanPDF(loanWithContext as any, selectedEquipments, targetDocente?.email, finalAuthIds);
 
         // 5. Success State
         setFinishedLoan({ 
           loan: loanWithContext, 
           equipments: selectedEquipments, 
           docenteEmail: targetDocente?.email, 
-          authorizedIds: authorizedEquipmentsIds 
+          authorizedIds: finalAuthIds 
         });
 
       } catch (innerError) {
