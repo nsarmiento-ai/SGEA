@@ -29,7 +29,7 @@ export const generateLoanPDF = (
   // If the user role is Docente or loan shows implicit approval, everything from original list is authorized
   const requestedIds = loan.metadata?.equipos_autorizados || loan.equipos_autorizados || authorizedIds;
   const isDirectLoan = !requestedIds; 
-  const dbAuthorized = (requestedIds || []).map(String);
+  const dbAuthorized = (requestedIds || []).map((id: any) => String(id).trim().toLowerCase());
   
   // Teacher implicit approval: detected via marker in materia or state
   const isTeacherReserva = (loan.materia || '').includes('[Auto-Aval Docente]') || loan.estado === 'Avalada' || loan.estado === 'Aprobada';
@@ -73,7 +73,8 @@ export const generateLoanPDF = (
     // 1. Direct Loans (no previous request/auth) -> everything is considered OK
     // 2. Teacher reserves (implicit auth) -> requested items are OK
     // 3. Student requests -> only requestedIds are OK
-    const isOriginalItem = dbAuthorized.includes(String(eq.id));
+    const itemId = String(eq.id).trim().toLowerCase();
+    const isOriginalItem = dbAuthorized.includes(itemId);
     const isActuallyAuthorized = isDirectLoan || (isTeacherReserva && isOriginalItem) || isOriginalItem;
     
     if (!isActuallyAuthorized) nonAuthorizedNames.push(eq.nombre);
@@ -84,7 +85,7 @@ export const generateLoanPDF = (
       eq.nombre,
       eq.modelo || 'N/A',
       eq.numero_serie || 'N/A',
-      isActuallyAuthorized ? '✓ Autorizado' : '⚠️ Agregado'
+      isActuallyAuthorized ? 'AUTORIZADO' : 'AGREGADO EN DESPACHO'
     ]);
 
     // Pieces rows
@@ -109,10 +110,10 @@ export const generateLoanPDF = (
     theme: 'grid',
     didParseCell: (data) => {
       if (data.section === 'body' && data.column.index === 4) {
-        if (data.cell.text[0] === '⚠️ Agregado') {
+        if (data.cell.text[0] === 'AGREGADO EN DESPACHO') {
           data.cell.styles.textColor = [185, 28, 28]; // Red 700
           data.cell.styles.fontStyle = 'bold';
-        } else if (data.cell.text[0] === '✓ Autorizado') {
+        } else if (data.cell.text[0] === 'AUTORIZADO') {
           data.cell.styles.textColor = [21, 128, 61]; // Green 700
         }
       }
