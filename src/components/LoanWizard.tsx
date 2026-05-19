@@ -51,9 +51,9 @@ export const LoanWizard: React.FC = () => {
   const [syncConflict, setSyncConflict] = useState<{ nombre: string, estado: string, id: string }[] | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  const getCleanMateria = (rawMateria: string | null | undefined) => {
+  const getCleanMateria = (rawMateria: string | null | undefined, tipoUso?: string) => {
     const text = rawMateria || '';
-    if (text.includes('[Uso Interno - Admin]')) {
+    if (text.includes('[Uso Interno - Admin]') || tipoUso === 'Uso Interno' || !text) {
       return { clean: 'Uso Interno - Administración', isInternal: true };
     }
     const clean = text.replace(/\[.*?\]/g, '').trim();
@@ -94,7 +94,7 @@ export const LoanWizard: React.FC = () => {
       setSelectedIds(equiposArray);
       setAuthorizedEquipmentsIds(equiposArray);
       
-      const { clean: cleanMateria, isInternal } = getCleanMateria(resMateria);
+      const { clean: cleanMateria, isInternal } = getCleanMateria(resMateria, params.get('tipo_uso') || undefined);
         
       const allPossibleMaterias = Object.values(MATERIAS_CATEGORIES).flat();
       const matchedMateria = isInternal ? null : allPossibleMaterias.find(m => 
@@ -117,7 +117,7 @@ export const LoanWizard: React.FC = () => {
       setSelectedStudentRequestId(studentReqId);
       if (resEquipos) setSelectedIds(resEquipos.split(','));
       
-      const { clean: cleanMateria, isInternal } = getCleanMateria(resMateria);
+      const { clean: cleanMateria, isInternal } = getCleanMateria(resMateria, params.get('tipo_uso') || undefined);
 
       const allPossibleMaterias = Object.values(MATERIAS_CATEGORIES).flat();
       const matchedMateria = isInternal ? null : allPossibleMaterias.find(m => 
@@ -184,7 +184,7 @@ export const LoanWizard: React.FC = () => {
   const selectStudentRequest = (req: StudentRequest) => {
     try {
       setError(null);
-      const { clean: cleanMateria, isInternal } = getCleanMateria(req.materia);
+      const { clean: cleanMateria, isInternal } = getCleanMateria(req.materia, req.tipo_uso);
 
       setSelectedStudentRequestId(req.id);
       if ((req as any)._table === 'reservas') {
@@ -246,7 +246,7 @@ export const LoanWizard: React.FC = () => {
     try {
       const [eqRes, resRes] = await Promise.all([
         supabase.from('equipamiento').select('id, nombre, modelo, categoria, numero_serie, foto_url, estado, piezas, permiso_uso'),
-        supabase.from('reservas').select('id, docente_nombre, alumno_nombre, equipos_ids, fecha_fin, materia')
+        supabase.from('reservas').select('id, docente_nombre, alumno_nombre, equipos_ids, fecha_inicio, fecha_fin, materia, estado')
       ]);
       if (eqRes.data) setEquipments(eqRes.data);
       if (resRes.data) setReservations(resRes.data || []);
@@ -340,7 +340,7 @@ export const LoanWizard: React.FC = () => {
         const estado = String(eq.estado || '').toLowerCase();
         if (estado === 'disponible') return false; // Is available
         // If it was reserved for this request, it shows as 'Reservado' but it is actually available for THIS loan
-        if (estado === 'reservado' && selectedStudentRequestId && authorizedEquipmentsIds.includes(eq.id)) {
+        if (estado === 'reservado' && selectedStudentRequestId && authorizedEquipmentsIds?.includes(eq.id)) {
           return false;
         }
         return true; // Truly not available (e.g. Prestado, Roto)
@@ -773,7 +773,7 @@ export const LoanWizard: React.FC = () => {
                     const isNotAvailable = estadoLower !== 'disponible';
                     
                     // Specific logic for items that are 'Reservado' for the current request
-                    const isReservedForThis = selectedStudentRequestId && authorizedEquipmentsIds.includes(eq.id) && estadoLower === 'reservado';
+                    const isReservedForThis = selectedStudentRequestId && authorizedEquipmentsIds?.includes(eq.id) && estadoLower === 'reservado';
 
                     const isDisabled = (isNoHabilitado || (isNotAvailable && !isReservedForThis)) && !selectedIds.includes(eq.id);
 
