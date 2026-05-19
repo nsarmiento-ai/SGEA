@@ -81,10 +81,10 @@ export const generateLoanPDF = (
     // Main equipment row
     tableData.push([
       counter++,
-      !isActuallyAuthorized ? `${eq.nombre} (* SIN AVAL)` : eq.nombre,
+      eq.nombre,
       eq.modelo || 'N/A',
       eq.numero_serie || 'N/A',
-      eq.categoria || 'N/A'
+      isActuallyAuthorized ? '✓ Autorizado' : '⚠️ Agregado'
     ]);
 
     // Pieces rows
@@ -103,10 +103,20 @@ export const generateLoanPDF = (
 
   autoTable(doc, {
     startY: 112,
-    head: [['#', 'Equipo / Kit', 'Modelo', 'Nº Serie', 'Categoría']],
+    head: [['#', 'Equipo / Kit', 'Modelo', 'Nº Serie', 'Estado Aval']],
     body: tableData,
     headStyles: { fillColor: [245, 158, 11] }, // Amber 500
     theme: 'grid',
+    didParseCell: (data) => {
+      if (data.section === 'body' && data.column.index === 4) {
+        if (data.cell.text[0] === '⚠️ Agregado') {
+          data.cell.styles.textColor = [185, 28, 28]; // Red 700
+          data.cell.styles.fontStyle = 'bold';
+        } else if (data.cell.text[0] === '✓ Autorizado') {
+          data.cell.styles.textColor = [21, 128, 61]; // Green 700
+        }
+      }
+    },
     styles: { cellPadding: 3 },
     columnStyles: {
       0: { cellWidth: 10 },
@@ -115,19 +125,6 @@ export const generateLoanPDF = (
   });
 
   const tableFinalY = (doc as any).lastAutoTable.finalY || 105;
-
-  // Disclaimer for non-authorized items
-  if (nonAuthorizedNames.length > 0) {
-    doc.setFontSize(8);
-    doc.setTextColor(180, 0, 0); // Bold red for warnings
-    doc.setFont('helvetica', 'bold');
-    
-    const disclaimerText = `IMPORTANTE - RESPONSABILIDAD PARCIAL: Los equipos [${nonAuthorizedNames.join(', ')}] NO contaban con aval previo al momento del despacho. De acuerdo al Reglamento de Pañol, la responsabilidad total por el cuidado, integridad y devolución de dichos elementos recae exclusivamente en el solicitante que suscribe.`;
-    
-    const splitText = doc.splitTextToSize(disclaimerText, pageWidth - 40);
-    doc.text(splitText, 20, tableFinalY + 10);
-    doc.setFont('helvetica', 'normal'); // Reset font
-  }
 
   // Footer / Signatures
   const finalY = tableFinalY + 40;

@@ -376,7 +376,7 @@ export const LoanWizard: React.FC = () => {
           fecha_devolucion_estimada: new Date(formData.fechaDevolucion).toISOString(),
           estado: 'Activo',
           equipos_ids: selectedIds,
-          comentarios: `${autorizacion_parcial ? '[AUTORIZACIÓN PARCIAL] ' : ''}${formData.comentarios}\n\nDetalle Técnico: Autorizados: ${equipos_autorizados.length}, Adicionales: ${equipos_adicionales.length}`.trim()
+          comentarios: `${autorizacion_parcial ? '[AUTORIZACIÓN PARCIAL] ' : ''}${formData.comentarios}\n\nDetalle Despacho: ${equipos_autorizados.length} autorizados. ${equipos_adicionales.length} equipos agregados manualmente por Administración.`.trim()
         };
 
         const { data: loan, error: loanError } = await supabase
@@ -418,24 +418,27 @@ export const LoanWizard: React.FC = () => {
             .from('solicitudes_alumnos')
             .update({ 
               estado: newState,
-              observaciones: `${formData.comentarios}${hasAddedEquipment ? '\nModificado en Despacho: Se agregaron equipos extra.' : ''}`.trim()
+              observaciones: `${formData.comentarios}${hasAddedEquipment ? '\nModificado en Despacho: Se agregaron equipos extra manualmente por Administración.' : ''}`.trim()
             } as any)
             .eq('id', selectedStudentRequestId);
           if (reqErr) throw reqErr;
         }
 
         // 2.6 Log to Resource History (Hoja de Vida)
-        const historyEntries = selectedIds.map(id => ({
-          recurso_id: id,
-          docente_nombre: formData.docente_responsable,
-          alumno_nombre: formData.alumno_nombre,
-          materia: formData.materia,
-          pañolero_entrega: activeResponsable!,
-          fecha_salida: new Date().toISOString(),
-          estado_salida: 'Bueno', // Default or from equipment state
-          prestamo_id: loan.id,
-          tipo_accion: 'Salida'
-        }));
+        const historyEntries = selectedIds.map(id => {
+          const isAddedManually = equipos_adicionales.includes(id);
+          return {
+            recurso_id: id,
+            docente_nombre: formData.docente_responsable,
+            alumno_nombre: formData.alumno_nombre,
+            materia: formData.materia,
+            pañolero_entrega: activeResponsable!,
+            fecha_salida: new Date().toISOString(),
+            estado_salida: isAddedManually ? 'Bueno (Agregado manual)' : 'Bueno',
+            prestamo_id: loan.id,
+            tipo_accion: 'Salida'
+          };
+        });
 
         const { error: historyError } = await supabase
           .from('historial_recursos')
