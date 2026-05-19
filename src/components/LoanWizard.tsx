@@ -198,10 +198,10 @@ export const LoanWizard: React.FC = () => {
       }
       
       // Ensure equipments array exists and handle potential string format from legacy records
-      const rawEquipos = req.equipos;
+      const rawEquipos: any = req.equipos;
       const equipmentsArray = Array.isArray(rawEquipos) 
         ? rawEquipos 
-        : (typeof rawEquipos === 'string' && rawEquipos.length > 0 
+        : (typeof rawEquipos === 'string' && (rawEquipos as string).length > 0 
             ? (rawEquipos as string).split(',').map(s => s.trim()).filter(Boolean) 
             : []);
 

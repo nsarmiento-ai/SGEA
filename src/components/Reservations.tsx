@@ -278,15 +278,21 @@ export const Reservations: React.FC = () => {
       const isInterno = formData.tipo_uso === 'Uso en Escuela';
       const isExterno = formData.tipo_uso === 'Uso Externo';
 
+      // Find teacher email for notifications
+      const selectedDocente = docentes.find(d => d.nombre_completo === formData.docente_nombre);
+      const docenteEmail = selectedDocente?.email || '';
+
       const newReservation: any = {
         equipos_ids: equiposIds,
         usuario_id: user.id,
         fecha_inicio: new Date(formData.fecha_inicio).toISOString(),
         fecha_fin: new Date(formData.fecha_fin).toISOString(),
         docente_nombre: formData.docente_nombre || activeResponsable || '',
+        docente_id: docenteEmail, // Use email as docente_id for notification logic
+        docente_aval_email: docenteEmail, // Explicit field for edge function
         materia: (isAdmin && isInterno) 
           ? `[Uso Interno - Admin] ${formData.materia}`.trim()
-          : `[${formData.tipo_uso}]${isDocente ? ' [Auto-Aval Docente]' : ''}${isExterno && isDocente ? ' [Requiere Aval de Dirección]' : ''} ${formData.materia}`.trim(),
+          : `[${formData.tipo_uso}]${isDocente ? ' [Auto-Aval Docente]' : ''}${isExterno ? ' [Requiere Aval de Dirección]' : ''} ${formData.materia}`.trim(),
         alumno_nombre: formData.alumno_nombre || (isDocente || isAdmin ? (formData.docente_nombre || activeResponsable || '') : ''),
         estado: (isAdmin && isInterno) 
           ? 'Aprobada' 

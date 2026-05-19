@@ -1,11 +1,12 @@
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2"
+import { Resend } from "npm:resend"
 
-const RESEND_API_KEY = Deno.env.get('RESEND_API_KEY')
-const SUPABASE_URL = Deno.env.get('SUPABASE_URL')
-const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
-const APP_URL = "https://ais-pre-s6pvvbo4hdgmrkhtagmvbx-476524253366.us-east1.run.app"
+const resend = new Resend(Deno.env.get('RESEND_API_KEY'));
+const SUPABASE_URL = Deno.env.get('SUPABASE_URL');
+const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+const APP_URL = "https://sgea.vercel.app";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -13,6 +14,7 @@ const corsHeaders = {
 }
 
 serve(async (req) => {
+  // Handle CORS
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders })
   }
@@ -21,108 +23,142 @@ serve(async (req) => {
     const supabase = createClient(SUPABASE_URL!, SUPABASE_SERVICE_ROLE_KEY!)
     const payload = await req.json()
     
+    // Supabase Webhook payload structure: 
+    // { record: any, old_record: any, type: 'INSERT' | 'UPDATE' | 'DELETE', table: string, schema: string }
     const { record: newRecord, old_record: oldRecord, type } = payload
     
-    let emailTo = ""
-    let subject = ""
-    let html = ""
+    console.log(`Processing ${type} for record ${newRecord?.id}`);
 
-    // LOGIC A: New Reservation requiring Director Approval
-    if (type === 'INSERT' && newRecord.estado === 'Pendiente' && newRecord.materia?.includes('[Requiere Aval de Dirección]')) {
-      emailTo = "director@cine.unt.edu.ar"
-      subject = "SGEA - Acción Requerida: Autorización de Rodaje Externo"
-      html = `
-        <div style="font-family: sans-serif; max-width: 600px; margin: auto; border: 1px solid #eee; padding: 20px; border-radius: 10px;">
-          <h2 style="color: #0f172a;">Solicitud de Aval de Dirección</h2>
-          <p>Se ha registrado un nuevo pedido de equipos para <b>Uso Externo</b> que requiere su revisión técnica.</p>
-          <div style="background: #f8fafc; padding: 15px; border-radius: 8px; margin: 20px 0;">
-            <p><b>Docente:</b> ${newRecord.docente_nombre}</p>
-            <p><b>Materia/Proyecto:</b> ${newRecord.materia}</p>
-            <p><b>Fecha:</b> ${new Date(newRecord.fecha_inicio).toLocaleDateString()}</p>
-          </div>
-          <a href="${APP_URL}/autorizaciones" style="display: inline-block; background: #0f172a; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: bold;">Ingresar al Panel de Dirección</a>
-          <p style="font-size: 12px; color: #64748b; margin-top: 30px;">Escuela Universitaria de Cine, Video y Televisión - UNT</p>
-        </div>
-      `
-    }
-
-    // LOGIC B: Aval Granted (Confirmed to Student/Teacher)
-    else if (type === 'UPDATE' && oldRecord.estado === 'Pendiente' && newRecord.estado === 'Avalada') {
-      // We need to find the student email if it's not in the record
-      // For this example, we assume we want to notify the creator of the reservation
-      const { data: userData } = await supabase.auth.admin.getUserById(newRecord.usuario_id)
-      emailTo = userData?.user?.email || ""
+    // --- CASE A & B: NEW RESERVATIONS (INSERT) ---
+    if (type === 'INSERT') {
+      const isExternal = (newRecord.materia || '').includes('[Requiere Aval de Dirección]');
+      const isStudentReq = newRecord.alumno_nombre && !(newRecord.materia || '').includes('[Auto-Aval Docente]');
       
-      if (emailTo) {
-        subject = "SGEA - Tu reserva ha sido Avalada"
-        html = `
-          <div style="font-family: sans-serif; max-width: 600px; margin: auto; border: 1px solid #eee; padding: 20px; border-radius: 10px;">
-            <h2 style="color: #15803d;">¡Reserva Confirmada!</h2>
-            <p>Hola, la solicitud para <b>${newRecord.docente_nombre}</b> ha sido avalada por la autoridad correspondiente.</p>
-            <p>Ya puedes coordinar el retiro de los equipos en el pañol en las fechas indicadas.</p>
-            <div style="background: #f0fdf4; padding: 15px; border-radius: 8px; margin: 20px 0; border: 1px solid #bcf0da;">
-              <p><b>ID de Reserva:</b> ${newRecord.id.slice(0,8)}</p>
-              <p><b>Materia:</b> ${newRecord.materia}</p>
-            </div>
-            <a href="${APP_URL}" style="display: inline-block; background: #15803d; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: bold;">Ver mis Reservas</a>
-          </div>
-        `
+      // CASE B: Requires Director Approval
+      if (isExternal) {
+        try {
+          await resend.emails.send({
+            from: 'SGEA Cine UNT <notificaciones@cine.unt.edu.ar>',
+            to: ['director@cine.unt.edu.ar'],
+            subject: 'SGEA - Acción Requerida: Solicitud de Uso Externo / Especial',
+            html: `
+              <div style="font-family: sans-serif; max-width: 600px; margin: auto; border: 1px solid #e2e8f0; border-radius: 12px; overflow: hidden;">
+                <div style="background: #0f172a; color: white; padding: 24px; text-align: center;">
+                  <h1 style="margin: 0; font-size: 20px;">SGEA - Escuela de Cine</h1>
+                </div>
+                <div style="padding: 32px; color: #1e293b; line-height: 1.6;">
+                  <h2 style="margin-top: 0; color: #0f172a;">Nueva Solicitud Pendiente de Aval</h2>
+                  <p>Se ha registrado un pedido que requiere <b>Aval de Dirección</b> para su procesamiento.</p>
+                  <div style="background: #f8fafc; border-left: 4px solid #0f172a; padding: 20px; margin: 24px 0;">
+                    <p style="margin: 0;"><b>Materia:</b> ${newRecord.materia}</p>
+                    <p style="margin: 8px 0;"><b>Docente:</b> ${newRecord.docente_nombre}</p>
+                    <p style="margin: 8px 0 0 0;"><b>Fecha Inicio:</b> ${new Date(newRecord.fecha_inicio).toLocaleDateString()}</p>
+                  </div>
+                  <div style="text-align: center; margin-top: 32px;">
+                    <a href="${APP_URL}/autorizaciones" style="background: #0f172a; color: white; padding: 14px 28px; text-decoration: none; border-radius: 8px; font-weight: bold; display: inline-block;">Ver y Autorizar en Panel</a>
+                  </div>
+                </div>
+                <div style="background: #f1f5f9; padding: 16px; text-align: center; font-size: 12px; color: #64748b;">
+                  Sistema de Gestión de Equipamiento Audiovisual - UNT
+                </div>
+              </div>
+            `
+          });
+          console.log('Director notification sent');
+        } catch (e) {
+          console.error('Error sending Director notification:', e);
+        }
+      }
+
+      // CASE A: Student Request notifying Teacher
+      if (isStudentReq) {
+        // We use docente_aval_email if provided, fallback to docente_id (often used as email in this app)
+        const teacherEmail = newRecord.docente_aval_email || newRecord.docente_id;
+        if (teacherEmail) {
+          try {
+            await resend.emails.send({
+              from: 'SGEA Cine UNT <notificaciones@cine.unt.edu.ar>',
+              to: [teacherEmail],
+              subject: 'SGEA - Tienes un pedido de Aval de Alumno pendiente',
+              html: `
+                <div style="font-family: sans-serif; max-width: 600px; margin: auto; border: 1px solid #fef3c7; border-radius: 12px; overflow: hidden;">
+                  <div style="background: #f59e0b; color: white; padding: 24px; text-align: center;">
+                    <h1 style="margin: 0; font-size: 20px;">SGEA - Aval Docente</h1>
+                  </div>
+                  <div style="padding: 32px; color: #451a03; line-height: 1.6;">
+                    <h2 style="margin-top: 0;">Solicitud de Aval Pendiente</h2>
+                    <p>El alumno <b>${newRecord.alumno_nombre}</b> ha solicitado equipos bajo su responsabilidad para la materia <b>${newRecord.materia}</b>.</p>
+                    <div style="background: #fffbeb; border-left: 4px solid #f59e0b; padding: 20px; margin: 24px 0;">
+                      <p style="margin: 0;"><b>Docente Responsable:</b> ${newRecord.docente_nombre}</p>
+                      <p style="margin: 8px 0;"><b>Equipos:</b> Ver detalle en sistema</p>
+                      <p style="margin: 8px 0 0 0;"><b>Fecha de Uso:</b> ${new Date(newRecord.fecha_inicio).toLocaleDateString()}</p>
+                    </div>
+                    <div style="text-align: center; margin-top: 32px;">
+                      <a href="${APP_URL}/mis-autorizaciones" style="background: #0f172a; color: white; padding: 14px 28px; text-decoration: none; border-radius: 8px; font-weight: bold; display: inline-block;">Revisar Solicitud</a>
+                    </div>
+                  </div>
+                </div>
+              `
+            });
+            console.log('Teacher notification sent');
+          } catch (e) {
+            console.error('Error sending Teacher notification:', e);
+          }
+        }
       }
     }
 
-    // LOGIC C: Student Request requiring Teacher Aval
-    // Note: If you use a separate table 'solicitudes_alumnos', this would trigger on that table.
-    // Assuming 'reservas' is used for both with a flag:
-    else if (type === 'INSERT' && newRecord.estado === 'Pendiente' && !newRecord.materia?.includes('[Auto-Aval Docente]')) {
-       // Search for teacher email (docente_id is often the email)
-       emailTo = newRecord.docente_id || "" 
-       if (emailTo) {
-         subject = "SGEA - Tienes un nuevo pedido de Aval de Alumno"
-         html = `
-           <div style="font-family: sans-serif; max-width: 600px; margin: auto; border: 1px solid #eee; padding: 20px; border-radius: 10px;">
-             <h2 style="color: #f59e0b;">Solicitud de Aval Pendiente</h2>
-             <p>Un alumno ha registrado una solicitud de equipos bajo su responsabilidad para la materia <b>${newRecord.materia}</b>.</p>
-             <div style="background: #fffbeb; padding: 15px; border-radius: 8px; margin: 20px 0; border: 1px solid #fef3c7;">
-               <p><b>Alumno:</b> ${newRecord.alumno_nombre}</p>
-               <p><b>Fecha de Uso:</b> ${new Date(newRecord.fecha_inicio).toLocaleDateString()}</p>
-             </div>
-             <a href="${APP_URL}/mis-autorizaciones" style="display: inline-block; background: #0f172a; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: bold;">Revisar y Autorizar</a>
-           </div>
-         `
-       }
+    // --- CASE C: AVAL GRANTED (UPDATE) ---
+    if (type === 'UPDATE' && oldRecord.estado === 'Pendiente' && newRecord.estado === 'Avalada') {
+      try {
+        // Fetch student email from auth metadata
+        const { data: userData } = await supabase.auth.admin.getUserById(newRecord.usuario_id);
+        const studentEmail = userData?.user?.email;
+
+        if (studentEmail) {
+          await resend.emails.send({
+            from: 'SGEA Cine UNT <notificaciones@cine.unt.edu.ar>',
+            to: [studentEmail],
+            subject: 'SGEA - Tu reserva ha sido AVALADA',
+            html: `
+              <div style="font-family: sans-serif; max-width: 600px; margin: auto; border: 1px solid #dcfce7; border-radius: 12px; overflow: hidden;">
+                <div style="background: #22c55e; color: white; padding: 24px; text-align: center;">
+                  <h1 style="margin: 0; font-size: 20px;">SGEA - Reserva de Equipos</h1>
+                </div>
+                <div style="padding: 32px; color: #14532d; line-height: 1.6;">
+                  <h2 style="margin-top: 0;">¡Buenas noticias!</h2>
+                  <p>Tu solicitud de equipos para <b>${newRecord.materia}</b> ha sido avalada satisfactoriamente.</p>
+                  <p>Ya puedes presentarte en el pañol en el día y horario solicitado para retirar los recursos.</p>
+                  <div style="background: #f0fdf4; border: 1px dashed #22c55e; padding: 20px; margin: 24px 0; border-radius: 8px;">
+                    <p style="margin: 0;"><b>Responsable:</b> ${newRecord.alumno_nombre || newRecord.docente_nombre}</p>
+                    <p style="margin: 8px 0 0 0;"><b>Estado:</b> LISTO PARA DESPACHO</p>
+                  </div>
+                  <div style="text-align: center; margin-top: 32px;">
+                    <a href="${APP_URL}" style="background: #0f172a; color: white; padding: 14px 28px; text-decoration: none; border-radius: 8px; font-weight: bold; display: inline-block;">Ver Comprobante</a>
+                  </div>
+                </div>
+              </div>
+            `
+          });
+          console.log('Student notification sent');
+        }
+      } catch (e) {
+        console.error('Error sending student confirmation:', e);
+      }
     }
 
-    if (emailTo && html) {
-      const res = await fetch('https://api.resend.com/emails', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${RESEND_API_KEY}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          from: 'SGEA Cine UNT <notificaciones@cine.unt.edu.ar>',
-          to: [emailTo],
-          subject: subject,
-          html: html,
-        }),
-      })
-
-      const resData = await res.json()
-      return new Response(JSON.stringify(resData), { 
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 200 
-      })
-    }
-
-    return new Response(JSON.stringify({ message: 'No notification needed' }), { 
+    return new Response(JSON.stringify({ success: true }), { 
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       status: 200 
     })
 
   } catch (error) {
+    console.error('Fatal Webhook Error:', error);
+    // Always return 200 to Supabase to avoid webhook retry loops if its a logic error
     return new Response(JSON.stringify({ error: error.message }), { 
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      status: 400 
+      status: 200 
     })
   }
 })
+
