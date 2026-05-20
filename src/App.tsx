@@ -140,9 +140,16 @@ function AppContent() {
 }
 
 function ProtectedRoute() {
-  const { role, isSuperAdmin } = useApp();
+  const { role, isSuperAdmin, userEmail } = useApp();
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const location = useLocation();
+
+  const isCineDomain = userEmail?.endsWith('@cine.unt.edu.ar');
+
+  // Rule 2: Non-@cine.unt.edu.ar users are strictly Alumno and must be routed/forced to /catalogo-publico
+  if (userEmail && !isCineDomain) {
+    return <Navigate to="/catalogo-publico" replace />;
+  }
 
   // If super admin hasn't picked a role yet, force role selection via route
   if (isSuperAdmin && !role && location.pathname !== '/select-role') {

@@ -12,8 +12,10 @@ import {
   ChevronLeft,
   ChevronRight,
   Filter,
-  Image as ImageIcon
+  Image as ImageIcon,
+  LogOut
 } from 'lucide-react';
+import { useApp } from '../context/AppContext';
 import { motion, AnimatePresence } from 'motion/react';
 import { cn, formatDate, optimizeCloudinaryUrl } from '../lib/utils';
 import { 
@@ -46,6 +48,7 @@ const statusConfig: Record<EquipmentStatus, { color: string, icon: any, label: s
 
 export const PublicView: React.FC = () => {
   const navigate = useNavigate();
+  const { activeResponsable, signOut } = useApp();
   const [activeTab, setActiveTab] = useState<'catalog' | 'calendar'>('catalog');
   const [equipments, setEquipments] = useState<Equipment[]>([]);
   const [loading, setLoading] = useState(true);
@@ -194,12 +197,28 @@ export const PublicView: React.FC = () => {
             </button>
           </div>
 
-          <button 
-            onClick={() => navigate('/login')}
-            className="text-xs font-bold text-slate-700 hover:text-slate-900 transition-colors hidden md:block"
-          >
-            Acceso Docentes →
-          </button>
+          {activeResponsable ? (
+            <div className="flex items-center gap-4">
+              <div className="text-right hidden md:block">
+                <p className="text-xs font-bold text-slate-900">{activeResponsable}</p>
+                <p className="text-[9px] font-black uppercase text-amber-600 tracking-wider">Sesión Alumno</p>
+              </div>
+              <button 
+                onClick={signOut}
+                className="text-xs font-bold text-red-500 hover:text-red-700 transition-colors flex items-center gap-1.5 py-2 px-3 hover:bg-red-50 rounded-xl"
+              >
+                <LogOut className="w-4 h-4" />
+                <span className="hidden md:inline">Salir</span>
+              </button>
+            </div>
+          ) : (
+            <button 
+              onClick={() => navigate('/login')}
+              className="text-xs font-bold text-slate-700 hover:text-slate-900 transition-colors hidden md:block"
+            >
+              Acceso Docentes →
+            </button>
+          )}
         </div>
       </header>
 

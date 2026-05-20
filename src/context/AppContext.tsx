@@ -75,8 +75,13 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
     try {
       const savedRole = localStorage.getItem('selected_role') as AppRole;
+      const isCineDomain = email?.endsWith('@cine.unt.edu.ar');
       
-      if (isSpecial) {
+      if (!isCineDomain) {
+        // STRICT ALUMNO: Force role to null and remove any saved role so they never log in as Docente/Admin
+        setRole(null);
+        localStorage.removeItem('selected_role');
+      } else if (isSpecial) {
         if (savedRole) {
           setRole(savedRole);
         } else {
@@ -84,7 +89,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         }
       } else {
         // Simple domain-based auto-role for @cine users who aren't superadmins
-        const defaultRole = email?.endsWith('@cine.unt.edu.ar') ? 'Administración' : 'Docente';
+        const defaultRole = 'Docente';
         setRole(savedRole || defaultRole);
       }
       
@@ -97,6 +102,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   const setRoleAndSave = async (newRole: AppRole | null) => {
+    // Treat student accounts strictly: prevent assigning administrative roles
+    if (userEmail && !userEmail.endsWith('@cine.unt.edu.ar') && newRole !== null) {
+      console.warn('Block: Alumno tried to assign authorized AppRole');
+      return;
+    }
     if (newRole) {
       localStorage.setItem('selected_role', newRole);
     } else {
