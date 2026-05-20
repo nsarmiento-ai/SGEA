@@ -95,14 +95,32 @@ function AppContent() {
     );
   }
 
-  // Handle Public Routes without Auth
+  // Handle routes, ensuring catalog and request wizard are protected
   return (
     <div className="relative min-h-screen">
       <AnimatedBackground />
       <Suspense fallback={<LoadingFallback />}>
         <Routes>
-          <Route path="/catalogo-publico" element={<PublicView />} />
-          <Route path="/solicitud" element={<StudentRequestView />} />
+          <Route 
+            path="/catalogo-publico" 
+            element={
+              !activeResponsable ? (
+                <Navigate to="/" replace />
+              ) : (
+                <PublicView />
+              )
+            } 
+          />
+          <Route 
+            path="/solicitud" 
+            element={
+              !activeResponsable ? (
+                <Navigate to="/" replace />
+              ) : (
+                <StudentRequestView />
+              )
+            } 
+          />
           
           {/* Protected routes below */}
           <Route 

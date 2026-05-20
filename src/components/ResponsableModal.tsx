@@ -195,25 +195,7 @@ export const ResponsableModal: React.FC = () => {
               </button>
             </div>
 
-            <div className="relative">
-              <div className="absolute inset-0 flex items-center" aria-hidden="true">
-                <div className="w-full border-t border-white/10"></div>
-              </div>
-              <div className="relative flex justify-center text-xs font-black uppercase tracking-widest">
-                <span className="bg-[#0f172a] px-4 text-slate-500">¿Consulta Pública?</span>
-              </div>
-            </div>
-
-            <button
-              onClick={() => navigate('/catalogo-publico')}
-              className={cn(
-                "w-full flex items-center justify-center gap-2 py-4 px-6 rounded-2xl transition-all border border-white/10",
-                "bg-white/5 text-slate-400 font-bold hover:bg-white/10 hover:text-white"
-              )}
-            >
-              <ExternalLink className="w-4 h-4" />
-              Catálogo Público
-            </button>
+            {/* Additional login info block */}
           </div>
 
           <div className="p-6 bg-white/5 border-t border-white/5 text-center">
