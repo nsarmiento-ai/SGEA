@@ -7,6 +7,10 @@ const SUPABASE_URL = Deno.env.get('SUPABASE_URL');
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
 const APP_URL = "https://sgea.vercel.app";
 
+// CONSTANTE FIJA DE MODO PRUEBA (Sandbox Bypass para Resend)
+const TEST_MODE = true; // Activo por default para interceptar y redirigir todos los mails al correo del admin
+const DEV_EMAIL = "n.sarmiento@cine.unt.edu.ar";
+
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
@@ -31,49 +35,46 @@ function formatFecha(fechaRaw: any): string {
   }
 }
 
-// Helper to safely send email with Resend, bypassing sandbox/onboarding limitations
-async function sendWrappedEmail({ to, subject, html }: { to: string[], subject: string, html: string }) {
-  // Let the user configure their verified domain email. If not set, default to onboarding@resend.dev
+// Simple and direct email sender using Direct Resend Calls
+async function sendNotificationEmail({ to, subject, html, originalRecipient }: { to: string[], subject: string, html: string, originalRecipient: string }) {
   let fromEmail = Deno.env.get('RESEND_FROM_EMAIL') || 'onboarding@resend.dev';
-  
-  // Format visual name
   if (!fromEmail.includes('<')) {
     fromEmail = `SGEA Cine UNT <${fromEmail}>`;
   }
 
-  // Fallback / developer email for testing
-  const testRecipient = Deno.env.get('TEST_RECIPIENT_EMAIL') || 'n.sarmiento@cine.unt.edu.ar';
-  
   let finalTo = [...to];
+  let finalHtml = html;
+  let finalSubject = subject;
 
-  // If we are using the free/onboarding domain, we MUST rewrite recipient to the verified owner address.
-  // Resend will throw a 400 Bad Request if we try to send to any unverified address in sandbox.
-  if (fromEmail.includes('onboarding@resend.dev')) {
-    console.log(`[Resend Sandbox Mode] Overriding recipients ${JSON.stringify(to)} to registered owner address: ${testRecipient}`);
-    subject = `[TEST RESEND SANDBOX to ${to.join(', ')}] ` + subject;
-    finalTo = [testRecipient];
-  } else {
-    // Optional CC / duplicate for tracking
-    const alwaysCcTest = Deno.env.get('ALWAYS_CC_TEST') === 'true';
-    if (alwaysCcTest && !finalTo.includes(testRecipient)) {
-      finalTo.push(testRecipient);
-    }
+  // Sandbox bypass logic: rewrite recipient to dev address if TEST_MODE is active
+  if (TEST_MODE) {
+    console.log(`[TEST_MODE] Redirigiendo correo original de ${originalRecipient} al administrador ${DEV_EMAIL}`);
+    finalTo = [DEV_EMAIL];
+    finalSubject = `[MODO PRUEBA] ${subject}`;
+    
+    const banner = `
+      <div style="background-color: #fffbeb; border: 1px solid #f59e0b; color: #78350f; padding: 14px; margin-bottom: 20px; font-family: sans-serif; font-size: 13px; border-radius: 8px;">
+        <strong>⚠️ NOTIFICACIÓN EN MODO PRUEBA DE DESARROLLO:</strong><br>
+        Este correo fue interceptado y redirigido en modo Sandbox.<br>
+        <b>Destinatario original del sistema:</b> <code>${originalRecipient}</code>
+      </div>
+    `;
+    finalHtml = banner + html;
   }
 
-  console.log(`Dispatching email -> From: ${fromEmail} | To: ${JSON.stringify(finalTo)} | Subject: ${subject}`);
-  
+  console.log(`Ejecutando envío en Resend -> De: ${fromEmail} | Para: ${JSON.stringify(finalTo)} | Asunto: ${finalSubject}`);
+
   const result = await resend.emails.send({
     from: fromEmail,
     to: finalTo,
-    subject: subject,
-    html: html,
+    subject: finalSubject,
+    html: finalHtml,
   });
 
   return result;
 }
 
 serve(async (req) => {
-  // Handle CORS
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders })
   }
@@ -82,13 +83,10 @@ serve(async (req) => {
     const supabase = createClient(SUPABASE_URL!, SUPABASE_SERVICE_ROLE_KEY!)
     const payload = await req.json()
     
-    // Supabase Webhook payload structure: 
-    // { record: any, old_record: any, type: 'INSERT' | 'UPDATE' | 'DELETE', table: string, schema: string }
     const { record: newRecord, old_record: oldRecord, type } = payload
     
-    console.log(`Processing webhook: Event=${type}, Table=${payload.table || 'reservas'}, RecordID=${newRecord?.id}`);
+    console.log(`[SGEA Webhook] Event=${type}, Table=${payload.table || 'reservas'}, RecordID=${newRecord?.id}`);
 
-    // If there is no record, skip
     if (!newRecord) {
       return new Response(JSON.stringify({ message: 'No record found in payload' }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -96,45 +94,45 @@ serve(async (req) => {
       });
     }
 
-    // Solve Date format early
     const formattedDate = formatFecha(newRecord.fecha_inicio);
 
-    // --- CASE A & B: NEW RESERVATIONS (INSERT) ---
+    // Fetch student's real name and email if available via auth.admin
+    let resolvedAlumnoNombre = newRecord.alumno_nombre;
+    let resolvedAlumnoEmail = "";
+
+    if (newRecord.usuario_id) {
+      try {
+        const { data: userData, error: userError } = await supabase.auth.admin.getUserById(newRecord.usuario_id);
+        if (!userError && userData?.user) {
+          resolvedAlumnoEmail = userData.user.email || "";
+          if (!resolvedAlumnoNombre) {
+            resolvedAlumnoNombre = userData.user.user_metadata?.full_name || 
+                                   userData.user.user_metadata?.nombre || 
+                                   userData.user.user_metadata?.name || 
+                                   userData.user.email?.split('@')[0];
+          }
+        }
+      } catch (err) {
+        console.error('Error al consultar datos del alumno en Supabase Auth:', err);
+      }
+    }
+
+    if (!resolvedAlumnoNombre) {
+      resolvedAlumnoNombre = "Un alumno de la materia";
+    }
+
+    // --- CASO A: SOLICITUD DE ALUMNO QUE NOTIFICA AL DOCENTE (INSERT) ---
     if (type === 'INSERT') {
       const isExternal = (newRecord.materia || '').includes('[Requiere Aval de Dirección]');
       const isStudentReq = newRecord.alumno_nombre || !(newRecord.materia || '').includes('[Auto-Aval Docente]');
 
-      // Try to fetch full student user details via auth.admin to resolve name and email if missing
-      let resolvedAlumnoNombre = newRecord.alumno_nombre;
-      let resolvedAlumnoEmail = "";
-
-      if (newRecord.usuario_id) {
-        try {
-          const { data: userData, error: userError } = await supabase.auth.admin.getUserById(newRecord.usuario_id);
-          if (!userError && userData?.user) {
-            resolvedAlumnoEmail = userData.user.email || "";
-            if (!resolvedAlumnoNombre) {
-              resolvedAlumnoNombre = userData.user.user_metadata?.full_name || 
-                                     userData.user.user_metadata?.nombre || 
-                                     userData.user.user_metadata?.name || 
-                                     userData.user.email?.split('@')[0];
-            }
-          }
-        } catch (err) {
-          console.error('Error querying student user details:', err);
-        }
-      }
-
-      // Final fallback if name is still empty
-      if (!resolvedAlumnoNombre) {
-        resolvedAlumnoNombre = "Un alumno de la materia";
-      }
-
-      // CASE B: Requires Director Approval (External / Special use)
+      // CASO B: Requiere Aval de Dirección (Uso Externo / Especial)
       if (isExternal) {
         try {
-          await sendWrappedEmail({
-            to: ['director@cine.unt.edu.ar'],
+          const directEmail = 'director@cine.unt.edu.ar';
+          await sendNotificationEmail({
+            to: [directEmail],
+            originalRecipient: directEmail,
             subject: 'SGEA - Acción Requerida: Solicitud de Uso Externo / Especial',
             html: `
               <div style="font-family: sans-serif; max-width: 600px; margin: auto; border: 1px solid #e2e8f0; border-radius: 12px; overflow: hidden;">
@@ -160,20 +158,20 @@ serve(async (req) => {
               </div>
             `
           });
-          console.log('Director notification sent successfully');
+          console.log('Notificación de Dirección procesada con éxito');
         } catch (e) {
-          console.error('Error sending Director notification:', e);
+          console.error('Error al enviar notificación a Dirección:', e);
         }
       }
 
-      // CASE A: Student Request notifying Teacher
+      // CASO A: Alumno solicita y se notifica al Docente Avalador
       if (isStudentReq) {
-        // Find teacher email: docente_aval_email first, fallback to docente_id
         const teacherEmail = newRecord.docente_aval_email || newRecord.docente_id;
         if (teacherEmail) {
           try {
-            await sendWrappedEmail({
+            await sendNotificationEmail({
               to: [teacherEmail],
+              originalRecipient: teacherEmail,
               subject: 'SGEA - Tienes un pedido de Aval de Alumno pendiente',
               html: `
                 <div style="font-family: sans-serif; max-width: 600px; margin: auto; border: 1px solid #fef3c7; border-radius: 12px; overflow: hidden;">
@@ -198,38 +196,24 @@ serve(async (req) => {
                 </div>
               `
             });
-            console.log('Teacher notification sent successfully');
+            console.log('Notificación de Docente procesada con éxito');
           } catch (e) {
-            console.error('Error sending Teacher notification:', e);
+            console.error('Error al enviar notificación a Docente:', e);
           }
         } else {
-          console.log(`Skipping teacher notification: No email specified in docente_aval_email/docente_id. Values were: docente_aval_email=${newRecord.docente_aval_email}, docente_id=${newRecord.docente_id}`);
+          console.log(`Omisión de notificación a Docente: docente_aval_email vacío.`);
         }
       }
     }
 
-    // --- CASE C: AVAL GRANTED (UPDATE) ---
+    // --- CASO C: RESERVA AVALADA POR EL DOCENTE (UPDATE) ---
     if (type === 'UPDATE' && oldRecord && oldRecord.estado === 'Pendiente' && newRecord.estado === 'Avalada') {
-      try {
-        // Fetch student email from auth metadata
-        const { data: userData, error: userError } = await supabase.auth.admin.getUserById(newRecord.usuario_id);
-        const studentEmail = userData?.user?.email;
-
-        // Fallback name if missing
-        let resolvedAlumnoNombre = newRecord.alumno_nombre;
-        if (!resolvedAlumnoNombre && userData?.user) {
-          resolvedAlumnoNombre = userData.user.user_metadata?.full_name || 
-                                 userData.user.user_metadata?.nombre || 
-                                 userData.user.user_metadata?.name || 
-                                 userData.user.email?.split('@')[0];
-        }
-        if (!resolvedAlumnoNombre) {
-          resolvedAlumnoNombre = "Alumno de Cátedra";
-        }
-
-        if (studentEmail) {
-          await sendWrappedEmail({
+      const studentEmail = resolvedAlumnoEmail || "";
+      if (studentEmail) {
+        try {
+          await sendNotificationEmail({
             to: [studentEmail],
+            originalRecipient: studentEmail,
             subject: 'SGEA - Tu reserva ha sido AVALADA',
             html: `
               <div style="font-family: sans-serif; max-width: 600px; margin: auto; border: 1px solid #dcfce7; border-radius: 12px; overflow: hidden;">
@@ -255,12 +239,12 @@ serve(async (req) => {
               </div>
             `
           });
-          console.log('Student notification sent successfully');
-        } else {
-          console.log(`Skipping student notification: Could not retrieve email for user ID ${newRecord.usuario_id}`);
+          console.log('Notificación de Alumno procesada con éxito');
+        } catch (e) {
+          console.error('Error al enviar confirmación al alumno:', e);
         }
-      } catch (e) {
-        console.error('Error sending student confirmation:', e);
+      } else {
+        console.log(`Omisión de notificación al Alumno: No se pudo resolver el email del usuario_id ${newRecord.usuario_id}.`);
       }
     }
 
@@ -271,7 +255,6 @@ serve(async (req) => {
 
   } catch (error: any) {
     console.error('Fatal Webhook Error:', error);
-    // Always return 200 to Supabase to avoid webhook retry loops if it's a code/payload error
     return new Response(JSON.stringify({ error: error.message }), { 
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       status: 200 
