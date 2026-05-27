@@ -1,13 +1,12 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2"
-import { Resend } from "npm:resend"
+import nodemailer from "npm:nodemailer"
 
-const resend = new Resend(Deno.env.get('RESEND_API_KEY'));
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL');
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
 const APP_URL = "https://sgea.vercel.app";
 
-// CONSTANTE FIJA DE MODO PRUEBA (Sandbox Bypass para Resend)
+// CONSTANTE FIJA DE MODO PRUEBA (Para pruebas en sandbox)
 const TEST_MODE = true; // Activo por default para interceptar y redirigir todos los mails al correo del admin
 const DEV_EMAIL = "n.sarmiento@cine.unt.edu.ar";
 
@@ -35,12 +34,28 @@ function formatFecha(fechaRaw: any): string {
   }
 }
 
-// Simple and direct email sender using Direct Resend Calls
+// Simple and direct email sender using Nodemailer and Gmail SMTP
 async function sendNotificationEmail({ to, subject, html, originalRecipient }: { to: string[], subject: string, html: string, originalRecipient: string }) {
-  let fromEmail = Deno.env.get('RESEND_FROM_EMAIL') || 'onboarding@resend.dev';
-  if (!fromEmail.includes('<')) {
-    fromEmail = `SGEA Cine UNT <${fromEmail}>`;
+  const gUser = Deno.env.get('GMAIL_USER');
+  const gPass = Deno.env.get('GMAIL_APP_PASSWORD');
+
+  if (!gUser || !gPass) {
+    throw new Error("Faltan las variables de entorno para Nodemailer: GMAIL_USER o GMAIL_APP_PASSWORD");
   }
+
+  // Configure transporter targeting smtp.gmail.com
+  const transporter = nodemailer.createTransport({
+    host: "smtp.gmail.com",
+    port: 465,
+    secure: true, // Use SSL
+    auth: {
+      user: gUser,
+      pass: gPass,
+    },
+  });
+
+  // Display name is customized, while real address matches authenticating user to prevent SPF/DKIM block
+  const fromEmail = `Pañol de Equipamiento SGEA <${gUser}>`;
 
   let finalTo = [...to];
   let finalHtml = html;
@@ -54,7 +69,7 @@ async function sendNotificationEmail({ to, subject, html, originalRecipient }: {
     
     const banner = `
       <div style="background-color: #fffbeb; border: 1px solid #f59e0b; color: #78350f; padding: 14px; margin-bottom: 20px; font-family: sans-serif; font-size: 13px; border-radius: 8px;">
-        <strong>⚠️ NOTIFICACIÓN EN MODO PRUEBA DE DESARROLLO:</strong><br>
+        <strong>⚠️ NOTIFICACIÓN EN MODO PRUEBA DE DESARROLLO (SMTP):</strong><br>
         Este correo fue interceptado y redirigido en modo Sandbox.<br>
         <b>Destinatario original del sistema:</b> <code>${originalRecipient}</code>
       </div>
@@ -62,16 +77,17 @@ async function sendNotificationEmail({ to, subject, html, originalRecipient }: {
     finalHtml = banner + html;
   }
 
-  console.log(`Ejecutando envío en Resend -> De: ${fromEmail} | Para: ${JSON.stringify(finalTo)} | Asunto: ${finalSubject}`);
+  console.log(`Ejecutando envío en Nodemailer -> De: ${fromEmail} | Para: ${JSON.stringify(finalTo)} | Asunto: ${finalSubject}`);
 
-  const result = await resend.emails.send({
+  const info = await transporter.sendMail({
     from: fromEmail,
-    to: finalTo,
+    to: finalTo.join(", "),
     subject: finalSubject,
     html: finalHtml,
   });
 
-  return result;
+  console.log(`Nodemailer envío completado con éxito. Message ID: ${info.messageId}`);
+  return info;
 }
 
 serve(async (req) => {
