@@ -2,32 +2,32 @@
   "name": "SGEA - Escuela de Cine UNT",
   "short_name": "SGEA",
   "description": "Sistema de Gestión de Equipamiento Audiovisual",
-  "start_url": ".",
+  "start_url": "/",
   "display": "standalone",
   "background_color": "#0f172a",
   "theme_color": "#0f172a",
   "orientation": "portrait-primary",
   "icons": [
     {
-      "src": "icon-192.png",
+      "src": "https://res.cloudinary.com/divij23kk/image/upload/v1779979569/launchericon-192x192_uuquvy.png",
       "sizes": "192x192",
       "type": "image/png",
       "purpose": "any"
     },
     {
-      "src": "icon-512.png",
+      "src": "https://res.cloudinary.com/divij23kk/image/upload/v1779979569/launchericon-512x512_nyeojx.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any"
     },
     {
-      "src": "icon-192.png",
+      "src": "https://res.cloudinary.com/divij23kk/image/upload/v1779979569/launchericon-192x192_uuquvy.png",
       "sizes": "192x192",
       "type": "image/png",
       "purpose": "maskable"
     },
     {
-      "src": "icon-512.png",
+      "src": "https://res.cloudinary.com/divij23kk/image/upload/v1779979569/launchericon-512x512_nyeojx.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "maskable"
