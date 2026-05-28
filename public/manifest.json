@@ -31,6 +31,12 @@
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "maskable"
+    },
+    {
+      "src": "https://res.cloudinary.com/divij23kk/image/upload/v1779979587/1024_guwudh.png",
+      "sizes": "1024x1024",
+      "type": "image/png",
+      "purpose": "any"
     }
   ],
   "categories": ["education", "productivity"],
