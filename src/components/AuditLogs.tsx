@@ -104,7 +104,7 @@ export const AuditLogs: React.FC = () => {
         ) : (
           <>
             {/* Mobile Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:hidden gap-4">
+            <div className="grid grid-cols-1 md:hidden gap-4">
               {filteredLogs.map((log) => (
                 <div key={log.id} className="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm space-y-3">
                   <div className="flex justify-between items-start gap-2">
@@ -138,7 +138,7 @@ export const AuditLogs: React.FC = () => {
             </div>
 
             {/* Desktop Table */}
-            <div className="hidden lg:block bg-white rounded-3xl shadow-sm border border-slate-200 overflow-hidden">
+            <div className="hidden md:block bg-white rounded-3xl shadow-sm border border-slate-200 overflow-hidden">
               <div className="overflow-x-auto">
                 <table className="w-full text-left border-collapse">
                   <thead>

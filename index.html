@@ -1,11 +1,18 @@
 <!doctype html>
-<html lang="en">
+<html lang="es">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <title>SGEA - Escuela de Cine UNT</title>
     <meta name="description" content="Sistema de Gestión de Equipamiento Audiovisual - Escuela Universitaria de Cine, Video y TV (UNT)." />
-    
+
+    <link rel="manifest" href="/manifest.json" />
+    <meta name="theme-color" content="#0f172a" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-touch-web-app-capable" content="yes" />
+    <meta name="apple-touch-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-touch-web-app-title" content="SGEA" />
+
     <link rel="preconnect" href="https://fonts.googleapis.com" crossorigin />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link rel="dns-prefetch" href="https://res.cloudinary.com" />
@@ -20,19 +27,16 @@
       fetchpriority="high"
       crossorigin
     />
-    <!-- Open Graph / Facebook -->
+
     <meta property="og:type" content="website" />
     <meta property="og:title" content="SGEA - Gestión de Equipamiento" />
     <meta property="og:description" content="Sistema de Gestión de Equipamiento Audiovisual - Escuela Universitaria de Cine, Video y TV (UNT)." />
     <meta property="og:image" content="https://res.cloudinary.com/divij23kk/image/upload/v1775522044/Logo-Escuela_clscco_1_pe7ao5.png" />
-
-    <!-- Twitter -->
     <meta property="twitter:card" content="summary_large_image" />
     <meta property="twitter:title" content="SGEA - Gestión de Equipamiento" />
     <meta property="twitter:description" content="Sistema de Gestión de Equipamiento Audiovisual - Escuela Universitaria de Cine, Video y TV (UNT)." />
     <meta property="twitter:image" content="https://res.cloudinary.com/divij23kk/image/upload/v1775522044/Logo-Escuela_clscco_1_pe7ao5.png" />
 
-    <!-- Favicon -->
     <link rel="icon" type="image/png" href="https://res.cloudinary.com/divij23kk/image/upload/v1775522044/Logo-Escuela_clscco_1_pe7ao5.png" />
     <link rel="apple-touch-icon" href="https://res.cloudinary.com/divij23kk/image/upload/v1775522044/Logo-Escuela_clscco_1_pe7ao5.png" />
     <link rel="canonical" id="canonical-link" href="https://sgea.vercel.app/" />
@@ -42,6 +46,15 @@
         if (canonical) {
           canonical.href = window.location.href.split('?')[0].split('#')[0];
         }
+
+        // Registrar Service Worker para PWA
+        if ('serviceWorker' in navigator) {
+          navigator.serviceWorker.register('/sw.js').then(function(reg) {
+            console.log('SW registrado con éxito:', reg.scope);
+          }).catch(function(err) {
+            console.log('Error al registrar el SW:', err);
+          });
+        }
       });
     </script>
   </head>
@@ -50,4 +63,3 @@
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>
-

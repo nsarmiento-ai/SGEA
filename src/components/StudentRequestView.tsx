@@ -291,7 +291,7 @@ export const StudentRequestView: React.FC = () => {
                     type="button"
                     onClick={() => setStep(2)}
                     disabled={!formData.responsable || !formData.dni || !formData.materia || !formData.docente_id}
-                    className="bg-slate-900 text-white px-8 py-4 rounded-xl font-bold hover:bg-slate-800 transition-all disabled:opacity-50"
+                    className="w-full sm:w-auto text-center bg-slate-900 text-white px-8 py-4 rounded-xl font-bold hover:bg-slate-800 transition-all disabled:opacity-50"
                   >
                     Siguiente: Selección de Equipos
                   </button>
@@ -310,7 +310,7 @@ export const StudentRequestView: React.FC = () => {
                 <div className="bg-white p-6 rounded-3xl shadow-sm border border-slate-200 space-y-4">
                   <div className="flex items-center justify-between gap-4">
                     <h3 className="text-lg font-black text-slate-900 flex items-center gap-2">
-                      <Package className="w-5 h-5 text-amber-500" />
+                       <Package className="w-5 h-5 text-amber-500" />
                       Selección de Equipamiento
                     </h3>
                     <div className="text-xs font-black text-slate-400 uppercase">
@@ -331,82 +331,134 @@ export const StudentRequestView: React.FC = () => {
 
                   <div className="border border-slate-200 rounded-2xl overflow-hidden bg-white">
                     <div className="max-h-[500px] overflow-y-auto scrollbar-thin">
-                      <table className="w-full text-left border-collapse">
-                        <thead className="sticky top-0 bg-slate-50 border-b border-slate-200 z-10">
-                          <tr>
-                            <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-slate-400">Equipo</th>
-                            <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-slate-400">Estado</th>
-                            <th className="px-6 py-4 text-right"></th>
-                          </tr>
-                        </thead>
-                        <tbody className="divide-y divide-slate-100">
-                          {filteredEquipment.length > 0 ? (
-                            filteredEquipment.map(item => (
-                              <tr 
-                                key={item.id} 
-                                className={cn(
-                                  "hover:bg-slate-50/80 transition-colors cursor-pointer",
-                                  selectedIds.includes(item.id) && "bg-amber-50/50"
-                                )}
-                                onClick={() => toggleEquipment(item.id)}
-                              >
-                                <td className="px-6 py-4">
-                                  <div className="flex items-center gap-4">
+                      {/* Desktop Table View */}
+                      <div className="hidden md:block">
+                        <table className="w-full text-left border-collapse">
+                          <thead className="sticky top-0 bg-slate-50 border-b border-slate-200 z-10">
+                            <tr>
+                              <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-slate-400">Equipo</th>
+                              <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-slate-400">Estado</th>
+                              <th className="px-6 py-4 text-right"></th>
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y divide-slate-100">
+                            {filteredEquipment.length > 0 ? (
+                              filteredEquipment.map(item => (
+                                <tr 
+                                  key={item.id} 
+                                  className={cn(
+                                    "hover:bg-slate-50/80 transition-colors cursor-pointer",
+                                    selectedIds.includes(item.id) && "bg-amber-50/50"
+                                  )}
+                                  onClick={() => toggleEquipment(item.id)}
+                                >
+                                  <td className="px-6 py-4">
+                                    <div className="flex items-center gap-4">
+                                      <div className={cn(
+                                        "w-10 h-10 rounded-xl flex items-center justify-center shrink-0",
+                                        selectedIds.includes(item.id) ? "bg-amber-500 text-slate-900 font-bold" : "bg-slate-100 text-slate-600"
+                                      )}>
+                                        <Package className="w-5 h-5" />
+                                      </div>
+                                      <div className="min-w-0">
+                                        <p className="font-bold text-slate-900 truncate tracking-tight">{item.nombre}</p>
+                                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-tight">{item.modelo}</p>
+                                      </div>
+                                    </div>
+                                  </td>
+                                  <td className="px-6 py-4 whitespace-nowrap">
+                                    <div className="flex flex-col gap-1">
+                                      <span className={cn(
+                                        "px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-wider border text-center",
+                                        item.estado === 'Disponible' 
+                                          ? "bg-green-50 text-green-600 border-green-200" 
+                                          : "bg-red-50 text-red-600 border-red-200"
+                                      )}>
+                                        {item.estado}
+                                      </span>
+                                      <span className="text-[8px] font-black uppercase text-slate-300 text-center">{item.categoria}</span>
+                                    </div>
+                                  </td>
+                                  <td className="px-6 py-4 text-right">
                                     <div className={cn(
-                                      "w-10 h-10 rounded-xl flex items-center justify-center shrink-0",
-                                      selectedIds.includes(item.id) ? "bg-amber-500 text-slate-900 font-bold" : "bg-slate-100 text-slate-600"
+                                      "w-6 h-6 rounded-lg border-2 flex items-center justify-center transition-all ml-auto",
+                                      selectedIds.includes(item.id)
+                                        ? "bg-amber-500 border-amber-500 text-slate-900 font-bold"
+                                        : "border-slate-200 text-transparent"
                                     )}>
-                                      <Package className="w-5 h-5" />
+                                      <CheckCircle className="w-4 h-4" />
                                     </div>
-                                    <div className="min-w-0">
-                                      <p className="font-bold text-slate-900 truncate tracking-tight">{item.nombre}</p>
-                                      <p className="text-[10px] font-bold text-slate-400 uppercase tracking-tight">{item.modelo}</p>
-                                    </div>
-                                  </div>
-                                </td>
-                                <td className="px-6 py-4 whitespace-nowrap">
-                                  <div className="flex flex-col gap-1">
-                                    <span className={cn(
-                                      "px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-wider border text-center",
-                                      item.estado === 'Disponible' 
-                                        ? "bg-green-50 text-green-600 border-green-200" 
-                                        : "bg-red-50 text-red-600 border-red-200"
-                                    )}>
-                                      {item.estado}
-                                    </span>
-                                    <span className="text-[8px] font-black uppercase text-slate-300 text-center">{item.categoria}</span>
-                                  </div>
-                                </td>
-                                <td className="px-6 py-4 text-right">
-                                  <div className={cn(
-                                    "w-6 h-6 rounded-lg border-2 flex items-center justify-center transition-all ml-auto",
-                                    selectedIds.includes(item.id)
-                                      ? "bg-amber-500 border-amber-500 text-slate-900 font-bold"
-                                      : "border-slate-200 text-transparent"
-                                  )}>
-                                    <CheckCircle className="w-4 h-4" />
-                                  </div>
+                                  </td>
+                                </tr>
+                              ))
+                            ) : (
+                              <tr>
+                                <td colSpan={3} className="px-6 py-12 text-center text-slate-400 font-bold text-sm">
+                                  No se encontraron equipos con ese nombre.
                                 </td>
                               </tr>
-                            ))
-                          ) : (
-                            <tr>
-                              <td colSpan={3} className="px-6 py-12 text-center text-slate-400 font-bold text-sm">
-                                No se encontraron equipos con ese nombre.
-                              </td>
-                            </tr>
-                          )}
-                        </tbody>
-                      </table>
+                            )}
+                          </tbody>
+                        </table>
+                      </div>
+
+                      {/* Mobile Cards View */}
+                      <div className="md:hidden p-4 space-y-3 bg-slate-50/50">
+                        {filteredEquipment.length > 0 ? (
+                          filteredEquipment.map(item => (
+                            <div 
+                              key={item.id} 
+                              onClick={() => toggleEquipment(item.id)}
+                              className={cn(
+                                "bg-white p-4 rounded-2xl border transition-all shadow-sm flex items-center justify-between gap-4 cursor-pointer",
+                                selectedIds.includes(item.id) ? "border-amber-500 ring-2 ring-amber-500/20 bg-amber-50/20" : "border-slate-100"
+                              )}
+                            >
+                              <div className="flex items-center gap-3 min-w-0">
+                                <div className={cn(
+                                  "w-10 h-10 rounded-xl flex items-center justify-center shrink-0 border",
+                                  selectedIds.includes(item.id) ? "bg-amber-500 text-slate-900 border-amber-500" : "bg-slate-100 text-slate-400 border-slate-200"
+                                )}>
+                                  <Package className="w-5 h-5 animate-in" />
+                                </div>
+                                <div className="min-w-0">
+                                  <p className="font-bold text-slate-900 text-sm truncate">{item.nombre}</p>
+                                  <p className="text-[10px] text-slate-400 font-semibold truncate leading-tight mt-0.5">{item.modelo}</p>
+                                  <span className={cn(
+                                    "inline-block px-2 py-0.5 rounded-full text-[8.5px] font-black uppercase border mt-1.5",
+                                    item.estado === 'Disponible' 
+                                      ? "bg-green-50 text-green-600 border-green-200" 
+                                      : "bg-red-50 text-red-600 border-red-200"
+                                  )}>
+                                    {item.estado}
+                                  </span>
+                                </div>
+                              </div>
+                              <div className={cn(
+                                "w-6 h-6 rounded-lg border-2 flex items-center justify-center transition-all shrink-0 ml-auto",
+                                selectedIds.includes(item.id)
+                                  ? "bg-amber-500 border-amber-500 text-slate-900"
+                                  : "border-slate-250 text-transparent"
+                              )}>
+                                <CheckCircle className="w-4 h-4" />
+                              </div>
+                            </div>
+                          ))
+                        ) : (
+                          <div className="py-12 text-center text-slate-400 font-bold text-sm bg-white rounded-2xl border border-slate-100">
+                            No se encontraron equipos con ese nombre.
+                          </div>
+                        )}
+                      </div>
                     </div>
                   </div>
                 </div>
 
-                <div className="flex justify-between">
+                <div className="flex flex-col sm:flex-row justify-between gap-4">
                   <button 
                     type="button"
                     onClick={() => setStep(1)}
-                    className="text-slate-500 font-bold px-8 py-4 hover:bg-slate-100 rounded-xl transition-all"
+                    className="w-full sm:w-auto order-2 sm:order-1 text-slate-500 font-bold px-8 py-4 hover:bg-slate-100 rounded-xl transition-all text-center"
                   >
                     Atrás
                   </button>
@@ -414,7 +466,7 @@ export const StudentRequestView: React.FC = () => {
                     type="button"
                     onClick={() => setStep(3)}
                     disabled={selectedIds.length === 0}
-                    className="bg-slate-900 text-white px-8 py-4 rounded-xl font-bold hover:bg-slate-800 transition-all disabled:opacity-50"
+                    className="w-full sm:w-auto order-1 sm:order-2 bg-slate-900 text-white px-8 py-4 rounded-xl font-bold hover:bg-slate-800 transition-all disabled:opacity-50 text-center"
                   >
                     Siguiente: Detalles de Fecha y Uso
                   </button>
@@ -522,18 +574,18 @@ export const StudentRequestView: React.FC = () => {
                   </div>
                 )}
 
-                <div className="flex justify-between">
+                <div className="flex flex-col sm:flex-row justify-between gap-4">
                   <button 
                     type="button"
                     onClick={() => setStep(2)}
-                    className="text-slate-500 font-bold px-8 py-4 hover:bg-slate-100 rounded-xl transition-all"
+                    className="w-full sm:w-auto order-2 sm:order-1 text-slate-500 font-bold px-8 py-4 hover:bg-slate-100 rounded-xl transition-all text-center"
                   >
                     Atrás
                   </button>
                   <button 
                     type="submit"
                     disabled={loading || !formData.fecha_inicio || !formData.fecha_fin}
-                    className="bg-slate-900 text-white px-12 py-4 rounded-xl font-bold hover:bg-amber-500 transition-all shadow-lg flex items-center gap-2 disabled:opacity-50"
+                    className="w-full sm:w-auto order-1 sm:order-2 bg-slate-900 text-white px-12 py-4 rounded-xl font-bold hover:bg-amber-500 transition-all shadow-lg flex items-center justify-center gap-2 disabled:opacity-50 text-center"
                   >
                     {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : <CheckCircle className="w-5 h-5" />}
                     Enviar Solicitud

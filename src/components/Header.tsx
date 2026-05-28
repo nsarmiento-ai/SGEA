@@ -45,7 +45,7 @@ export const Header: React.FC<HeaderProps> = ({ onOpenSidebar }) => {
           <button 
             aria-label="Toggle menu"
             onClick={onOpenSidebar}
-            className="lg:hidden p-2 text-slate-600 hover:bg-slate-50 rounded-xl transition-colors"
+            className="lg:hidden p-3 text-slate-600 hover:bg-slate-50 rounded-xl transition-colors"
           >
             <Menu className="w-6 h-6" />
           </button>
@@ -67,13 +67,13 @@ export const Header: React.FC<HeaderProps> = ({ onOpenSidebar }) => {
               <User className="w-4 h-4 sm:w-5 h-5" />
             </div>
             
-            <div className="hidden sm:flex flex-col items-start min-w-[100px]">
+            <div className="flex flex-col items-start min-w-[70px] sm:min-w-[100px] max-w-[120px] sm:max-w-[200px]">
               <TextAnimate 
                 text={activeResponsable || ''} 
                 type="fadeIn"
-                className="text-sm font-bold text-slate-800 truncate max-w-[150px]" 
+                className="text-xs sm:text-sm font-bold text-slate-800 truncate max-w-[120px] sm:max-w-[150px]" 
               />
-              <span className="text-[10px] font-black text-amber-600 uppercase tracking-wider leading-none">
+              <span className="text-[9px] sm:text-[10px] font-black text-amber-600 uppercase tracking-wider leading-none truncate max-w-[120px] sm:max-w-none">
                 {role === 'Director' ? 'Dirección' : role === 'Docente' ? 'Docente' : 'Administrador'}
               </span>
             </div>

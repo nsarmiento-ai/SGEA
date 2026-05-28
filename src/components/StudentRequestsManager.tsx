@@ -345,11 +345,11 @@ export const StudentRequestsManager: React.FC<{ filterDireccion?: boolean }> = (
 
                     <div>
                       <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2">Equipamiento Solicitado</p>
-                      <div className="flex flex-wrap gap-2">
+                      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
                         {req.equipos.map(id => (
-                          <div key={id} className="bg-white border border-slate-200 px-3 py-1.5 rounded-lg flex items-center gap-2">
-                            <Package className="w-3 h-3 text-slate-400" />
-                            <span className="text-xs font-bold text-slate-700">{equipment[id]?.nombre || 'Equipo no encontrado'}</span>
+                          <div key={id} className="bg-white border border-slate-200 px-3 py-1.5 rounded-lg flex items-center gap-2 min-w-0">
+                            <Package className="w-3 h-3 text-slate-400 shrink-0" />
+                            <span className="text-xs font-bold text-slate-700 truncate">{equipment[id]?.nombre || 'Equipo no encontrado'}</span>
                           </div>
                         ))}
                       </div>
@@ -386,11 +386,11 @@ export const StudentRequestsManager: React.FC<{ filterDireccion?: boolean }> = (
                       </div>
                     </div>
 
-                    <div className="grid grid-cols-2 gap-3 mt-6">
+                    <div className="flex flex-col sm:flex-row gap-3 mt-6">
                       <button
                         onClick={() => handleReject(req)}
                         disabled={processingId === req.id}
-                        className="flex items-center justify-center gap-2 py-3 bg-white border border-slate-200 text-slate-500 font-bold rounded-xl hover:bg-red-50 hover:text-red-600 hover:border-red-200 transition-all disabled:opacity-50"
+                        className="w-full sm:w-auto px-6 py-3 bg-white border border-slate-200 text-slate-500 font-bold rounded-xl hover:bg-red-50 hover:text-red-600 hover:border-red-200 transition-all disabled:opacity-50 flex items-center justify-center gap-2"
                       >
                         <XCircle className="w-4 h-4" />
                         Rechazar
@@ -398,7 +398,7 @@ export const StudentRequestsManager: React.FC<{ filterDireccion?: boolean }> = (
                       <button
                         onClick={() => handleAuthorize(req)}
                         disabled={processingId === req.id}
-                        className="flex items-center justify-center gap-2 py-3 bg-slate-900 text-white font-bold rounded-xl hover:bg-green-600 transition-all shadow-lg shadow-slate-200 disabled:opacity-50"
+                        className="w-full sm:w-auto sm:flex-1 px-6 py-3 bg-slate-900 text-white font-bold rounded-xl hover:bg-green-600 transition-all shadow-lg shadow-slate-200 disabled:opacity-50 flex items-center justify-center gap-2"
                       >
                         {processingId === req.id ? (
                           <Loader2 className="w-4 h-4 animate-spin" />

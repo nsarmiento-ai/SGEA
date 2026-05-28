@@ -172,7 +172,7 @@ export const DirectorDashboard: React.FC = () => {
       </div>
 
       {/* KPI Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-10">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6 mb-10">
         <KpiCard 
           icon={Clock} 
           label="Pendientes Firma" 
@@ -231,15 +231,40 @@ export const DirectorDashboard: React.FC = () => {
                 <AlertTriangle className="w-5 h-5" />
                 <h3 className="text-xs font-black uppercase tracking-widest">Equipos en Alerta</h3>
               </div>
-              <div className="space-y-2 max-h-48 overflow-y-auto pr-2 custom-scrollbar">
-                {stats.outOfService.map(item => (
-                  <div key={item.id} className="flex justify-between items-center bg-white p-2.5 rounded-xl border border-red-50 shadow-sm">
-                    <span className="text-[10px] font-bold text-slate-700 truncate mr-2">{item.nombre}</span>
-                    <span className="text-[8px] font-black uppercase px-1.5 py-0.5 bg-red-100 text-red-600 rounded">
-                      {item.estado}
-                    </span>
-                  </div>
-                ))}
+              <div className="max-h-48 overflow-y-auto pr-2 custom-scrollbar">
+                {/* Tabla de equipos fuera de servicio para desktop */}
+                <table className="hidden md:table w-full text-left text-xs border-collapse">
+                  <thead>
+                    <tr className="border-b border-red-100 text-red-700">
+                      <th className="pb-2 font-bold">Equipo</th>
+                      <th className="pb-2 text-right font-bold">Estado</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {stats.outOfService.map(item => (
+                      <tr key={item.id} className="border-b border-red-50/50 last:border-0">
+                        <td className="py-2 text-slate-700 font-bold truncate max-w-[140px]">{item.nombre}</td>
+                        <td className="py-2 text-right">
+                          <span className="text-[8px] font-black uppercase px-1.5 py-0.5 bg-red-100 text-red-600 rounded">
+                            {item.estado}
+                          </span>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+
+                {/* Cards apiladas para mobile */}
+                <div className="md:hidden space-y-2">
+                  {stats.outOfService.map(item => (
+                    <div key={item.id} className="flex justify-between items-center bg-white p-2.5 rounded-xl border border-red-50 shadow-sm">
+                      <span className="text-[10px] font-bold text-slate-700 truncate mr-2">{item.nombre}</span>
+                      <span className="text-[8px] font-black uppercase px-1.5 py-0.5 bg-red-100 text-red-600 rounded">
+                        {item.estado}
+                      </span>
+                    </div>
+                  ))}
+                </div>
               </div>
             </div>
           )}
@@ -261,7 +286,7 @@ export const DirectorDashboard: React.FC = () => {
             </div>
             <button 
               onClick={() => setShowStats(!showStats)}
-              className="mt-8 w-full bg-white/10 hover:bg-white/20 transition-all border border-white/10 rounded-2xl py-3 text-xs font-black uppercase tracking-widest flex items-center justify-center gap-2"
+              className="mt-8 w-full bg-white/10 hover:bg-white/20 transition-all border border-white/10 rounded-2xl py-4 px-4 text-xs font-black uppercase tracking-widest flex items-center justify-center gap-2"
             >
               {showStats ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
               {showStats ? 'Ocultar Estadísticas' : 'Ver Gráficos Detallados'}
@@ -295,7 +320,7 @@ export const DirectorDashboard: React.FC = () => {
                   <BarChart3 className="w-4 h-4 text-amber-500" />
                   Equipos más solicitados (Top 5)
                 </h3>
-                <div className="h-72 w-full">
+                <div className="h-48 md:h-72 w-full">
                   <ResponsiveContainer width="100%" height="100%">
                     <BarChart data={stats.topEquipment} layout="vertical" margin={{ left: 40 }}>
                       <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#f1f5f9" />
@@ -324,7 +349,7 @@ export const DirectorDashboard: React.FC = () => {
                   <PieChartIcon className="w-4 h-4 text-amber-500" />
                   Estado de Stock (Disponibles vs Mantenimiento)
                 </h3>
-                <div className="h-72 w-full">
+                <div className="h-48 md:h-72 w-full">
                   <ResponsiveContainer width="100%" height="100%">
                     <PieChart>
                       <Pie
@@ -360,7 +385,7 @@ export const DirectorDashboard: React.FC = () => {
                   <PieChartIcon className="w-4 h-4 text-amber-500" />
                   Finalidad de los Pedidos
                 </h3>
-                <div className="h-64 w-full">
+                <div className="h-48 md:h-64 w-full">
                   <ResponsiveContainer width="100%" height="100%">
                     <PieChart>
                       <Pie
@@ -390,15 +415,15 @@ export const DirectorDashboard: React.FC = () => {
 };
 
 const KpiCard = ({ icon: Icon, label, value, color, bgColor, desc }: any) => (
-  <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm hover:shadow-md transition-all group">
+  <div className="bg-white p-4 sm:p-6 rounded-3xl border border-slate-200 shadow-sm hover:shadow-md transition-all group">
     <div className="flex items-center justify-between mb-4">
-      <div className={cn("w-12 h-12 rounded-2xl flex items-center justify-center transition-colors shadow-sm", bgColor)}>
-        <Icon className={cn("w-6 h-6", color)} />
+      <div className={cn("w-10 h-10 sm:w-12 sm:h-12 rounded-xl sm:rounded-2xl flex items-center justify-center transition-colors shadow-sm", bgColor)}>
+        <Icon className={cn("w-5 h-5 sm:w-6 sm:h-6", color)} />
       </div>
-      <span className={cn("text-3xl font-black", color)}>{value}</span>
+      <span className={cn("text-2xl sm:text-3xl font-black", color)}>{value}</span>
     </div>
-    <p className="text-xs font-black uppercase tracking-widest text-slate-400 mb-1">{label}</p>
-    <p className="text-[10px] font-bold text-slate-400 opacity-60 leading-tight">{desc}</p>
+    <p className="text-[10px] sm:text-xs font-black uppercase tracking-widest text-slate-400 mb-1 leading-tight">{label}</p>
+    <p className="text-[9px] sm:text-[10px] font-bold text-slate-400 opacity-60 leading-tight hidden sm:block">{desc}</p>
   </div>
 );
 

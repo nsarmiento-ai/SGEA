@@ -60,18 +60,8 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
 
   return (
     <>
-      {/* Overlay for mobile */}
-      {isOpen && (
-        <div 
-          className="fixed inset-0 bg-black/50 z-40 lg:hidden backdrop-blur-sm transition-opacity"
-          onClick={onClose}
-        />
-      )}
-
-      <aside className={cn(
-        "fixed inset-y-0 left-0 z-50 w-64 bg-slate-900 border-r border-slate-800 flex flex-col text-slate-300 transition-transform duration-300 ease-in-out lg:relative lg:translate-x-0 cursor-default",
-        isOpen ? "translate-x-0" : "-translate-x-full"
-      )}>
+      {/* Sidebar lateral for desktop (hidden on mobile, flex on desktop) */}
+      <aside className="hidden lg:flex lg:flex-col w-64 bg-slate-900 border-r border-slate-800 text-slate-300 cursor-default shrink-0 min-h-screen">
         <div className="p-6 flex items-center justify-between gap-3 border-b border-slate-800">
           <div className="flex items-center gap-3">
             <div className="p-2 rounded-lg">
@@ -98,9 +88,6 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
             <NavLink
               key={item.path}
               to={item.path}
-              onClick={() => {
-                if (window.innerWidth < 1024) onClose();
-              }}
               className={({ isActive }) => cn(
                 "flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 group",
                 isActive 
@@ -114,6 +101,30 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
           ))}
         </nav>
       </aside>
+
+      {/* Bottom Navigation for mobile (< 1024px) */}
+      <nav 
+        className="lg:hidden fixed bottom-0 left-0 right-0 z-50 bg-slate-900/95 backdrop-blur-md border-t border-slate-800 flex items-center shadow-[0_-4px_16px_rgba(0,0,0,0.4)]"
+        style={{ paddingBottom: 'calc(env(safe-area-inset-bottom) + 0.5rem)', paddingTop: '0.5rem' }}
+      >
+        <div className="w-full flex items-center justify-start overflow-x-auto scrollbar-none [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none] px-4 gap-1.5 pb-0.5">
+          {menuItems.map((item) => (
+            <NavLink
+              key={item.path}
+              to={item.path}
+              className={({ isActive }) => cn(
+                "flex flex-col items-center gap-1 py-1 px-3 rounded-xl transition-all duration-200 shrink-0 select-none",
+                isActive 
+                  ? "text-amber-400 font-bold bg-amber-500/10" 
+                  : "text-slate-400 hover:text-slate-200 font-medium"
+              )}
+            >
+              <item.icon className="w-5 h-5 shrink-0" />
+              <span className="text-[10px] font-bold tracking-tight whitespace-nowrap">{item.label}</span>
+            </NavLink>
+          ))}
+        </div>
+      </nav>
     </>
   );
 };
