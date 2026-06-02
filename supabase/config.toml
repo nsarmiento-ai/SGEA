@@ -1,0 +1,5 @@
+[functions.keepalive]
+verify_jwt = false
+
+[functions.handle-notifications]
+verify_jwt = false

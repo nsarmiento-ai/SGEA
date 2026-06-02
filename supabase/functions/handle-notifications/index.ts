@@ -2,17 +2,12 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import nodemailer from "npm:nodemailer";
 
-// ─── CONFIG ──────────────────────────────────────────────────────────────────
-
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 const APP_URL = "https://sgea.vercel.app";
 
-// ⚠️ Cambiá a true solo para testear — todos los mails van a DEV_EMAIL
 const TEST_MODE = false;
 const DEV_EMAIL = "n.sarmiento@cine.unt.edu.ar";
-
-// Email del director — destinatario fijo para avales de dirección
 const DIRECTOR_EMAIL = "jveiga@cine.unt.edu.ar";
 
 const corsHeaders = {
@@ -20,17 +15,16 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-// ─── NODEMAILER ──────────────────────────────────────────────────────────────
-
-async function sendMail({ to, subject, html }: {
+async function sendMail({ to, cc, subject, html }: {
   to: string | string[];
+  cc?: string | string[];
   subject: string;
   html: string;
 }) {
   const gUser = Deno.env.get("GMAIL_USER");
   const gPass = Deno.env.get("GMAIL_APP_PASSWORD");
 
-  if (!gUser || !gPass) throw new Error("Faltan GMAIL_USER o GMAIL_APP_PASSWORD en variables de entorno");
+  if (!gUser || !gPass) throw new Error("Faltan GMAIL_USER o GMAIL_APP_PASSWORD");
 
   const transporter = nodemailer.createTransport({
     host: "smtp.gmail.com",
@@ -39,34 +33,34 @@ async function sendMail({ to, subject, html }: {
     auth: { user: gUser, pass: gPass },
   });
 
-  const recipients = Array.isArray(to) ? to : [to];
-  const originalList = recipients.join(", ");
-
-  let finalTo = recipients;
+  let finalTo = Array.isArray(to) ? to.join(", ") : to;
+  let finalCc = cc ? (Array.isArray(cc) ? cc.join(", ") : cc) : undefined;
   let finalSubject = subject;
   let finalHtml = html;
 
   if (TEST_MODE) {
-    console.log(`[TEST_MODE] Redirigiendo [${originalList}] → ${DEV_EMAIL}`);
-    finalTo = [DEV_EMAIL];
+    console.log(`[TEST_MODE] Redirigiendo a ${DEV_EMAIL}. Original To: [${finalTo}], CC: [${finalCc}]`);
+    finalTo = DEV_EMAIL;
+    finalCc = undefined;
     finalSubject = `[PRUEBA] ${subject}`;
     finalHtml = `<div style="background:#fffbeb;border:1px solid #f59e0b;color:#78350f;padding:14px;margin-bottom:20px;font-family:sans-serif;font-size:13px;border-radius:8px;">
-      <strong>⚠️ MODO PRUEBA</strong> — Destinatario(s) real(es): <code>${originalList}</code>
+      <strong>⚠️ MODO PRUEBA</strong><br>
+      <b>Destinatario Real:</b> <code>${finalTo}</code><br>
+      <b>En Copia Real:</b> <code>${finalCc || 'Ninguno'}</code>
     </div>` + html;
   }
 
   const info = await transporter.sendMail({
     from: `"Pañol SGEA - Cine UNT" <${gUser}>`,
-    to: finalTo.join(", "),
+    to: finalTo,
+    cc: finalCc,
     subject: finalSubject,
     html: finalHtml,
   });
 
-  console.log(`✅ Mail enviado a [${finalTo.join(", ")}] | MessageID: ${info.messageId}`);
+  console.log(`✅ Mail enviado a [${finalTo}] | CC: [${finalCc || 'ninguno'}] | MessageID: ${info.messageId}`);
   return info;
 }
-
-// ─── HELPERS ─────────────────────────────────────────────────────────────────
 
 function formatFecha(fechaRaw: any): string {
   if (!fechaRaw) return "A confirmar en el sistema";
@@ -80,14 +74,10 @@ function formatFecha(fechaRaw: any): string {
   } catch { return "A confirmar en el sistema"; }
 }
 
-// Resuelve email y nombre del alumno
-// profiles tiene: id, email, rol, created_at (sin nombre)
-// El nombre viene de auth.users user_metadata
 async function resolveAlumno(supabase: any, usuario_id: string) {
   let nombre = "Alumno";
   let email = "";
 
-  // 1. Buscar email en profiles
   try {
     const { data: profile } = await supabase
       .from("profiles")
@@ -96,13 +86,10 @@ async function resolveAlumno(supabase: any, usuario_id: string) {
       .single();
     if (profile?.email) {
       email = profile.email;
-      nombre = email.split("@")[0]; // fallback hasta tener metadata
+      nombre = email.split("@")[0];
     }
-  } catch (err) {
-    console.error("Error leyendo profiles:", err);
-  }
+  } catch (err) { console.error("Error leyendo profiles:", err); }
 
-  // 2. Refinar nombre desde auth.users metadata
   try {
     const { data } = await supabase.auth.admin.getUserById(usuario_id);
     if (data?.user?.email && !email) email = data.user.email;
@@ -110,14 +97,10 @@ async function resolveAlumno(supabase: any, usuario_id: string) {
     if (meta?.full_name) nombre = meta.full_name;
     else if (meta?.name) nombre = meta.name;
     else if (meta?.nombre) nombre = meta.nombre;
-  } catch (err) {
-    console.error("Error leyendo auth.admin:", err);
-  }
+  } catch (err) { console.error("Error leyendo auth.admin:", err); }
 
   return { nombre, email };
 }
-
-// ─── TEMPLATES ───────────────────────────────────────────────────────────────
 
 const wrapEmail = (headerBg: string, headerTitle: string, body: string, footer = "Sistema de Gestión de Equipamiento Audiovisual — UNT") => `
   <div style="font-family:sans-serif;max-width:600px;margin:auto;border:1px solid #e2e8f0;border-radius:12px;overflow:hidden;">
@@ -138,23 +121,24 @@ const btn = (url: string, label: string) =>
     <a href="${url}" style="background:#0f172a;color:white;padding:14px 28px;text-decoration:none;border-radius:8px;font-weight:bold;display:inline-block;">${label}</a>
   </div>`;
 
-// ─── HANDLERS: TABLA solicitudes_alumnos ─────────────────────────────────────
-
 async function handleSolicitudInsert(record: any, supabase: any) {
   const docenteEmail = record.docente_id;
-  if (!docenteEmail) {
-    console.warn("⚠️ Sin docente_id en solicitud, omitiendo notificación");
-    return;
-  }
+  if (!docenteEmail) return;
 
   let alumnoNombre = record.responsable || "Alumno";
+  let alumnoEmail = "";
   if (record.usuario_id) {
     const resolved = await resolveAlumno(supabase, record.usuario_id);
     if (resolved.nombre) alumnoNombre = resolved.nombre;
+    if (resolved.email) alumnoEmail = resolved.email;
   }
+
+  // Notifica al docente, con copia al alumno y participantes si existen
+  const copiaCorreos = [alumnoEmail, record.participantes].filter(Boolean);
 
   await sendMail({
     to: docenteEmail,
+    cc: copiaCorreos.length > 0 ? copiaCorreos : undefined,
     subject: "SGEA — Nueva solicitud de Aval Docente pendiente",
     html: wrapEmail(
       "#f59e0b", "SGEA — Aval Docente Requerido",
@@ -165,26 +149,25 @@ async function handleSolicitudInsert(record: any, supabase: any) {
          "Tipo de uso": record.tipo_uso || "No especificado",
          "Fecha de inicio": formatFecha(record.fecha_inicio),
          "Fecha de devolución": formatFecha(record.fecha_fin),
+         "Participantes": record.participantes || "Ninguno"
        })}
-       <p style="font-size:13px;color:#78350f;">Al otorgar el aval asumís la co-responsabilidad del equipamiento.</p>
-       ${btn(`${APP_URL}/mis-autorizaciones`, "Revisar y Otorgar Aval")}`,
-      "Al avalar la solicitud, el alumno podrá retirar el equipamiento en el pañol."
+       ${btn(`${APP_URL}/mis-autorizaciones`, "Revisar y Otorgar Aval")}`
     ),
   });
-  console.log(`Notificación enviada al docente: ${docenteEmail}`);
 }
 
-async function handleSolicitudPendienteDireccion(record: any, alumnoNombre: string) {
+async function handleSolicitudPendienteDireccion(record: any, alumnoNombre: string, alumnoEmail: string) {
+  const copiaCorreos = [alumnoEmail, record.participantes].filter(Boolean);
   await sendMail({
     to: DIRECTOR_EMAIL,
+    cc: copiaCorreos.length > 0 ? copiaCorreos : undefined,
     subject: "SGEA — Solicitud pendiente de Aval de Dirección",
     html: wrapEmail(
       "#0f172a", "SGEA — Aval de Dirección Requerido",
-      `<h2 style="margin-top:0;">Solicitud de Uso Externo requiere su aprobación</h2>
-       <p>La solicitud del alumno <b>${alumnoNombre}</b> fue avalada por el docente <b>${record.docente_nombre || "N/D"}</b> y requiere Aval de Dirección para su despacho.</p>
+      `<h2 style="margin-top:0;">Solicitud requiere Aval de Dirección</h2>
+       <p>La solicitud de <b>${alumnoNombre}</b> fue avalada por el docente y requiere aprobación de Dirección.</p>
        ${infoBox("#0f172a", "#f8fafc", {
          "Materia / Proyecto": record.materia || "No especificada",
-         "Docente responsable": record.docente_nombre || "No especificado",
          "Alumno referente": alumnoNombre,
          "Fecha de inicio": formatFecha(record.fecha_inicio),
        })}
@@ -194,9 +177,11 @@ async function handleSolicitudPendienteDireccion(record: any, alumnoNombre: stri
 }
 
 async function handleSolicitudAutorizada(record: any, alumnoNombre: string, alumnoEmail: string) {
-  if (!alumnoEmail) { console.warn("⚠️ Sin email de alumno para notificar autorización"); return; }
+  if (!alumnoEmail) return;
+  const copiaCorreos = [record.participantes].filter(Boolean);
   await sendMail({
     to: alumnoEmail,
+    cc: copiaCorreos.length > 0 ? copiaCorreos : undefined,
     subject: "SGEA — ✅ Tu solicitud fue Autorizada para Despacho",
     html: wrapEmail(
       "#22c55e", "SGEA — Solicitud Autorizada",
@@ -207,30 +192,27 @@ async function handleSolicitudAutorizada(record: any, alumnoNombre: string, alum
          "Fecha de inicio": formatFecha(record.fecha_inicio),
          "Estado": "✅ AUTORIZADO PARA DESPACHO",
        })}
-       <p style="font-size:13px;color:#166534;">Presentá tu credencial o comprobante digital en el pañol para retirar.</p>
-       ${btn(APP_URL, "Ver Comprobante en SGEA")}`,
-      "Recordá respetar las fechas y condiciones de devolución."
+       ${btn(APP_URL, "Ver Comprobante en SGEA")}`
     ),
   });
 }
 
 async function handleSolicitudRechazada(record: any, alumnoNombre: string, alumnoEmail: string) {
   if (!alumnoEmail) return;
+  const copiaCorreos = [record.participantes].filter(Boolean);
   await sendMail({
     to: alumnoEmail,
+    cc: copiaCorreos.length > 0 ? copiaCorreos : undefined,
     subject: "SGEA — ❌ Tu solicitud fue Rechazada",
     html: wrapEmail(
       "#e53935", "SGEA — Solicitud Rechazada",
       `<h2 style="margin-top:0;color:#b71c1c;">Solicitud no aprobada</h2>
-       <p>Lamentablemente tu solicitud para <b>${record.materia || "N/D"}</b> fue rechazado.</p>
+       <p>Lamentablemente tu solicitud para <b>${record.materia || 'N/D'}</b> fue rechazada.</p>
        ${record.observaciones ? `<p><b>Motivo:</b> ${record.observaciones}</p>` : ""}
-       <p>Podés comunicarte con el pañol o tu docente para más información.</p>
        ${btn(APP_URL, "Ver detalle en SGEA")}`
     ),
   });
 }
-
-// ─── HANDLERS: TABLA reservas ─────────────────────────────────────────────────
 
 async function handleReservaInsert(record: any, supabase: any) {
   const materia = record.materia || "";
@@ -244,27 +226,27 @@ async function handleReservaInsert(record: any, supabase: any) {
       subject: "SGEA — Nueva Solicitud de Uso Externo / Especial",
       html: wrapEmail(
         "#0f172a", "SGEA — Aval de Dirección Requerido",
-        `<h2 style="margin-top:0;">Solicitud de equipamiento para uso externo</h2>
-         <p>Se registró un pedido que requiere su <b>Aval de Dirección</b>.</p>
+        `<h2 style="margin-top:0;">Uso externo requiere Aval de Dirección</h2>
          ${infoBox("#0f172a", "#f8fafc", {
            "Materia / Proyecto": materia,
            "Docente solicitante": record.docente_nombre || "No especificado",
-           "Fecha de inicio": formatFecha(record.fecha_inicio),
          })}
          ${btn(`${APP_URL}/autorizaciones`, "Ver y Autorizar en Panel")}`
       ),
     });
-    console.log("Notificación enviada a Dirección (reserva externa)");
   }
 
   if (tieneDocenteAval && !esAutoAval) {
     let alumnoNombre = record.alumno_nombre || "Un alumno";
+    let alumnoEmail = "";
     if (record.usuario_id) {
       const resolved = await resolveAlumno(supabase, record.usuario_id);
       if (resolved.nombre) alumnoNombre = resolved.nombre;
+      if (resolved.email) alumnoEmail = resolved.email;
     }
     await sendMail({
       to: record.docente_aval_email,
+      cc: alumnoEmail ? [alumnoEmail] : undefined,
       subject: "SGEA — Pedido de Aval Docente pendiente",
       html: wrapEmail(
         "#f59e0b", "SGEA — Aval Docente Requerido",
@@ -274,18 +256,16 @@ async function handleReservaInsert(record: any, supabase: any) {
            "Materia / Cátedra": materia,
            "Fecha de uso": formatFecha(record.fecha_inicio),
          })}
-         ${btn(`${APP_URL}/mis-autorizaciones`, "Revisar y Otorgar Aval")}`,
-        "Al avalar la reserva asumís la co-responsabilidad del equipamiento."
+         ${btn(`${APP_URL}/mis-autorizaciones`, "Revisar y Otorgar Aval")}`
       ),
     });
-    console.log(`Notificación enviada al docente: ${record.docente_aval_email}`);
   }
 }
 
 async function handleReservaAvalada(record: any, supabase: any) {
-  if (!record.usuario_id) { console.warn("⚠️ Sin usuario_id en reserva avalada"); return; }
+  if (!record.usuario_id) return;
   const { nombre: alumnoNombre, email: alumnoEmail } = await resolveAlumno(supabase, record.usuario_id);
-  if (!alumnoEmail) { console.warn("⚠️ Sin email resuelto para alumno"); return; }
+  if (!alumnoEmail) return;
 
   await sendMail({
     to: alumnoEmail,
@@ -293,56 +273,32 @@ async function handleReservaAvalada(record: any, supabase: any) {
     html: wrapEmail(
       "#22c55e", "SGEA — Reserva Avalada",
       `<h2 style="margin-top:0;color:#166534;">¡Buenas noticias, ${alumnoNombre}!</h2>
-       <p>Tu reserva de equipos fue avalada. Podés presentarte en el pañol para retirarlos.</p>
+       <p>Tu reserva fue avalada y está lista para despacho en el pañol.</p>
        ${infoBox("#22c55e", "#f0fdf4", {
          "Materia": record.materia || "No especificada",
          "Fecha de entrega": formatFecha(record.fecha_inicio),
-         "Estado": "LISTO PARA DESPACHO / PAÑOL",
        })}
-       ${btn(APP_URL, "Ver Comprobante en SGEA")}`,
-      "Presentá tu credencial o comprobante digital en el pañol para retirar."
+       ${btn(APP_URL, "Ver Comprobante en SGEA")}`
     ),
   });
-  console.log(`Confirmación de aval enviada a alumno: ${alumnoEmail}`);
 }
 
-// ─── SERVE ───────────────────────────────────────────────────────────────────
-
 serve(async (req) => {
-  if (req.method === "OPTIONS") {
-    return new Response("ok", { headers: corsHeaders });
-  }
-
-  if (req.method === "HEAD") {
-    return new Response(null, { headers: corsHeaders, status: 200 });
-  }
+  if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
+  if (req.method === "HEAD") return new Response(null, { headers: corsHeaders, status: 200 });
 
   let payload: any;
   try {
-    const contentType = req.headers.get("content-type") || "";
-    if (!contentType.includes("application/json")) {
-      throw new Error("Content-Type no es application/json");
-    }
     payload = await req.json();
-  } catch (parseError: any) {
-    console.error("Error parseando payload:", parseError.message);
-    return new Response(JSON.stringify({ error: `Payload inválido: ${parseError.message}` }), {
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-      status: 400,
-    });
+  } catch (err) {
+    return new Response(JSON.stringify({ error: "Payload inválido" }), { headers: corsHeaders, status: 400 });
   }
 
   try {
     const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
     const { record: newRecord, old_record: oldRecord, type, table } = payload;
 
-    if (!newRecord) {
-      return new Response(JSON.stringify({ success: true, message: "Sin record" }), {
-        headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 200,
-      });
-    }
-
-    console.log(`[SGEA] Evento=${type} | Tabla=${table} | ID=${newRecord.id}`);
+    if (!newRecord) return new Response(JSON.stringify({ success: true }), { headers: corsHeaders, status: 200 });
 
     if (table === "solicitudes_alumnos") {
       let alumnoNombre = newRecord.responsable || "Alumno";
@@ -354,49 +310,29 @@ serve(async (req) => {
         if (resolved.nombre) alumnoNombre = resolved.nombre;
       }
 
-      if (type === "INSERT") {
-        await handleSolicitudInsert(newRecord, supabase);
+      if (type === "INSERT") await handleSolicitudInsert(newRecord, supabase);
+      
+      if (type === "UPDATE" && oldRecord?.estado !== "Pendiente de Dirección" && newRecord.estado === "Pendiente de Dirección") {
+        await handleSolicitudPendienteDireccion(newRecord, alumnoNombre, alumnoEmail);
       }
-
-      if (type === "UPDATE" &&
-          oldRecord?.estado !== "Pendiente de Dirección" &&
-          newRecord.estado === "Pendiente de Dirección") {
-        await handleSolicitudPendienteDireccion(newRecord, alumnoNombre);
-      }
-
-      if (type === "UPDATE" &&
-          oldRecord?.estado !== "Autorizado para Despacho" &&
-          newRecord.estado === "Autorizado para Despacho") {
+      if (type === "UPDATE" && oldRecord?.estado !== "Autorizado para Despacho" && newRecord.estado === "Autorizado para Despacho") {
         await handleSolicitudAutorizada(newRecord, alumnoNombre, alumnoEmail);
       }
-
-      if (type === "UPDATE" &&
-          oldRecord?.estado !== "Rechazado" &&
-          newRecord.estado === "Rechazado") {
+      if (type === "UPDATE" && oldRecord?.estado !== "Rechazado" && newRecord.estado === "Rechazado") {
         await handleSolicitudRechazada(newRecord, alumnoNombre, alumnoEmail);
       }
     }
 
     if (table === "reservas" || !table) {
-      if (type === "INSERT") {
-        await handleReservaInsert(newRecord, supabase);
-      }
-
-      if (type === "UPDATE" &&
-          oldRecord?.estado === "Pendiente" &&
-          newRecord.estado === "Avalada") {
+      if (type === "INSERT") await handleReservaInsert(newRecord, supabase);
+      if (type === "UPDATE" && oldRecord?.estado === "Pendiente" && newRecord.estado === "Avalada") {
         await handleReservaAvalada(newRecord, supabase);
       }
     }
 
-    return new Response(JSON.stringify({ success: true }), {
-      headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 200,
-    });
-
+    return new Response(JSON.stringify({ success: true }), { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 200 });
   } catch (error: any) {
-    console.error("❌ Error fatal:", error.message);
-    return new Response(JSON.stringify({ error: error.message }), {
-      headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 200,
-    });
+    console.error("❌ Error:", error.message);
+    return new Response(JSON.stringify({ error: error.message }), { headers: corsHeaders, status: 200 });
   }
 });
