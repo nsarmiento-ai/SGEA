@@ -8,7 +8,7 @@ const APP_URL = "https://sgea.vercel.app";
 
 const TEST_MODE = false;
 const DEV_EMAIL = "n.sarmiento@cine.unt.edu.ar";
-const DIRECTOR_EMAIL = "jveiga@cine.unt.edu.ar";
+const DIRECTOR_EMAIL = "direccion@cine.unt.edu.ar";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -133,7 +133,6 @@ async function handleSolicitudInsert(record: any, supabase: any) {
     if (resolved.email) alumnoEmail = resolved.email;
   }
 
-  // Notifica al docente, con copia al alumno y participantes si existen
   const copiaCorreos = [alumnoEmail, record.participantes].filter(Boolean);
 
   await sendMail({
