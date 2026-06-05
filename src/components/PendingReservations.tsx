@@ -32,7 +32,10 @@ export const PendingReservations: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
 
-  const isDireccion = userEmail === 'jveiga@cine.unt.edu.ar' || userEmail === 'n.sarmiento@cine.unt.edu.ar';
+  const isDireccion = 
+    userEmail === 'jveiga@cine.unt.edu.ar' || 
+    userEmail === 'n.sarmiento@cine.unt.edu.ar' || 
+    userEmail === 'direccion@cine.unt.edu.ar';
 
   useEffect(() => {
     fetchData();

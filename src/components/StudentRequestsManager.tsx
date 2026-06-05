@@ -13,7 +13,10 @@ export const StudentRequestsManager: React.FC<{ filterDireccion?: boolean }> = (
   const [loading, setLoading] = useState(true);
   const [processingId, setProcessingId] = useState<string | null>(null);
 
-  const isDireccion = userEmail === 'jveiga@cine.unt.edu.ar' || userEmail === 'n.sarmiento@cine.unt.edu.ar';
+  const isDireccion = 
+    userEmail === 'jveiga@cine.unt.edu.ar' || 
+    userEmail === 'n.sarmiento@cine.unt.edu.ar' || 
+    userEmail === 'direccion@cine.unt.edu.ar';
 
   const docenteName = CONTACTS_DATA.find(c => c.email === userEmail)?.nombre;
 

@@ -8,7 +8,7 @@ const APP_URL = "https://sgea.vercel.app";
 
 const TEST_MODE = false;
 const DEV_EMAIL = "n.sarmiento@cine.unt.edu.ar";
-const DIRECTOR_EMAIL = "direccion@cine.unt.edu.ar";
+const DIRECTOR_EMAILS = ["direccion@cine.unt.edu.ar", "jveiga@cine.unt.edu.ar"];
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -158,7 +158,7 @@ async function handleSolicitudInsert(record: any, supabase: any) {
 async function handleSolicitudPendienteDireccion(record: any, alumnoNombre: string, alumnoEmail: string) {
   const copiaCorreos = [alumnoEmail, record.participantes].filter(Boolean);
   await sendMail({
-    to: DIRECTOR_EMAIL,
+    to: DIRECTOR_EMAILS,
     cc: copiaCorreos.length > 0 ? copiaCorreos : undefined,
     subject: "SGEA — Solicitud pendiente de Aval de Dirección",
     html: wrapEmail(
@@ -170,7 +170,7 @@ async function handleSolicitudPendienteDireccion(record: any, alumnoNombre: stri
          "Alumno referente": alumnoNombre,
          "Fecha de inicio": formatFecha(record.fecha_inicio),
        })}
-       ${btn(`${APP_URL}/autorizaciones`, "Ver y Autorizar en Panel")}`
+       ${btn(`${APP_URL}/director`, "Ver y Autorizar en Panel")}`
     ),
   });
 }
@@ -221,7 +221,7 @@ async function handleReservaInsert(record: any, supabase: any) {
 
   if (requiereDir) {
     await sendMail({
-      to: DIRECTOR_EMAIL,
+      to: DIRECTOR_EMAILS,
       subject: "SGEA — Nueva Solicitud de Uso Externo / Especial",
       html: wrapEmail(
         "#0f172a", "SGEA — Aval de Dirección Requerido",
@@ -230,7 +230,7 @@ async function handleReservaInsert(record: any, supabase: any) {
            "Materia / Proyecto": materia,
            "Docente solicitante": record.docente_nombre || "No especificado",
          })}
-         ${btn(`${APP_URL}/autorizaciones`, "Ver y Autorizar en Panel")}`
+         ${btn(`${APP_URL}/director`, "Ver y Autorizar en Panel")}`
       ),
     });
   }
