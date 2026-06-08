@@ -389,19 +389,11 @@ export const StudentRequestsManager: React.FC<{ filterDireccion?: boolean }> = (
                       </div>
                     </div>
 
-                    <div className="flex flex-col sm:flex-row gap-3 mt-6">
-                      <button
-                        onClick={() => handleReject(req)}
-                        disabled={processingId === req.id}
-                        className="w-full sm:flex-1 px-6 py-3 bg-white border border-slate-200 text-slate-500 font-bold rounded-xl hover:bg-red-50 hover:text-red-600 hover:border-red-200 transition-all disabled:opacity-50 flex items-center justify-center gap-2"
-                      >
-                        <XCircle className="w-4 h-4" />
-                        Rechazar
-                      </button>
+                    <div className="flex flex-col space-y-3 mt-6">
                       <button
                         onClick={() => handleAuthorize(req)}
                         disabled={processingId === req.id}
-                        className="w-full sm:flex-1 px-6 py-3 bg-green-600 text-white font-bold rounded-xl hover:bg-green-700 transition-all shadow-lg shadow-green-100 disabled:opacity-50 flex items-center justify-center gap-2"
+                        className="w-full px-6 py-3 bg-green-600 text-white font-bold rounded-xl hover:bg-green-700 transition-all shadow-lg shadow-green-100 disabled:opacity-50 flex items-center justify-center gap-2"
                       >
                         {processingId === req.id ? (
                           <Loader2 className="w-4 h-4 animate-spin" />
@@ -409,6 +401,14 @@ export const StudentRequestsManager: React.FC<{ filterDireccion?: boolean }> = (
                           <CheckCircle className="w-4 h-4" />
                         )}
                         Autorizar
+                      </button>
+                      <button
+                        onClick={() => handleReject(req)}
+                        disabled={processingId === req.id}
+                        className="w-full px-6 py-3 bg-white border border-slate-200 text-slate-500 font-bold rounded-xl hover:bg-red-50 hover:text-red-600 hover:border-red-200 transition-all disabled:opacity-50 flex items-center justify-center gap-2"
+                      >
+                        <XCircle className="w-4 h-4" />
+                        Rechazar
                       </button>
                     </div>
                   </div>
