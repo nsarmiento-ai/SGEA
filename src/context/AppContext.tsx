@@ -3,7 +3,7 @@ import * as Sentry from "@sentry/react";
 import { supabase } from '../lib/supabase';
 import { Responsable } from '../types';
 
-export type AppRole = 'Administración' | 'Docente' | 'Director';
+export type AppRole = 'Administración' | 'Docente' | 'Director' | 'SuperAdmin' | 'Estudiante';
 
 interface AppContextType {
   activeResponsable: string | null;
@@ -69,28 +69,48 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const fullName = session.user.user_metadata.full_name || session.user.email;
     setUserEmail(email);
 
-    const superAdmins = ['n.sarmiento@cine.unt.edu.ar', 'jveiga@cine.unt.edu.ar'];
-    const isSpecial = superAdmins.includes(email);
-    setIsSuperAdmin(isSpecial);
-
     try {
-      const savedRole = localStorage.getItem('selected_role') as AppRole;
+      // Query role from 'user_roles' table
+      let dbRole: AppRole | null = null;
+      if (email) {
+        const { data, error } = await supabase
+          .from('user_roles')
+          .select('role')
+          .eq('email', email)
+          .maybeSingle(); // Use maybeSingle to not throw error if not found
+        if (data?.role) {
+          dbRole = data.role as AppRole;
+        }
+      }
+
       const isCineDomain = email?.endsWith('@cine.unt.edu.ar');
-      
-      if (!isCineDomain) {
-        // STRICT ALUMNO: Force role to null and remove any saved role so they never log in as Docente/Admin
-        setRole(null);
-        localStorage.removeItem('selected_role');
-      } else if (isSpecial) {
+      let inferredRole: AppRole | null = dbRole;
+
+      if (!inferredRole) {
+        if (isCineDomain) {
+          inferredRole = 'Docente';
+        } else {
+          inferredRole = 'Estudiante';
+        }
+      }
+
+      const superAdmins = ['n.sarmiento@cine.unt.edu.ar', 'jveiga@cine.unt.edu.ar'];
+      const isSpecial = superAdmins.includes(email || '') || inferredRole === 'SuperAdmin';
+      setIsSuperAdmin(isSpecial);
+
+      const savedRole = localStorage.getItem('selected_role') as AppRole;
+
+      if (isSpecial) {
         if (savedRole) {
           setRole(savedRole);
         } else {
           setRole(null); // Force selection screen
         }
       } else {
-        // Simple domain-based auto-role for @cine users who aren't superadmins
-        const defaultRole = 'Docente';
-        setRole(savedRole || defaultRole);
+        if (inferredRole === 'Estudiante') {
+          localStorage.removeItem('selected_role');
+        }
+        setRole(inferredRole);
       }
       
       setActiveResponsableState(fullName);
@@ -103,7 +123,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const setRoleAndSave = async (newRole: AppRole | null) => {
     // Treat student accounts strictly: prevent assigning administrative roles
-    if (userEmail && !userEmail.endsWith('@cine.unt.edu.ar') && newRole !== null) {
+    if (userEmail && !userEmail.endsWith('@cine.unt.edu.ar') && newRole !== null && newRole !== 'Estudiante') {
       console.warn('Block: Alumno tried to assign authorized AppRole');
       return;
     }
