@@ -31,7 +31,6 @@ import { addDays, format, isWithinInterval, parseISO, isAfter, setHours, setMinu
 import { MATERIAS_CATEGORIES } from '../constants';
 
 import { useNavigate } from 'react-router-dom';
-import { toast } from 'react-hot-toast';
 
 export const LoanWizard: React.FC = () => {
   const { activeResponsable } = useApp();
@@ -321,7 +320,7 @@ export const LoanWizard: React.FC = () => {
       
       if (conflictRes) {
         const eq = (equipments || []).find(e => e.id === id);
-        toast.error(`Error: El equipo ${eq?.nombre} no puede prestarse hasta el ${format(parseISO(conflictRes.fecha_inicio), 'dd/MM')} porque tiene una reserva de ${conflictRes.docente_nombre} el día ${format(parseISO(conflictRes.fecha_inicio), 'dd/MM')}.`);
+        alert(`Error: El equipo ${eq?.nombre} no puede prestarse hasta el ${format(parseISO(conflictRes.fecha_inicio), 'dd/MM')} porque tiene una reserva de ${conflictRes.docente_nombre} el día ${format(parseISO(conflictRes.fecha_inicio), 'dd/MM')}.`);
         return;
       }
     }
@@ -499,11 +498,11 @@ export const LoanWizard: React.FC = () => {
     } catch (error: any) {
       console.error('Error al registrar el préstamo:', error);
       if (error.code === 'PGRST303' || error.status === 401) {
-        toast.error('Su sesión ha expirado. Por favor, vuelva a iniciar sesión para continuar.');
+        alert('Su sesión ha expirado. Por favor, vuelva a iniciar sesión para continuar.');
         window.location.reload();
         return;
       }
-      toast.error(`Error al registrar el préstamo: ${error.message || 'Revisa la consola'}`);
+      alert(`Error al registrar el préstamo: ${error.message || 'Revisa la consola'}`);
     } finally {
       setSubmitting(false);
     }
@@ -514,7 +513,7 @@ export const LoanWizard: React.FC = () => {
     const { loan, equipments, docenteEmail } = finishedLoan;
     
     if (!docenteEmail) {
-      toast.error('No se puede enviar el email: El docente no tiene un correo electrónico registrado.');
+      alert('No se puede enviar el email: El docente no tiene un correo electrónico registrado.');
       return;
     }
     
@@ -541,7 +540,7 @@ export const LoanWizard: React.FC = () => {
       await handleFinish(); // Retry
     } catch (e) {
       console.error("Error syncing equipment:", e);
-      toast.error("Error al sincronizar equipos. Inténtelo nuevamente.");
+      alert("Error al sincronizar equipos. Inténtelo nuevamente.");
       setSubmitting(false);
     }
   };

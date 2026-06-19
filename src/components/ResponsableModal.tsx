@@ -9,7 +9,6 @@ import { AnimatedBackground } from './ui/AnimatedBackground';
 import { BackgroundImageTexture } from './ui/BackgroundImageTexture';
 import { BorderBeam } from './ui/BorderBeam';
 import { TextAnimate } from './ui/TextAnimate';
-import { toast } from 'react-hot-toast';
 
 export const ResponsableModal: React.FC = () => {
   const { activeResponsable, loading: authLoading } = useApp();
@@ -33,7 +32,7 @@ export const ResponsableModal: React.FC = () => {
 
     if (error) {
       console.error('Detalle del error de Auth (Docentes/Admin):', error);
-      toast.error('Error al iniciar sesión: ' + error.message);
+      alert('Error al iniciar sesión: ' + error.message);
       setLoggingIn(false);
     }
   };
@@ -61,7 +60,7 @@ export const ResponsableModal: React.FC = () => {
 
     if (error) {
       console.error('Detalle del error de Auth (Alumnos):', error);
-      toast.error('Error al iniciar sesión: ' + error.message);
+      alert('Error al iniciar sesión: ' + error.message);
       setLoggingInStudent(false);
     }
   };

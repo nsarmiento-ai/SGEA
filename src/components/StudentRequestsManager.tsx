@@ -5,7 +5,6 @@ import { useApp } from '../context/AppContext';
 import { CONTACTS_DATA } from '../lib/contactsData';
 import { Loader2, CheckCircle, XCircle, Clock, AlertCircle, Package, User, Calendar, BookOpen, ExternalLink, ShieldCheck } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
-import { toast } from 'react-hot-toast';
 
 export const StudentRequestsManager: React.FC<{ filterDireccion?: boolean }> = ({ filterDireccion }) => {
   const { activeResponsable, role, userEmail } = useApp();
@@ -23,9 +22,7 @@ export const StudentRequestsManager: React.FC<{ filterDireccion?: boolean }> = (
 
   useEffect(() => {
     if (role === 'Docente') {
-      if (import.meta.env.DEV) {
-        console.log('Panel Docente: Buscando pedidos para:', userEmail);
-      }
+      console.log('Panel Docente: Buscando pedidos para:', userEmail);
     }
     fetchRequests();
     fetchEquipment();
@@ -98,7 +95,7 @@ export const StudentRequestsManager: React.FC<{ filterDireccion?: boolean }> = (
 
   const handleAuthorize = async (request: StudentRequest) => {
     if (!userEmail) {
-      toast.error('Error: No se detectó una sesión activa para firmar la autorización.');
+      alert('Error: No se detectó una sesión activa para firmar la autorización.');
       return;
     }
     setProcessingId(request.id);
@@ -115,9 +112,7 @@ export const StudentRequestsManager: React.FC<{ filterDireccion?: boolean }> = (
       }
     }
 
-    if (import.meta.env.DEV) {
-      console.log('Autorizando solicitud ID:', request.id, 'con email:', userEmail);
-    }
+    console.log('Autorizando solicitud ID:', request.id, 'con email:', userEmail);
 
     try {
       const isReserva = (request as any)._table === 'reservas';
@@ -172,15 +167,14 @@ export const StudentRequestsManager: React.FC<{ filterDireccion?: boolean }> = (
         }
       );
 
-      toast.success(filterDireccion ? 'Solicitud autorizada por Dirección' : 'Solicitud avalada correctamente');
       setRequests(prev => prev.filter(r => r.id !== request.id));
     } catch (err: any) {
       console.error('Error authorizing request:', err);
       if (err.message === 'SGEA_SESSION_EXPIRED') {
-        toast.error('Su sesión ha expirado. Por favor, vuelva a iniciar sesión para continuar.');
+        alert('Su sesión ha expirado. Por favor, vuelva a iniciar sesión para continuar.');
         window.location.href = '/login'; // Force redirect if login exists, or just reload
       } else {
-        toast.error('Error en la autorización. Verifique su conexión o intente nuevamente.');
+        alert('Error en la autorización. Verifique su conexión o intente nuevamente.');
       }
     } finally {
       setProcessingId(null);
@@ -210,12 +204,11 @@ export const StudentRequestsManager: React.FC<{ filterDireccion?: boolean }> = (
         { requestId: request.id, source: (request as any)._table }
       );
 
-      toast.success('Solicitud rechazada correctamente');
       setRequests(prev => prev.filter(r => r.id !== request.id));
     } catch (err: any) {
       console.error('Error rejecting request:', err);
       if (err.message === 'SGEA_SESSION_EXPIRED') {
-        toast.error('Su sesión ha expirado. Por favor, vuelva a iniciar sesión para continuar.');
+        alert('Su sesión ha expirado. Por favor, vuelva a iniciar sesión para continuar.');
         window.location.reload();
       }
     } finally {

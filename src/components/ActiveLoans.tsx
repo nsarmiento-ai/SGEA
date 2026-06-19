@@ -21,7 +21,6 @@ import {
 import { motion } from 'motion/react';
 import { cn, formatDate } from '../lib/utils';
 import { differenceInDays, isPast, format } from 'date-fns';
-import { toast } from 'react-hot-toast';
 
 import { CONTACTS_DATA } from '../lib/contactsData';
 
@@ -114,7 +113,7 @@ export const ActiveLoans: React.FC<{ filterMora?: boolean }> = ({ filterMora = f
     const { loan, equipments, responsableRecibe, docenteEmail } = finishedReturn;
     
     if (!docenteEmail) {
-      toast.error('No se puede enviar el email: El docente no tiene un correo electrónico registrado.');
+      alert('No se puede enviar el email: El docente no tiene un correo electrónico registrado.');
       return;
     }
     
@@ -373,7 +372,7 @@ const ReceiveModal: React.FC<{ loan: Loan, equipmentsMap: Record<string, Equipme
 
   const handleConfirm = async () => {
     if (!isReadyToSubmit) {
-      toast.error('Por favor, verifique todos los artículos antes de finalizar.');
+      alert('Por favor, verifique todos los artículos antes de finalizar.');
       return;
     }
 
@@ -402,9 +401,7 @@ const ReceiveModal: React.FC<{ loan: Loan, equipmentsMap: Record<string, Equipme
           updatedDescription = `[Reporte ${reportDate}]: ${note || 'Falla reportada'}\n---\n${updatedDescription}`;
         }
 
-        if (import.meta.env.DEV) {
-          console.log(`[DEBUG] Actualizando equipo ID ${eqId} (${eq.nombre}) a estado: ${dbStatus}`);
-        }
+        console.log(`[DEBUG] Actualizando equipo ID ${eqId} (${eq.nombre}) a estado: ${dbStatus}`);
         const { error: eqErr } = await supabase
           .from('equipamiento')
           .update({ 
@@ -468,7 +465,6 @@ const ReceiveModal: React.FC<{ loan: Loan, equipmentsMap: Record<string, Equipme
         itemNotes
       );
 
-      toast.success('Devolución procesada con éxito');
       onSuccess({ 
         loan: { ...loan, ...loanUpdate }, 
         equipments: returnedEquipmentsData, 
@@ -479,7 +475,7 @@ const ReceiveModal: React.FC<{ loan: Loan, equipmentsMap: Record<string, Equipme
       });
     } catch (error: any) {
       console.error(error);
-      toast.error('Error al procesar la devolución.');
+      alert('Error al procesar la devolución.');
     } finally {
       setLoading(false);
     }

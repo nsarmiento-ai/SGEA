@@ -8,7 +8,6 @@ import { motion, AnimatePresence } from 'motion/react';
 import { useNavigate } from 'react-router-dom';
 import { cn, optimizeCloudinaryUrl } from '../lib/utils';
 import { generateStudentRequestVoucherPDF } from '../lib/pdf';
-import { toast } from 'react-hot-toast';
 
 export const StudentRequestView: React.FC = () => {
   const navigate = useNavigate();
@@ -83,12 +82,10 @@ export const StudentRequestView: React.FC = () => {
       created_at: new Date().toISOString()
     };
 
-    if (import.meta.env.DEV) {
-      console.log('Enviando solicitud:', {
-        ...newRequest,
-        equipos_count: selectedIds.length
-      });
-    }
+    console.log('Enviando solicitud:', {
+      ...newRequest,
+      equipos_count: selectedIds.length
+    });
 
     try {
       const { data, error: insertError } = await supabase
@@ -102,10 +99,7 @@ export const StudentRequestView: React.FC = () => {
         }
         throw insertError;
       }
-      
-      if (import.meta.env.DEV) {
-        console.log('Solicitud enviada con éxito:', data);
-      }
+      console.log('Solicitud enviada con éxito:', data);
       
       // Auto-generate voucher
       const reqWithId = data ? data[0] : newRequest;
@@ -116,7 +110,7 @@ export const StudentRequestView: React.FC = () => {
     } catch (err: any) {
       console.error('Error submitting request:', err);
       if (err.message === 'SGEA_SESSION_EXPIRED') {
-        toast.error('Su sesión ha expirado. Por favor, vuelva a cargar la página o iniciar sesión.');
+        alert('Su sesión ha expirado. Por favor, vuelva a cargar la página o iniciar sesión.');
         window.location.reload();
         return;
       }
