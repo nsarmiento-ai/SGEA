@@ -33,6 +33,7 @@ import { isWithinInterval, parseISO, isAfter } from 'date-fns';
 import { Reservation } from '../types';
 import { TextAnimate } from './ui/TextAnimate';
 import { BorderBeam } from './ui/BorderBeam';
+import { toast } from 'react-hot-toast';
 
 const statusConfig: Record<EquipmentStatus, { color: string, icon: any, label: string }> = {
   'Disponible': { color: 'text-green-600 bg-green-50 border-green-200', icon: CheckCircle2, label: 'Disponible' },
@@ -137,17 +138,23 @@ export const Catalog: React.FC = () => {
 
   const fetchEquipments = async () => {
     setLoading(true);
-    console.log('Catalog: Iniciando fetch de equipos (tabla equipamiento) y reservas (tabla reservas)...');
+    if (import.meta.env.DEV) {
+      console.log('Catalog: Iniciando fetch de equipos (tabla equipamiento) y reservas (tabla reservas)...');
+    }
     const [eqRes, resRes] = await Promise.all([
       supabase.from('equipamiento').select('id, nombre, modelo, numero_serie, categoria, foto_url, estado, permiso_uso, piezas, descripcion').order('nombre', { ascending: true }),
       supabase.from('reservas').select('id, equipos_ids, fecha_inicio, fecha_fin, estado')
     ]);
     
-    console.log('Catalog: Respuesta cruda de Supabase (equipamiento):', eqRes);
-    console.log('Catalog: Respuesta cruda de Supabase (reservas):', resRes);
+    if (import.meta.env.DEV) {
+      console.log('Catalog: Respuesta cruda de Supabase (equipamiento):', eqRes);
+      console.log('Catalog: Respuesta cruda de Supabase (reservas):', resRes);
+    }
 
     if (!eqRes.error && eqRes.data) {
-      console.log(`Catalog: Se recibieron ${eqRes.data.length} equipos.`);
+      if (import.meta.env.DEV) {
+        console.log(`Catalog: Se recibieron ${eqRes.data.length} equipos.`);
+      }
       const mappedData = eqRes.data.map(eq => {
         let parsedPiezas = eq.piezas;
         if (typeof eq.piezas === 'string') {
@@ -194,30 +201,36 @@ export const Catalog: React.FC = () => {
   const handleDelete = async (id: string, name: string) => {
     if (!confirm(`¿Está seguro de archivar "${name}"? No aparecerá en el inventario activo.`)) return;
     
-    console.log('Archivando equipo. Valor enviado a Supabase:', 'Archivado');
+    if (import.meta.env.DEV) {
+      console.log('Archivando equipo. Valor enviado a Supabase:', 'Archivado');
+    }
     const { error } = await supabase
       .from('equipamiento')
       .update({ estado: 'Archivado' })
       .eq('id', id);
     
     if (error) {
-      alert(`Error al archivar: ${error.message}`);
+      toast.error(`Error al archivar: ${error.message}`);
     } else {
+      toast.success('Equipo archivado correctamente');
       await logAction(activeResponsable!, 'BAJA_EQUIPO', { id, nombre: name, motivo: 'Archivado' });
       fetchEquipments();
     }
   };
 
   const handleRestore = async (id: string, name: string) => {
-    console.log('Restaurando equipo. Valor enviado a Supabase:', 'Disponible');
+    if (import.meta.env.DEV) {
+      console.log('Restaurando equipo. Valor enviado a Supabase:', 'Disponible');
+    }
     const { error } = await supabase
       .from('equipamiento')
       .update({ estado: 'Disponible' })
       .eq('id', id);
     
     if (error) {
-      alert(`Error al restaurar: ${error.message}`);
+      toast.error(`Error al restaurar: ${error.message}`);
     } else {
+      toast.success('Equipo restaurado correctamente');
       await logAction(activeResponsable!, 'RESTAURAR_EQUIPO', { id, nombre: name });
       fetchEquipments();
     }
@@ -901,19 +914,22 @@ const EquipmentModal: React.FC<{ item: Equipment | null, onClose: () => void, on
     const dataToSave = { ...formData, piezas: formData.piezas || [] };
     const action = item ? 'EDICION_EQUIPO' : 'ALTA_EQUIPO';
     
-    console.log(`Guardando equipo (${action}). Datos enviados a Supabase:`, dataToSave);
+    if (import.meta.env.DEV) {
+      console.log(`Guardando equipo (${action}). Datos enviados a Supabase:`, dataToSave);
+    }
     
     const { error } = item 
       ? await supabase.from('equipamiento').update(dataToSave).eq('id', item.id)
       : await supabase.from('equipamiento').insert([dataToSave]);
 
     if (!error) {
+      toast.success(item ? 'Equipo actualizado correctamente' : 'Equipo creado con éxito');
       await logAction(activeResponsable!, action, dataToSave);
       onSave();
       onClose();
     } else {
       console.error('Error saving equipment:', error);
-      alert(`Error al guardar el equipo: ${error.message || JSON.stringify(error)}`);
+      toast.error(`Error al guardar el equipo: ${error.message || JSON.stringify(error)}`);
     }
     setLoading(false);
   };

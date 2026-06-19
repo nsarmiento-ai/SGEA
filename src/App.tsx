@@ -13,6 +13,7 @@ import { RoleSelectionModal } from './components/RoleSelectionModal';
 import { Loader2, Menu } from 'lucide-react';
 import { useEffect, useState, useRef, Suspense, lazy } from 'react';
 import { supabase } from './lib/supabase';
+import { Toaster } from 'react-hot-toast';
 
 // Lazy loading of route components
 const Catalog = lazy(() => import('./components/Catalog').then(m => ({ default: m.Catalog })));
@@ -236,6 +237,7 @@ export default function App() {
       <Router>
         <AppContent />
       </Router>
+      <Toaster position="top-right" reverseOrder={false} />
     </AppProvider>
   );
 }

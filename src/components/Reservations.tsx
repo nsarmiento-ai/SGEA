@@ -37,6 +37,7 @@ import { parseISO, areIntervalsOverlapping, format } from 'date-fns';
 import { generateReservationPDF } from '../lib/pdf';
 import { sendAssistedEmail } from '../lib/email';
 import { MATERIAS_CATEGORIES } from '../constants';
+import { toast } from 'react-hot-toast';
 
 const mapStatus = (status: string | null | undefined): EquipmentStatus => {
   if (!status) return 'Disponible';
@@ -109,7 +110,9 @@ export const Reservations: React.FC = () => {
     setLoading(true);
     setError(null);
     try {
-      console.log('Iniciando fetch de equipos (tabla equipamiento) y reservas (tabla reservas)...');
+      if (import.meta.env.DEV) {
+        console.log('Iniciando fetch de equipos (tabla equipamiento) y reservas (tabla reservas)...');
+      }
       const [eqData, resData] = await Promise.all([
         supabase.from('equipamiento').select('id, nombre, modelo, numero_serie, categoria, foto_url, estado, permiso_uso, descripcion').order('nombre', { ascending: true }),
         supabase.from('reservas').select('id, equipos_ids, fecha_inicio, fecha_fin, estado, docente_nombre, materia, alumno_nombre').order('fecha_inicio', { ascending: true })
@@ -125,15 +128,19 @@ export const Reservations: React.FC = () => {
       })) as Responsable[];
       setDocentes(formattedDocentes);
 
-      console.log('Respuesta cruda de Supabase (equipamiento):', eqData);
-      console.log('Respuesta cruda de Supabase (reservas):', resData);
+      if (import.meta.env.DEV) {
+        console.log('Respuesta cruda de Supabase (equipamiento):', eqData);
+        console.log('Respuesta cruda de Supabase (reservas):', resData);
+      }
       
       if (eqData.error) {
         throw new Error(`Error Supabase (equipos): ${eqData.error.message}`);
       }
 
       if (eqData.data) {
-        console.log(`Se recibieron ${eqData.data.length} equipos.`);
+        if (import.meta.env.DEV) {
+          console.log(`Se recibieron ${eqData.data.length} equipos.`);
+        }
         const mappedData = eqData.data.map(eq => ({
           ...eq,
           estado: mapStatus(eq.estado)
@@ -168,7 +175,9 @@ export const Reservations: React.FC = () => {
     return matchesSearch && matchesCategory && matchesFavorites;
   });
 
-  console.log(`Equipos filtrados: ${filteredEquipments.length} de ${equipments.length}`);
+  if (import.meta.env.DEV) {
+    console.log(`Equipos filtrados: ${filteredEquipments.length} de ${equipments.length}`);
+  }
 
   const addToCart = (eq: Equipment) => {
     if (cart.find(item => item.id === eq.id)) return;
@@ -231,7 +240,7 @@ export const Reservations: React.FC = () => {
 
     if (!cart || cart.length === 0) {
       setError('No has seleccionado ningún equipo.');
-      alert('No has seleccionado ningún equipo.');
+      toast.error('No has seleccionado ningún equipo.');
       return;
     }
 
@@ -267,12 +276,14 @@ export const Reservations: React.FC = () => {
       const { data: { user } } = await supabase.auth.getUser();
       
       if (!user) {
-        alert('Tu sesión ha expirado. Por favor, inicia sesión de nuevo.');
+        toast.error('Tu sesión ha expirado. Por favor, inicia sesión de nuevo.');
         window.location.reload();
         return;
       }
 
-      console.log('Intentando reserva con:', { usuario: user.email, carrito: cart.map(c => c.nombre) });
+      if (import.meta.env.DEV) {
+        console.log('Intentando reserva con:', { usuario: user.email, carrito: cart.map(c => c.nombre) });
+      }
 
       const isAdmin = role === 'Administración';
       const isInterno = formData.tipo_uso === 'Uso en Escuela';
@@ -314,7 +325,9 @@ export const Reservations: React.FC = () => {
         throw insertError;
       }
 
-      console.log('Reserva guardada con éxito', insertedData);
+      if (import.meta.env.DEV) {
+        console.log('Reserva guardada con éxito', insertedData);
+      }
 
       const logMsg = isDocente && formData.tipo_uso === 'Uso en Escuela' 
         ? 'Aval implícito por creación de reserva (Uso Interno)'
@@ -350,13 +363,13 @@ export const Reservations: React.FC = () => {
     } catch (err: any) {
       console.error('ERROR DE SUPABASE:', err);
       if (err.message === 'SGEA_SESSION_EXPIRED') {
-        alert('Su sesión ha expirado. Por favor, vuelva a iniciar sesión para continuar.');
+        toast.error('Su sesión ha expirado. Por favor, vuelva a iniciar sesión para continuar.');
         window.location.reload();
         return;
       }
       const errorMsg = err.message || JSON.stringify(err);
       setError(errorMsg);
-      alert(`Error al guardar la reserva: ${errorMsg}`);
+      toast.error(`Error al guardar la reserva: ${errorMsg}`);
     } finally {
       setSubmitting(false);
     }
@@ -367,7 +380,7 @@ export const Reservations: React.FC = () => {
     const { reservation, equipments, docenteEmail } = finishedReservation;
     
     if (!docenteEmail) {
-      alert('No se puede enviar el email: El docente no tiene un correo electrónico registrado.');
+      toast.error('No se puede enviar el email: El docente no tiene un correo electrónico registrado.');
       return;
     }
     
