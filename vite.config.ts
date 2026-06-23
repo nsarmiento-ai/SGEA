@@ -62,6 +62,7 @@ export default defineConfig(({mode}) => {
         workbox: {
           globPatterns: ['**/*.{js,css,html,ico,png,svg,json,webmanifest}'],
           cleanupOutdatedCaches: true,
+          importScripts: ['/custom-push-listener.js'],
           runtimeCaching: []
         }
       })

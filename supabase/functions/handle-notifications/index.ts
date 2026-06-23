@@ -121,6 +121,61 @@ const btn = (url: string, label: string) =>
     <a href="${url}" style="background:#0f172a;color:white;padding:14px 28px;text-decoration:none;border-radius:8px;font-weight:bold;display:inline-block;">${label}</a>
   </div>`;
 
+async function getUserIdByEmail(supabase: any, email: string): Promise<string | null> {
+  if (!email) return null;
+  try {
+    const { data } = await supabase
+      .from("profiles")
+      .select("id")
+      .eq("email", email)
+      .single();
+    if (data?.id) return data.id;
+  } catch (err) {
+    console.error(`Error buscando user_id para email ${email} en profiles:`, err);
+  }
+  return null;
+}
+
+async function getAdminUserIds(supabase: any): Promise<string[]> {
+  try {
+    const { data: roleData, error: roleError } = await supabase
+      .from("user_roles")
+      .select("email")
+      .in("role", ["Director", "Administración"]);
+
+    if (roleError || !roleData) return [];
+    const emails = roleData.map((r: any) => r.email).filter(Boolean);
+    if (emails.length === 0) return [];
+
+    const { data: profileData, error: profileError } = await supabase
+      .from("profiles")
+      .select("id")
+      .in("email", emails);
+
+    if (profileError || !profileData) return [];
+    return profileData.map((p: any) => p.id).filter(Boolean);
+  } catch (err) {
+    console.error("Error in getAdminUserIds:", err);
+    return [];
+  }
+}
+
+async function sendPush(supabase: any, user_id: string, title: string, body: string) {
+  try {
+    if (!user_id) return;
+    const { data, error } = await supabase.functions.invoke("send-push-notification", {
+      body: { user_id, title, body },
+    });
+    if (error) {
+      console.error(`⚠️ Error invocando send-push-notification para ${user_id}:`, error);
+    } else {
+      console.log(`📡 Invocación de push exitosa para ${user_id}:`, data);
+    }
+  } catch (err: any) {
+    console.error(`⚠️ Error en bloque de push para ${user_id}:`, err.message);
+  }
+}
+
 async function handleSolicitudInsert(record: any, supabase: any) {
   const docenteEmail = record.docente_id;
   if (!docenteEmail) return;
@@ -153,9 +208,24 @@ async function handleSolicitudInsert(record: any, supabase: any) {
        ${btn(`${APP_URL}/mis-autorizaciones`, "Revisar y Otorgar Aval")}`
     ),
   });
+
+  // Push Notification (Teacher)
+  try {
+    const docUserId = await getUserIdByEmail(supabase, docenteEmail);
+    if (docUserId) {
+      await sendPush(
+        supabase,
+        docUserId,
+        "SGEA — Aval Docente Requerido",
+        `El alumno ${alumnoNombre} solicita tu aval para retirar equipamiento.`
+      );
+    }
+  } catch (e: any) {
+    console.error("Error en push de handleSolicitudInsert:", e.message);
+  }
 }
 
-async function handleSolicitudPendienteDireccion(record: any, alumnoNombre: string, alumnoEmail: string) {
+async function handleSolicitudPendienteDireccion(record: any, alumnoNombre: string, alumnoEmail: string, supabase: any) {
   const copiaCorreos = [alumnoEmail, record.participantes].filter(Boolean);
   await sendMail({
     to: DIRECTOR_EMAILS,
@@ -173,9 +243,24 @@ async function handleSolicitudPendienteDireccion(record: any, alumnoNombre: stri
        ${btn(`${APP_URL}/director`, "Ver y Autorizar en Panel")}`
     ),
   });
+
+  // Push Notification (Directors)
+  try {
+    const adminIds = await getAdminUserIds(supabase);
+    for (const uid of adminIds) {
+      await sendPush(
+        supabase,
+        uid,
+        "SGEA — Aval de Dirección Requerido",
+        `La solicitud de ${alumnoNombre} requiere aprobación de Dirección.`
+      );
+    }
+  } catch (e: any) {
+    console.error("Error en push de handleSolicitudPendienteDireccion:", e.message);
+  }
 }
 
-async function handleSolicitudAutorizada(record: any, alumnoNombre: string, alumnoEmail: string) {
+async function handleSolicitudAutorizada(record: any, alumnoNombre: string, alumnoEmail: string, supabase: any) {
   if (!alumnoEmail) return;
   const copiaCorreos = [record.participantes].filter(Boolean);
   await sendMail({
@@ -194,9 +279,23 @@ async function handleSolicitudAutorizada(record: any, alumnoNombre: string, alum
        ${btn(APP_URL, "Ver Comprobante en SGEA")}`
     ),
   });
+
+  // Push Notification (Student)
+  try {
+    if (record.usuario_id) {
+      await sendPush(
+        supabase,
+        record.usuario_id,
+        "SGEA — Tu solicitud fue Autorizada",
+        `¡Buenas noticias! Tu solicitud de equipamiento está aprobada y lista para retiro.`
+      );
+    }
+  } catch (e: any) {
+    console.error("Error en push de handleSolicitudAutorizada:", e.message);
+  }
 }
 
-async function handleSolicitudRechazada(record: any, alumnoNombre: string, alumnoEmail: string) {
+async function handleSolicitudRechazada(record: any, alumnoNombre: string, alumnoEmail: string, supabase: any) {
   if (!alumnoEmail) return;
   const copiaCorreos = [record.participantes].filter(Boolean);
   await sendMail({
@@ -211,6 +310,21 @@ async function handleSolicitudRechazada(record: any, alumnoNombre: string, alumn
        ${btn(APP_URL, "Ver detalle en SGEA")}`
     ),
   });
+
+  // Push Notification (Student)
+  try {
+    if (record.usuario_id) {
+      const why = record.observaciones ? `: ${record.observaciones}` : ".";
+      await sendPush(
+        supabase,
+        record.usuario_id,
+        "SGEA — Tu solicitud fue Rechazada",
+        `Tu solicitud para ${record.materia || 'N/D'} fue rechazada${why}`
+      );
+    }
+  } catch (e: any) {
+    console.error("Error en push de handleSolicitudRechazada:", e.message);
+  }
 }
 
 async function handleReservaInsert(record: any, supabase: any) {
@@ -233,6 +347,21 @@ async function handleReservaInsert(record: any, supabase: any) {
          ${btn(`${APP_URL}/director`, "Ver y Autorizar en Panel")}`
       ),
     });
+
+    // Push Notification (Directors)
+    try {
+      const adminIds = await getAdminUserIds(supabase);
+      for (const uid of adminIds) {
+        await sendPush(
+          supabase,
+          uid,
+          "SGEA — Aval de Dirección Requerido",
+          `Uso externo de equipamiento por ${record.docente_nombre || "un docente"} requiere aprobación.`
+        );
+      }
+    } catch (e: any) {
+      console.error("Error en push de handleReservaInsert (requiereDir):", e.message);
+    }
   }
 
   if (tieneDocenteAval && !esAutoAval) {
@@ -258,6 +387,21 @@ async function handleReservaInsert(record: any, supabase: any) {
          ${btn(`${APP_URL}/mis-autorizaciones`, "Revisar y Otorgar Aval")}`
       ),
     });
+
+    // Push Notification (Teacher)
+    try {
+      const docUserId = await getUserIdByEmail(supabase, record.docente_aval_email);
+      if (docUserId) {
+        await sendPush(
+          supabase,
+          docUserId,
+          "SGEA — Pedido de Aval Docente pendiente",
+          `El alumno ${alumnoNombre} solicita equipamiento bajo tu responsabilidad académica.`
+        );
+      }
+    } catch (e: any) {
+      console.error("Error en push de handleReservaInsert (docente_aval):", e.message);
+    }
   }
 }
 
@@ -280,6 +424,20 @@ async function handleReservaAvalada(record: any, supabase: any) {
        ${btn(APP_URL, "Ver Comprobante en SGEA")}`
     ),
   });
+
+  // Push Notification (Student)
+  try {
+    if (record.usuario_id) {
+      await sendPush(
+        supabase,
+        record.usuario_id,
+        "SGEA — Tu reserva fue Avalada",
+        "¡Buenas noticias! Tu reserva fue avalada y está ready para despacho."
+      );
+    }
+  } catch (e: any) {
+    console.error("Error en push de handleReservaAvalada:", e.message);
+  }
 }
 
 serve(async (req) => {
@@ -312,13 +470,13 @@ serve(async (req) => {
       if (type === "INSERT") await handleSolicitudInsert(newRecord, supabase);
       
       if (type === "UPDATE" && oldRecord?.estado !== "Pendiente de Dirección" && newRecord.estado === "Pendiente de Dirección") {
-        await handleSolicitudPendienteDireccion(newRecord, alumnoNombre, alumnoEmail);
+        await handleSolicitudPendienteDireccion(newRecord, alumnoNombre, alumnoEmail, supabase);
       }
       if (type === "UPDATE" && oldRecord?.estado !== "Autorizado para Despacho" && newRecord.estado === "Autorizado para Despacho") {
-        await handleSolicitudAutorizada(newRecord, alumnoNombre, alumnoEmail);
+        await handleSolicitudAutorizada(newRecord, alumnoNombre, alumnoEmail, supabase);
       }
       if (type === "UPDATE" && oldRecord?.estado !== "Rechazado" && newRecord.estado === "Rechazado") {
-        await handleSolicitudRechazada(newRecord, alumnoNombre, alumnoEmail);
+        await handleSolicitudRechazada(newRecord, alumnoNombre, alumnoEmail, supabase);
       }
     }
 
