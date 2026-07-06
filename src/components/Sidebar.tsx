@@ -35,7 +35,6 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
     { icon: AlertTriangle, label: 'Panel de Mora', path: '/mora' },
     { icon: Clock, label: role === 'Docente' ? 'Mis Préstamos' : 'Devolución', path: '/activos' },
     { icon: PlusCircle, label: 'Despacho Directo', path: '/nuevo-prestamo' },
-    { icon: History, label: 'Historial de Uso', path: '/historial' },
     { icon: FileText, label: 'Archivo Histórico', path: '/archivo-historico' },
     { icon: CheckSquare, label: 'Mis Autorizaciones', path: '/mis-autorizaciones' },
   ].filter(item => {

@@ -11,17 +11,5 @@ export const supabase = createClient(supabaseUrl || '', supabaseAnonKey || '');
 
 // Helper for audit logging
 export async function logAction(responsable: string, action: string, details: any) {
-  const { error } = await supabase
-    .from('audit_logs')
-    .insert([
-      {
-        responsable_nombre: responsable,
-        accion: action,
-        detalles: details,
-      },
-    ]);
-  
-  if (error) {
-    console.error('Error logging action:', error);
-  }
+  // No-op: Audit logging has been completely disabled to optimize storage space.
 }

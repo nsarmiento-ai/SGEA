@@ -28,12 +28,8 @@ export const AuditLogs: React.FC = () => {
 
   const fetchLogs = async () => {
     setLoading(true);
-    const { data, error } = await supabase
-      .from('audit_logs')
-      .select('id, responsable_nombre, accion, detalles, created_at')
-      .order('created_at', { ascending: false });
-    
-    if (!error && data) setLogs(data);
+    // Audit logs table has been removed to optimize storage.
+    setLogs([]);
     setLoading(false);
   };
 
