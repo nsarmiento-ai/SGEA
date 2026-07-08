@@ -86,16 +86,37 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       const isCineDomain = email?.endsWith('@cine.unt.edu.ar');
       let inferredRole: AppRole | null = dbRole;
 
-      if (!inferredRole) {
-        if (isCineDomain) {
+      const adminEmails = [
+        'r.brasero@cine.unt.edu.ar',
+        'r.leguizamon@cine.unt.edu.ar',
+        'lsuarez@cine.unt.edu.ar',
+        'metchandy@cine.unt.edu.ar',
+        'jdiaz@cine.unt.edu.ar',
+        'f.santilli@cine.unt.edu.ar',
+        'abautistatarqui@cine.unt.edu.ar'
+      ];
+
+      const superAdmins = [
+        'n.sarmiento@cine.unt.edu.ar',
+        'direccion@cine.unt.edu.ar',
+        'd.academica@cine.unt.edu.ar',
+        'jveiga@cine.unt.edu.ar'
+      ];
+
+      if (email) {
+        const cleanEmail = email.toLowerCase().trim();
+        if (superAdmins.includes(cleanEmail)) {
+          inferredRole = 'SuperAdmin';
+        } else if (adminEmails.includes(cleanEmail)) {
+          inferredRole = 'Administración';
+        } else if (cleanEmail.endsWith('@cine.unt.edu.ar')) {
           inferredRole = 'Docente';
         } else {
           inferredRole = 'Estudiante';
         }
       }
 
-      const superAdmins = ['n.sarmiento@cine.unt.edu.ar', 'jveiga@cine.unt.edu.ar'];
-      const isSpecial = superAdmins.includes(email || '') || inferredRole === 'SuperAdmin';
+      const isSpecial = superAdmins.includes(email?.toLowerCase().trim() || '') || inferredRole === 'SuperAdmin';
       setIsSuperAdmin(isSpecial);
 
       const savedRole = localStorage.getItem('selected_role') as AppRole;
