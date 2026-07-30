@@ -93,7 +93,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         'metchandy@cine.unt.edu.ar',
         'jdiaz@cine.unt.edu.ar',
         'f.santilli@cine.unt.edu.ar',
-        'abautistatarqui@cine.unt.edu.ar'
+        'abautistatarqui@cine.unt.edu.ar',
+        'jcaceres@cine.unt.edu.ar'
       ];
 
       const superAdmins = [

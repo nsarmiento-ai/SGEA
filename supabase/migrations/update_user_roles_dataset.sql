@@ -71,7 +71,7 @@ insert into user_roles (email, role) values
 ('j.guzzi@cine.unt.edu.ar', 'Docente'),
 ('j.mascaro@cine.unt.edu.ar', 'Docente'),
 ('j.villa@cine.unt.edu.ar', 'Docente'),
-('jcaceres@cine.unt.edu.ar', 'Docente'),
+('jcaceres@cine.unt.edu.ar', 'Administración'),
 ('jdiaz@cine.unt.edu.ar', 'Administración'),
 ('jmolina@cine.unt.edu.ar', 'Docente'),
 ('jornadasecp@cine.unt.edu.ar', 'Docente'),

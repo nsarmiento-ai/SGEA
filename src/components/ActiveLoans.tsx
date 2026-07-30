@@ -368,25 +368,39 @@ const ReceiveModal: React.FC<{ loan: Loan, equipmentsMap: Record<string, Equipme
     return initialState;
   });
 
-  const isReadyToSubmit = Object.values(itemConditions).every(condition => condition !== null);
+  const isReadyToSubmit = Object.values(itemConditions).some(condition => condition !== null);
 
   const handleConfirm = async () => {
     if (!isReadyToSubmit) {
-      alert('Por favor, verifique todos los artículos antes de finalizar.');
+      alert('Por favor, verifique al menos un artículo antes de finalizar.');
       return;
     }
 
     setLoading(true);
     try {
       const returnedEquipmentsData: Equipment[] = [];
+      const returnedItemConditions: Record<string, 'ok' | 'problem' | null> = {};
+      const returnedItemNotes: Record<string, string> = {};
       const loanItems = (loan.equipos_ids || []);
       
       let compositeNotes = observacionesGenerales ? `[General] ${observacionesGenerales}\n` : '';
 
+      const unreturnedEquipIds: string[] = [];
+
       for (const eqId of loanItems) {
-        const eq = equipmentStates[eqId];
         const condition = itemConditions[eqId];
+        
+        if (!condition) {
+          unreturnedEquipIds.push(eqId);
+          continue;
+        }
+
+        returnedItemConditions[eqId] = condition;
+        const eq = equipmentStates[eqId];
         const note = itemNotes[eqId];
+        if (note) {
+          returnedItemNotes[eqId] = note;
+        }
         const dbStatus = itemStatuses[eqId] || 'Disponible';
         
         if (condition === 'problem') {
@@ -395,13 +409,13 @@ const ReceiveModal: React.FC<{ loan: Loan, equipmentsMap: Record<string, Equipme
 
         // Update equipment in DB
         // Persist specific report note in the equipment's description (Hoja de Vida)
-        let updatedDescription = eq.descripcion || '';
+        let updatedDescription = eq?.descripcion || '';
         if (condition === 'problem') {
           const reportDate = new Date().toLocaleDateString();
           updatedDescription = `[Reporte ${reportDate}]: ${note || 'Falla reportada'}\n---\n${updatedDescription}`;
         }
 
-        console.log(`[DEBUG] Actualizando equipo ID ${eqId} (${eq.nombre}) a estado: ${dbStatus}`);
+        console.log(`[DEBUG] Actualizando equipo ID ${eqId} (${eq?.nombre}) a estado: ${dbStatus}`);
         const { error: eqErr } = await supabase
           .from('equipamiento')
           .update({ 
@@ -412,7 +426,7 @@ const ReceiveModal: React.FC<{ loan: Loan, equipmentsMap: Record<string, Equipme
         
         if (eqErr) throw eqErr;
 
-        // Log History for each item
+        // Log History for each returned item
         await supabase.from('historial_recursos').insert([{
           recurso_id: eqId,
           docente_nombre: loan.docente_responsable,
@@ -434,12 +448,18 @@ const ReceiveModal: React.FC<{ loan: Loan, equipmentsMap: Record<string, Equipme
         }
       }
 
+      const isAllReturned = unreturnedEquipIds.length === 0;
+
       // Update loan record
       const loanUpdate: any = {
-        estado: 'Finalizado',
+        estado: isAllReturned ? 'Finalizado' : loan.estado,
         observaciones_recepcion: compositeNotes.trim() || 'Recibido OK',
-        fecha_devolucion_real: new Date().toISOString()
+        ...(isAllReturned ? { fecha_devolucion_real: new Date().toISOString() } : {})
       };
+
+      if (!isAllReturned) {
+        loanUpdate.equipos_ids = unreturnedEquipIds;
+      }
 
       const { error: loanError } = await supabase
         .from('prestamos') 
@@ -452,7 +472,8 @@ const ReceiveModal: React.FC<{ loan: Loan, equipmentsMap: Record<string, Equipme
       await logAction(activeResponsable!, 'DEVOLUCION_PRESTAMO_DETALLADA', { 
         loanId: loan.id, 
         alumno: loan.alumno_nombre,
-        compositeNotes: loanUpdate.observaciones_recepcion
+        compositeNotes: loanUpdate.observaciones_recepcion,
+        esParcial: !isAllReturned
       });
 
       const targetDocente = docentes.find(d => d.nombre_completo === loan.docente_responsable);
@@ -461,8 +482,8 @@ const ReceiveModal: React.FC<{ loan: Loan, equipmentsMap: Record<string, Equipme
         returnedEquipmentsData, 
         activeResponsable!, 
         targetDocente?.email,
-        itemConditions,
-        itemNotes
+        returnedItemConditions,
+        returnedItemNotes
       );
 
       onSuccess({ 
@@ -470,8 +491,8 @@ const ReceiveModal: React.FC<{ loan: Loan, equipmentsMap: Record<string, Equipme
         equipments: returnedEquipmentsData, 
         responsableRecibe: activeResponsable!, 
         docenteEmail: targetDocente?.email,
-        itemConditions,
-        itemNotes
+        itemConditions: returnedItemConditions,
+        itemNotes: returnedItemNotes
       });
     } catch (error: any) {
       console.error(error);
